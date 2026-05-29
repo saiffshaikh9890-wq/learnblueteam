@@ -1,4 +1,4 @@
-imp
+import { useState, useEffect, useRef } from "react";
 // ─────────────────────────────────────────────────────────────────────────────
 // INVESTIGATION ZERO — Beginner onboarding scenario
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,7 +100,6 @@ const INVESTIGATION_ZERO = {
   ]
 };
 
-import { useState, useEffect, useRef } from "react";
 
 // ── colour helpers ────────────────────────────────────────────────────────────
 function sc(s) {
