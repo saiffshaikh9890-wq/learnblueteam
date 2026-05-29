@@ -1641,156 +1641,380 @@ function PolicyPage({policyKey,nav}) {
 
 
 // ── landing ───────────────────────────────────────────────────────────────────
+function FAQItem({q,a}) {
+  const [open,setOpen] = useState(false);
+  return (
+    <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,overflow:"hidden"}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",padding:"14px 16px",background:"none",border:"none",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",textAlign:"left",gap:10}}>
+        <span style={{fontSize:14,fontWeight:600,color:"#111318",lineHeight:1.4}}>{q}</span>
+        <span style={{fontSize:18,color:"#1a56db",flexShrink:0,transform:open?"rotate(45deg)":"none",transition:"transform 0.2s"}}>+</span>
+      </button>
+      {open&&<div style={{padding:"0 16px 14px",fontSize:13.5,color:"#5a6272",lineHeight:1.75,borderTop:"1px solid #e1e4ed",paddingTop:12}}>{a}</div>}
+    </div>
+  );
+}
+
+function OnboardingModal({onStart}) {
+  const [step,setStep] = useState(0);
+  const tools = [
+    {color:"#1a56db",icon:"📊",name:"BlueTrace SIEM",desc:"Detects suspicious activity across your network. This is where alerts fire and investigations begin."},
+    {color:"#dc2626",icon:"🖥",name:"SentinelEDR",desc:"Shows exactly what happened on the endpoint — process tree, network connections, files created."},
+    {color:"#7c3aed",icon:"🔍",name:"ThreatLens",desc:"Checks whether IPs, domains, and file hashes are known malicious. Your threat intelligence tool."},
+    {color:"#059669",icon:"📋",name:"IncidentDesk",desc:"Where you manage the ticket, write your IR report, and close the incident."},
+  ];
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(17,19,24,0.6)",backdropFilter:"blur(6px)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:16,padding:28,maxWidth:480,width:"100%",boxShadow:"0 8px 32px rgba(17,19,24,0.15)",animation:"fadeUp 0.3s ease"}}>
+        {step===0 ? (
+          <>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:32,marginBottom:10}}>👋</div>
+              <h2 style={{fontSize:20,fontWeight:800,color:"#111318",marginBottom:6}}>Welcome to LearnBlueTeam</h2>
+              <p style={{fontSize:14,color:"#5a6272",lineHeight:1.7}}>You are about to investigate a real-world security incident. You will use the same tools professional SOC analysts use every day.</p>
+            </div>
+            <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,padding:"14px",marginBottom:16,fontSize:13,color:"#5a6272",lineHeight:1.7}}>
+              <strong style={{color:"#111318"}}>No experience required.</strong> Your analyst coach will guide you through every step and explain why each action matters.
+            </div>
+            <button onClick={()=>setStep(1)} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
+              Show Me the Tools →
+            </button>
+          </>
+        ) : (
+          <>
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#1a56db",letterSpacing:"0.1em",fontFamily:"var(--mo)",marginBottom:4,textTransform:"uppercase"}}>Tools You'll Use — {step}/{tools.length}</div>
+              <div style={{height:3,background:"#f0f2f6",borderRadius:2,overflow:"hidden"}}>
+                <div style={{height:"100%",width:(step/tools.length*100)+"%",background:"#1a56db",transition:"width 0.3s"}}/>
+              </div>
+            </div>
+            {tools.slice(0,step).map((t,i)=>(
+              <div key={t.name} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"12px",background:i===step-1?"rgba(26,86,219,0.04)":"#f7f8fa",border:"1px solid "+(i===step-1?"#1a56db30":"#e1e4ed"),borderRadius:10,marginBottom:8}}>
+                <div style={{width:36,height:36,borderRadius:8,background:t.color+"15",border:"1px solid "+t.color+"30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{t.icon}</div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:t.color,marginBottom:2}}>{t.name}</div>
+                  <div style={{fontSize:12.5,color:"#5a6272",lineHeight:1.6}}>{t.desc}</div>
+                </div>
+              </div>
+            ))}
+            {step < tools.length
+              ? <button onClick={()=>setStep(s=>s+1)} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginTop:4}}>
+                  Next Tool →
+                </button>
+              : <button onClick={onStart} style={{width:"100%",background:"#16a34a",color:"#fff",padding:"13px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",marginTop:4,boxShadow:"0 4px 14px rgba(22,163,74,0.3)"}}>
+                  ✓ I'm Ready — Start Investigation
+                </button>
+            }
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 function Landing({nav,appUser}) {
   const [typed,setTyped] = useState("");
-  const tRef=useRef();
-  const [ti,setTi]=useState(0);const[ci,setCi]=useState(0);const[del,setDel]=useState(false);
-  const titles=["SOC Analyst","Incident Responder","Threat Hunter","Blue Team Defender","DFIR Analyst"];
+  const tRef = useRef();
+  const [ti,setTi] = useState(0);
+  const [ci,setCi] = useState(0);
+  const [del,setDel] = useState(false);
+  const titles = ["Defensive Security Professional","SOC Analyst","Incident Responder","Threat Hunter","Blue Team Specialist"];
   useEffect(()=>{
     const cur=titles[ti];
     tRef.current=setTimeout(()=>{
       if(!del){setTyped(cur.slice(0,ci+1));if(ci+1===cur.length)setTimeout(()=>setDel(true),2200);else setCi(c=>c+1);}
       else{setTyped(cur.slice(0,ci-1));if(ci===0){setDel(false);setTi(i=>(i+1)%titles.length);}else setCi(c=>c-1);}
-    },del?30:75);
+    },del?28:72);
     return()=>clearTimeout(tRef.current);
   },[ci,del,ti]);
 
-  const companies=["Jio","Airtel","Wipro","Infosys","HCL","TCS","Tech Mahindra","Tata Comm","Accenture","Cognizant","IBM India","Capgemini","HDFC Tech","PhonePe","Paytm Security","Flipkart","Swiggy","Zepto","CRED","Razorpay"];
-
   return (
     <div>
-      {/* HERO */}
-      <div style={{minHeight:"90vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px 40px",textAlign:"center",background:"var(--bg)",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(var(--bd) 1px,transparent 1px),linear-gradient(90deg,var(--bd) 1px,transparent 1px)",backgroundSize:"40px 40px",opacity:0.4,pointerEvents:"none"}}/>
-        {/* Logo above hero */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:18,position:"relative",zIndex:1}}>
-          <Logo size={48}/>
+      {/* ── HERO ── */}
+      <div style={{minHeight:"92vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px 48px",textAlign:"center",background:"#f7f8fa",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(#e1e4ed 1px,transparent 1px),linear-gradient(90deg,#e1e4ed 1px,transparent 1px)",backgroundSize:"40px 40px",opacity:0.5,pointerEvents:"none"}}/>
+        {/* Logo */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:20,position:"relative",zIndex:1}}>
+          <Logo size={44}/>
           <div style={{textAlign:"left"}}>
-            <div style={{fontSize:22,fontWeight:800,color:"var(--tx)",letterSpacing:"0.01em",lineHeight:1}}>
-              LEARN<span style={{color:"var(--ac)"}}>BLUETEAM</span>
-            </div>
-            <div style={{fontSize:10,color:"var(--tx4)",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive · Security · Reimagined</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#111318",letterSpacing:"0.01em",lineHeight:1}}>LEARN<span style={{color:"#1a56db"}}>BLUETEAM</span></div>
+            <div style={{fontSize:9,color:"#8892a4",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive · Security · Reimagined</div>
           </div>
         </div>
-        <div style={{display:"inline-flex",alignItems:"center",gap:7,background:"var(--w)",border:"1px solid var(--bd)",color:"var(--tx3)",padding:"5px 13px",borderRadius:100,fontSize:11,fontWeight:600,marginBottom:22,position:"relative",zIndex:1,fontFamily:"var(--mo)",boxShadow:"var(--sh)"}}>
+        {/* Beta badge */}
+        <div style={{display:"inline-flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid #e1e4ed",color:"#5a6272",padding:"5px 13px",borderRadius:100,fontSize:11,fontWeight:600,marginBottom:20,position:"relative",zIndex:1,fontFamily:"var(--mo)",boxShadow:"0 1px 3px rgba(17,19,24,0.06)"}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:"#16a34a",animation:"pulse 2s infinite"}}/>
-          BETA — FREE ACCESS
+          BETA — FREE ACCESS OPEN
         </div>
-        <h1 style={{fontSize:"clamp(28px,6vw,56px)",fontWeight:700,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"var(--tx)",position:"relative",zIndex:1}}>
-          Train to become a<br/>
-          <span style={{color:"var(--ac)"}}>{typed}</span>
-          <span style={{display:"inline-block",width:2,height:"0.85em",background:"var(--ac)",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
+        {/* Headline */}
+        <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
+          Become a<br/>
+          <span style={{color:"#1a56db"}}>{typed}</span>
+          <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
-        <p style={{fontSize:"clamp(14px,3.5vw,16px)",color:"var(--tx3)",lineHeight:1.75,maxWidth:480,margin:"0 auto 28px",position:"relative",zIndex:1}}>
-          Browser-native defensive security simulations. Real SOC workflows. No VMs. No setup. Just open and start investigating.
+        <p style={{fontSize:"clamp(14px,3vw,17px)",color:"#5a6272",lineHeight:1.75,maxWidth:520,margin:"0 auto 28px",position:"relative",zIndex:1}}>
+          Investigate phishing, malware, ransomware, and cloud attacks using realistic SIEM, EDR, Threat Intelligence, and Incident Response workflows.<br/>
+          <strong style={{color:"#111318"}}>No VMs. No setup. Just start investigating.</strong>
         </p>
+        {/* CTAs */}
         <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",position:"relative",zIndex:1,width:"100%",maxWidth:400}}>
           {appUser
-            ?<button onClick={()=>nav("dash")} style={{flex:1,background:"var(--ac)",color:"#fff",fontSize:14,fontWeight:600,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:140}}>Dashboard</button>
-            :<button onClick={()=>nav("signup")} style={{flex:1,background:"var(--ac)",color:"#fff",fontSize:14,fontWeight:600,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:140}}>Get Started Free</button>
+            ?<button onClick={()=>nav("dash")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Go to Dashboard</button>
+            :<button onClick={()=>nav("signup")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Start Free Investigation</button>
           }
-          <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"var(--w)",color:"var(--tx2)",fontSize:14,fontWeight:500,padding:"13px 20px",borderRadius:10,border:"1px solid var(--bd)",cursor:"pointer",boxShadow:"var(--sh)",minWidth:140}}>Try SOC Demo</button>
+          <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"#fff",color:"#2d3241",fontSize:14,fontWeight:500,padding:"13px 20px",borderRadius:10,border:"1px solid #e1e4ed",cursor:"pointer",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",minWidth:160}}>Watch Demo →</button>
         </div>
         {/* Live alert ticker */}
-        <div style={{marginTop:22,display:"flex",alignItems:"center",gap:9,padding:"10px 14px",background:"var(--w)",borderRadius:10,border:"1px solid var(--bd)",maxWidth:480,width:"100%",boxShadow:"var(--sh)",position:"relative",zIndex:1}}>
+        <div style={{marginTop:24,display:"flex",alignItems:"center",gap:9,padding:"10px 14px",background:"#fff",borderRadius:10,border:"1px solid #e1e4ed",maxWidth:480,width:"100%",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",position:"relative",zIndex:1}}>
           <div style={{width:7,height:7,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite",flexShrink:0}}/>
           <Pill color="red" sm>CRITICAL</Pill>
-          <span style={{fontSize:12,color:"var(--tx3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>C2 beacon — WS-FINANCE-04 → 91.212.174.22:443</span>
-          <span style={{fontFamily:"var(--mo)",fontSize:10,color:"var(--tx4)",flexShrink:0}}>02:17</span>
+          <span style={{fontSize:12,color:"#5a6272",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>C2 beacon detected — WS-CORP-FIN-044 → 185.220.101.47:443</span>
+          <span style={{fontSize:10,color:"#8892a4",flexShrink:0,fontFamily:"var(--mo)"}}>08:17</span>
+        </div>
+        {/* Disclaimer */}
+        <div style={{marginTop:14,fontSize:10,color:"#8892a4",position:"relative",zIndex:1,maxWidth:480}}>
+          ⚠ All scenarios, users, domains, and alerts are fictional and created for educational purposes only.
         </div>
       </div>
 
-      {/* MARQUEE */}
-      <div style={{overflow:"hidden",borderTop:"1px solid var(--bd)",borderBottom:"1px solid var(--bd)",background:"var(--w)",padding:"12px 0"}}>
-        <div style={{textAlign:"center",fontSize:9,fontWeight:700,letterSpacing:"0.2em",color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:10,textTransform:"uppercase"}}>
-          Used by analysts training for roles at
+      {/* ── MARQUEE — removed company names per compliance ── */}
+      <div style={{overflow:"hidden",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",background:"#fff",padding:"12px 0"}}>
+        <div style={{textAlign:"center",fontSize:9,fontWeight:700,letterSpacing:"0.2em",color:"#8892a4",fontFamily:"var(--mo)",marginBottom:10,textTransform:"uppercase"}}>
+          Analysts training for roles in
         </div>
         <div style={{display:"flex",width:"max-content",animation:"ticker 30s linear infinite"}}>
-          {[...companies,...companies].map((c,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"0 26px",fontSize:12.5,fontWeight:500,color:"var(--tx4)",whiteSpace:"nowrap",fontFamily:"var(--mo)"}}>
-              {c}<div style={{width:3,height:3,borderRadius:"50%",background:"var(--bg4)"}}/>
+          {["SOC Operations","Incident Response","Threat Hunting","Digital Forensics","Cloud Security","Email Security","Malware Analysis","Identity Security","Detection Engineering","Security Operations",
+            "SOC Operations","Incident Response","Threat Hunting","Digital Forensics","Cloud Security","Email Security","Malware Analysis","Identity Security","Detection Engineering","Security Operations"
+          ].map((c,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"0 24px",fontSize:12.5,fontWeight:500,color:"#8892a4",whiteSpace:"nowrap",fontFamily:"var(--mo)"}}>
+              {c}<div style={{width:3,height:3,borderRadius:"50%",background:"#dde0e9"}}/>
             </div>
           ))}
         </div>
       </div>
 
-      {/* STATS */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",background:"var(--w)",borderBottom:"1px solid var(--bd)"}}>
-        {[["2","LIVE SCENARIOS"],["280+","XP AVAILABLE"],["6","MODULES"],["20min","AVG SESSION"]].map(([n,lb])=>(
-          <div key={lb} style={{padding:"20px 16px",textAlign:"center",border:"1px solid var(--bd)"}}>
-            <div style={{fontSize:26,fontWeight:700,color:"var(--tx)",fontFamily:"var(--mo)",lineHeight:1,marginBottom:5}}>{n}</div>
-            <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.12em",fontWeight:600,textTransform:"uppercase"}}>{lb}</div>
-          </div>
-        ))}
+      {/* ── CHOOSE YOUR PATH ── */}
+      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Defensive Security Paths</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,30px)",fontWeight:800,color:"#111318",marginBottom:8,lineHeight:1.2}}>Choose Your Defensive Security Path</h2>
+          <p style={{fontSize:14,color:"#5a6272",maxWidth:480,margin:"0 auto"}}>LearnBlueTeam covers the full spectrum of defensive security careers.</p>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,maxWidth:1060,margin:"0 auto"}}>
+          {[
+            {icon:"🔵",title:"SOC Analyst",desc:"Investigate alerts, triage incidents, and respond to threats using SIEM and EDR tools.",status:"Available Now",available:true,cta:"Start Learning"},
+            {icon:"🔴",title:"Incident Responder",desc:"Contain and recover from active security incidents including ransomware and breaches.",status:"Coming Soon",available:false},
+            {icon:"🟣",title:"Threat Hunter",desc:"Proactively search for hidden threats using behavioral analytics and threat intelligence.",status:"Coming Soon",available:false},
+            {icon:"☁️",title:"Cloud Security Analyst",desc:"Investigate cloud incidents, IAM abuse, and exposed credentials in AWS and Azure.",status:"Coming Soon",available:false},
+            {icon:"⚙️",title:"Detection Engineer",desc:"Build detection rules, tune alerts, and improve your organisation's security posture.",status:"Coming Soon",available:false},
+          ].map(p=>(
+            <div key={p.title} style={{background:p.available?"#fff":"#f7f8fa",border:"1px solid "+(p.available?"#1a56db":"#e1e4ed"),borderRadius:14,padding:"20px",opacity:p.available?1:0.7,boxShadow:p.available?"0 2px 12px rgba(26,86,219,0.1)":"none"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                <span style={{fontSize:28}}>{p.icon}</span>
+                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:100,background:p.available?"rgba(26,86,219,0.08)":"rgba(107,114,128,0.08)",color:p.available?"#1a56db":"#6b7280",fontFamily:"var(--mo)"}}>{p.status}</span>
+              </div>
+              <div style={{fontSize:15,fontWeight:700,color:"#111318",marginBottom:6}}>{p.title}</div>
+              <div style={{fontSize:13,color:"#5a6272",lineHeight:1.65,marginBottom:14}}>{p.desc}</div>
+              {p.available
+                ?<button onClick={()=>nav("signup")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"10px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer"}}>
+                  {p.cta} →
+                </button>
+                :<div style={{fontSize:12,color:"#8892a4",textAlign:"center",padding:"8px",border:"1px dashed #e1e4ed",borderRadius:6}}>Notify me when available</div>
+              }
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* SIMULATIONS */}
-      <div style={{padding:"32px 20px"}}>
-        <Ey t="Live Simulations"/>
-        <h2 style={{fontSize:"clamp(20px,5vw,28px)",fontWeight:700,marginBottom:6,color:"var(--tx)",lineHeight:1.2}}>Real incidents.<br/>Real investigations.</h2>
-        <p style={{color:"var(--tx3)",fontSize:14,lineHeight:1.7,marginBottom:24}}>Free during Beta. No signup required to try.</p>
-        <div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {Object.values(SCENARIOS).map(s=>(
-            <div key={s.id} onClick={()=>nav("sim-"+s.id)} style={{background:"var(--w)",border:"1px solid var(--bd)",borderRadius:14,padding:"18px",cursor:"pointer",boxShadow:"var(--sh)",transition:"all 0.13s",active:{transform:"scale(0.98)"}}}>
+      {/* ── CAREER ROADMAP ── */}
+      <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Career Roadmap</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>Your Journey from Beginner to Specialist</h2>
+          <p style={{fontSize:14,color:"#5a6272"}}>Every level unlocks new scenarios and skills.</p>
+        </div>
+        <div style={{maxWidth:700,margin:"0 auto",display:"flex",flexDirection:"column",gap:0}}>
+          {[
+            {level:"Level 0",title:"Complete Beginner",color:"#6b7280",learn:["What is a SIEM","What is EDR","What is an IOC","Alert vs Incident"],xp:"0 XP",icon:"🌱"},
+            {level:"SOC Analyst L1",title:"Junior Analyst",color:"#1a56db",learn:["Alert Triage","Phishing Analysis","IOC Validation","True/False Positive"],xp:"500 XP",icon:"🔵"},
+            {level:"SOC Analyst L2",title:"Mid-Level Analyst",color:"#7c3aed",learn:["Malware Investigation","Correlation Analysis","Threat Hunting Basics","Incident Validation"],xp:"1,500 XP",icon:"🟣"},
+            {level:"Incident Responder",title:"IR Specialist",color:"#dc2626",learn:["Containment & Eradication","Ransomware Response","Recovery Planning","Crisis Management"],xp:"3,000 XP",icon:"🔴"},
+            {level:"Blue Team Specialist",title:"Senior Specialist",color:"#059669",learn:["Advanced Investigations","Detection Engineering","Enterprise SecOps","Team Leadership"],xp:"5,000 XP",icon:"🏆"},
+          ].map((s,i,arr)=>(
+            <div key={s.level} style={{display:"flex",gap:0,position:"relative"}}>
+              {/* Line */}
+              {i<arr.length-1&&<div style={{position:"absolute",left:27,top:56,width:2,height:"calc(100% - 20px)",background:"#e1e4ed",zIndex:0}}/>}
+              <div style={{display:"flex",gap:14,alignItems:"flex-start",padding:"0 0 28px 0",flex:1}}>
+                {/* Circle */}
+                <div style={{width:56,height:56,borderRadius:"50%",background:s.color+"15",border:"2px solid "+s.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,position:"relative",zIndex:1,background:"#fff",boxShadow:"0 2px 8px "+s.color+"20"}}>
+                  {s.icon}
+                </div>
+                <div style={{flex:1,background:"#fff",border:"1px solid #e1e4ed",borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <div>
+                      <div style={{fontSize:10,fontWeight:700,color:s.color,fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>{s.level}</div>
+                      <div style={{fontSize:15,fontWeight:700,color:"#111318"}}>{s.title}</div>
+                    </div>
+                    <div style={{fontSize:11,fontWeight:700,color:s.color,fontFamily:"var(--mo)",background:s.color+"10",padding:"3px 10px",borderRadius:6,border:"1px solid "+s.color+"25"}}>{s.xp}</div>
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {s.learn.map(l=>(
+                      <span key={l} style={{fontSize:11.5,color:"#5a6272",background:"#f7f8fa",border:"1px solid #e1e4ed",padding:"2px 9px",borderRadius:4,fontFamily:"var(--mo)"}}>✓ {l}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── HOW IT WORKS ── */}
+      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>How It Works</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>Real Investigation Workflow</h2>
+          <p style={{fontSize:14,color:"#5a6272",maxWidth:460,margin:"0 auto"}}>Every scenario follows the exact workflow used by real SOC analysts.</p>
+        </div>
+        <div style={{maxWidth:600,margin:"0 auto",display:"flex",flexDirection:"column",gap:0}}>
+          {[
+            {n:1,icon:"🚨",title:"Receive Security Alert",desc:"SIEM detects suspicious activity and fires a correlated alert.",tool:"BlueTrace SIEM",color:"#1a56db"},
+            {n:2,icon:"📊",title:"Review SIEM Evidence",desc:"Analyse the correlated alert, check rules fired, and read the timeline.",tool:"BlueTrace SIEM",color:"#1a56db"},
+            {n:3,icon:"🖥",title:"Investigate Endpoint Activity",desc:"Open the EDR to read the process tree, network connections, and file events.",tool:"SentinelEDR",color:"#dc2626"},
+            {n:4,icon:"🔍",title:"Validate IOC Intelligence",desc:"Look up IPs, hashes, and domains to confirm if they are malicious.",tool:"ThreatLens",color:"#7c3aed"},
+            {n:5,icon:"🔒",title:"Contain the Threat",desc:"Isolate the endpoint, block IOCs, and reset compromised credentials.",tool:"SentinelEDR",color:"#dc2626"},
+            {n:6,icon:"📋",title:"Close the Incident",desc:"Write the IR report, document findings, and close the ticket.",tool:"IncidentDesk",color:"#059669"},
+            {n:7,icon:"⚡",title:"Earn XP and Level Up",desc:"Every completed investigation earns XP and progresses your career path.",tool:"",color:"#f59e0b"},
+          ].map((s,i,arr)=>(
+            <div key={s.n} style={{display:"flex",gap:14,position:"relative",paddingBottom:i<arr.length-1?24:0}}>
+              {i<arr.length-1&&<div style={{position:"absolute",left:20,top:44,width:2,height:"calc(100% - 16px)",background:"#e1e4ed"}}/>}
+              <div style={{width:42,height:42,borderRadius:"50%",background:s.color+"12",border:"2px solid "+s.color+"40",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,zIndex:1,background:"#fff"}}>
+                {s.icon}
+              </div>
+              <div style={{flex:1,paddingTop:4}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"#111318"}}>{s.title}</div>
+                  {s.tool&&<span style={{fontSize:10,fontWeight:600,color:s.color,background:s.color+"10",padding:"1px 7px",borderRadius:3,fontFamily:"var(--mo)",border:"1px solid "+s.color+"25"}}>{s.tool}</span>}
+                </div>
+                <div style={{fontSize:13,color:"#5a6272",lineHeight:1.6}}>{s.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── FEATURED SCENARIOS ── */}
+      <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Live Simulations</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:6}}>Real Incidents. Real Investigations.</h2>
+          <p style={{fontSize:14,color:"#5a6272"}}>Free during Beta. No signup required to try.</p>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:12,maxWidth:760,margin:"0 auto"}}>
+          {[
+            {id:"phishing-c2",icon:"🎣",title:"Spear-Phishing to C2 Beacon",diff:"Beginner",time:"25 min",xp:120,tags:["Phishing","C2","EDR","SIEM"],desc:"Finance analyst opened a macro-enabled document. EDR detected C2 beacon. LSASS credential dump in progress. Investigate and contain.",free:true},
+            {id:"ransomware",icon:"💀",title:"Ransomware Staging Detected",diff:"Intermediate",time:"40 min",xp:200,tags:["Ransomware","Lateral Movement","IR"],desc:"Mass file encryption on FILE-SRV-01. Extension .locked spreading. Three endpoints actively encrypting. Stop it before backups are hit.",free:true},
+            {id:"sentinel-aad",icon:"☁️",title:"Azure AD Identity Attack — MFA Fatigue",diff:"Intermediate",time:"30 min",xp:180,tags:["Identity","MFA","Cloud","ATO"],desc:"47 MFA push notifications in 8 minutes. One approved. Attacker session active from Amsterdam. Impossible travel. Active ATO.",free:false,soon:true},
+          ].map(s=>(
+            <div key={s.id} style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:14,padding:"18px",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",cursor:s.soon?undefined:"pointer",opacity:s.soon?0.6:1}} onClick={()=>!s.soon&&nav("sim-"+s.id)}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                <Pill color={s.difficulty==="Easy"?"green":"amber"} sm>{s.difficulty}</Pill>
-                <Pill color="green" sm>FREE</Pill>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:24}}>{s.icon}</span>
+                  <div>
+                    <div style={{fontSize:15,fontWeight:700,color:"#111318",lineHeight:1.3}}>{s.title}</div>
+                    <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap"}}>
+                      <span style={{fontSize:11,color:s.diff==="Beginner"?"#16a34a":"#b45309",fontWeight:600,fontFamily:"var(--mo)"}}>{s.diff}</span>
+                      <span style={{fontSize:11,color:"#8892a4",fontFamily:"var(--mo)"}}>⏱ {s.time}</span>
+                      <span style={{fontSize:11,color:"#1a56db",fontWeight:600,fontFamily:"var(--mo)"}}>⚡ {s.xp} XP</span>
+                    </div>
+                  </div>
+                </div>
+                <div>{s.soon?<Pill color="gray" sm>SOON</Pill>:<Pill color="green" sm>FREE</Pill>}</div>
               </div>
-              <div style={{fontSize:17,fontWeight:700,color:"var(--tx)",marginBottom:6,lineHeight:1.3}}>{s.title}</div>
-              <div style={{fontSize:13,color:"var(--tx3)",lineHeight:1.65,marginBottom:12}}>{s.brief}</div>
-              <div style={{display:"flex",gap:14,fontSize:11.5,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:12}}>
-                <span>⏱ {s.duration}m</span><span>⭐ {s.xpReward} XP</span><span>{s.category}</span>
-              </div>
+              <div style={{fontSize:13,color:"#5a6272",lineHeight:1.65,marginBottom:10}}>{s.desc}</div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{s.tags.map(t=><Tag key={t} c={t}/>)}</div>
             </div>
           ))}
-          {/* Coming soon */}
-          {["Insider Data Exfiltration","Cloud IAM Compromise","Lateral Movement Detection"].map(t=>(
-            <div key={t} style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:14,padding:"18px",opacity:0.6}}>
-              <Pill color="gray" sm>COMING SOON</Pill>
-              <div style={{fontSize:16,fontWeight:600,color:"var(--tx3)",marginTop:8}}>{t}</div>
+        </div>
+      </div>
+
+      {/* ── WHAT YOU'LL LEARN ── */}
+      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Curriculum</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:6}}>What You'll Learn</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8,maxWidth:760,margin:"0 auto"}}>
+          {["Alert Triage & Classification","Phishing Investigation","Malware Analysis Basics","Threat Hunting Foundations","Threat Intelligence Lookup","Incident Response Process","Cloud Security Fundamentals","Identity Attack Investigation","EDR Investigation Techniques","SIEM Correlation Analysis","IOC Validation & Enrichment","Security Operations Reporting"].map(item=>(
+            <div key={item} style={{display:"flex",gap:9,alignItems:"center",padding:"10px 12px",background:"#f7f8fa",borderRadius:8,border:"1px solid #e1e4ed"}}>
+              <span style={{color:"#16a34a",fontWeight:700,fontSize:14,flexShrink:0}}>✓</span>
+              <span style={{fontSize:13,color:"#2d3241",fontWeight:500}}>{item}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* WHY */}
-      <div style={{background:"var(--w)",borderTop:"1px solid var(--bd)",borderBottom:"1px solid var(--bd)",padding:"32px 20px"}}>
-        <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"var(--ac)",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnBlueTeam</div>
-        <h2 style={{fontSize:"clamp(20px,5vw,26px)",fontWeight:800,marginBottom:20,color:"#111318",lineHeight:1.2}}>Defensive security training,<br/>finally done right.</h2>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {[["🖥","Real SOC Workstation","Full SIEM, EDR, Threat Intel tools. Not a quiz."],
-            ["🎯","Step-by-Step Coaching","Guided analyst workflow on every investigation."],
-            ["📱","Zero Setup","Runs in your browser. Mobile-friendly."],
-            ["🏆","Blue Team Only","SOC, DFIR, Threat Hunting. 100% defensive."],
+      {/* ── WHY LEARNBLUETEAM ── */}
+      <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",padding:"48px 20px"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnBlueTeam</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Different from everything else</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,maxWidth:860,margin:"0 auto"}}>
+          {[
+            ["🖥","Real SOC Workstation","Full SIEM, EDR, and Threat Intel tools on every investigation. Not a quiz. Not a video."],
+            ["🎯","Step-by-Step Coaching","Your analyst coach guides every decision — what to look for, why it matters."],
+            ["📱","Zero Setup","Runs in your browser in seconds. Mobile-friendly. No VMs, no downloads."],
+            ["🏆","Blue Team Focused","100% defensive security. SOC, DFIR, Threat Hunting, Cloud Security."],
+            ["📊","Career Progression","XP, levels, badges. A clear path from beginner to senior analyst."],
+            ["📜","Verified Certificates","LearnBlueTeam Certificate of Completion. Unique verifiable ID."],
           ].map(([ic,tl,ds])=>(
-            <div key={tl} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"12px",background:"#f7f8fa",borderRadius:10,border:"1px solid #e1e4ed"}}>
-              <span style={{fontSize:20,flexShrink:0}}>{ic}</span>
+            <div key={tl} style={{display:"flex",gap:13,alignItems:"flex-start",padding:"16px",background:"#fff",borderRadius:12,border:"1px solid #e1e4ed",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
+              <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{ic}</span>
               <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#111318",marginBottom:2}}>{tl}</div>
-                <div style={{fontSize:12,color:"#5a6272",lineHeight:1.5}}>{ds}</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:3}}>{tl}</div>
+                <div style={{fontSize:12.5,color:"#5a6272",lineHeight:1.6}}>{ds}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* DOPAMINE LOOP — social proof ticker */}
-      <div style={{background:"var(--ac)",padding:"14px 20px",overflow:"hidden"}}>
-        <div style={{display:"flex",width:"max-content",animation:"ticker 18s linear infinite",alignItems:"center",gap:32}}>
-          {["🔥 Arjun M. just earned 120 XP","⚡ Priya S. reached Level 5","🎯 Rohan K. closed a P1 ransomware incident","🏆 Neha R. earned SOC Analyst certificate","🔥 Vikram D. 7-day streak","⚡ 847 analysts trained this week",
-            "🔥 Arjun M. just earned 120 XP","⚡ Priya S. reached Level 5","🎯 Rohan K. closed a P1 ransomware incident","🏆 Neha R. earned SOC Analyst certificate","🔥 Vikram D. 7-day streak","⚡ 847 analysts trained this week"
-          ].map((t,i)=>(
-            <span key={i} style={{fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.9)",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6}}>{t}</span>
+      {/* ── TESTIMONIALS ── */}
+      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Early Access Feedback</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318"}}>What Analysts Say</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,maxWidth:900,margin:"0 auto"}}>
+          {[
+            {q:"Finally understood how SIEM and EDR work together in a real investigation. No other platform shows this.",name:"Arjun M.",role:"Fresher → SOC Analyst L1",loc:"Bangalore"},
+            {q:"The guided walkthrough feels like having a senior analyst sitting next to you. This is what was missing.",name:"Priya S.",role:"IT Graduate",loc:"Mumbai"},
+            {q:"I've tried TryHackMe and LetsDefend. LBT is different — it's defensive, realistic, and career-focused.",name:"Rohan K.",role:"SOC Analyst",loc:"Delhi"},
+          ].map(t=>(
+            <div key={t.name} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
+              <div style={{fontSize:20,color:"#1a56db",marginBottom:8}}>❝</div>
+              <div style={{fontSize:13.5,color:"#2d3241",lineHeight:1.7,marginBottom:14,fontStyle:"italic"}}>{t.q}</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#111318"}}>{t.name}</div>
+                  <div style={{fontSize:11.5,color:"#5a6272"}}>{t.role}</div>
+                </div>
+                <div style={{fontSize:11,color:"#8892a4",fontFamily:"var(--mo)"}}>{t.loc}</div>
+              </div>
+            </div>
           ))}
+        </div>
+        <div style={{textAlign:"center",marginTop:14,fontSize:12,color:"#8892a4"}}>
+          * Testimonials from Beta access users. Names used with permission.
         </div>
       </div>
 
-      {/* PRICING */}
-      <div style={{padding:"36px 20px 28px",background:"var(--w)",borderTop:"1px solid #e1e4ed"}}>
+      {/* ── PRICING ── */}
+      <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"var(--ac)",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Pricing</div>
-          <h2 style={{fontSize:"clamp(20px,5vw,26px)",fontWeight:800,color:"#111318",marginBottom:4}}>Start free. Upgrade when ready.</h2>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Pricing</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:4}}>Start free. Upgrade when ready.</h2>
           <p style={{color:"#5a6272",fontSize:13,marginBottom:14}}>UPI · Cards · Cancel anytime</p>
           <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#7c3aed,#4f46e5)",borderRadius:10,padding:"10px 18px"}}>
             <span style={{fontSize:16}}>🎓</span>
@@ -1798,168 +2022,114 @@ function Landing({nav,appUser}) {
             <span style={{background:"#fff",color:"#7c3aed",fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:5}}>60% OFF</span>
           </div>
         </div>
-
-        <div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {/* FREE */}
-          <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:12,maxWidth:500,margin:"0 auto"}}>
+          <div style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#8892a4",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>FREE</div>
-                <div style={{fontSize:28,fontWeight:800,color:"#111318",fontFamily:"var(--mo)",lineHeight:1}}>₹0</div>
-              </div>
+              <div><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#8892a4",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>FREE</div><div style={{fontSize:28,fontWeight:800,color:"#111318",fontFamily:"var(--mo)"}}>₹0</div></div>
               <div style={{fontSize:12,color:"#5a6272",textAlign:"right"}}>Try it out<br/>No credit card</div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
+            <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
               {["2 SOC investigations (preview)","Real SOC workstation","AI coaching + XP system"].map(f=>(
-                <div key={f} style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <span style={{color:"#16a34a",fontWeight:700,fontSize:14,flexShrink:0}}>✓</span>
-                  <span style={{fontSize:13,color:"#2d3241"}}>{f}</span>
-                </div>
+                <div key={f} style={{display:"flex",gap:8}}><span style={{color:"#16a34a",fontWeight:700}}>✓</span><span style={{fontSize:13,color:"#2d3241"}}>{f}</span></div>
               ))}
               {["All 6 modules","50+ simulations","Certificates","Leaderboard"].map(f=>(
-                <div key={f} style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <span style={{color:"#d1d5db",fontWeight:700,fontSize:14,flexShrink:0}}>✕</span>
-                  <span style={{fontSize:13,color:"#9ca3af"}}>{f}</span>
-                </div>
+                <div key={f} style={{display:"flex",gap:8}}><span style={{color:"#d1d5db",fontWeight:700}}>✕</span><span style={{fontSize:13,color:"#9ca3af"}}>{f}</span></div>
               ))}
             </div>
-            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#f0f2f6",color:"#2d3241",padding:"12px",borderRadius:9,fontSize:14,fontWeight:600,border:"1px solid #e1e4ed",cursor:"pointer"}}>
-              Get Started Free
-            </button>
+            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#f0f2f6",color:"#2d3241",padding:"12px",borderRadius:9,fontSize:14,fontWeight:600,border:"1px solid #e1e4ed",cursor:"pointer"}}>Get Started Free</button>
           </div>
-
-          {/* PRO */}
-          <div style={{background:"#fff",border:"2px solid var(--ac)",borderRadius:14,padding:"20px",position:"relative",boxShadow:"0 0 0 4px rgba(26,86,219,0.07)"}}>
-            <div style={{position:"absolute",top:-12,left:"50%",transform:"translateX(-50%)",background:"var(--ac)",color:"#fff",padding:"2px 14px",borderRadius:100,fontSize:10,fontWeight:700,letterSpacing:"0.1em",whiteSpace:"nowrap",fontFamily:"var(--mo)"}}>MOST POPULAR</div>
+          <div style={{background:"#fff",border:"2px solid #1a56db",borderRadius:14,padding:"20px",position:"relative",boxShadow:"0 0 0 4px rgba(26,86,219,0.07)"}}>
+            <div style={{position:"absolute",top:-12,left:"50%",transform:"translateX(-50%)",background:"#1a56db",color:"#fff",padding:"2px 14px",borderRadius:100,fontSize:10,fontWeight:700,letterSpacing:"0.1em",whiteSpace:"nowrap",fontFamily:"var(--mo)"}}>MOST POPULAR</div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"var(--ac)",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>PRO</div>
-                <div style={{display:"flex",alignItems:"baseline",gap:6}}>
-                  <span style={{fontSize:28,fontWeight:800,color:"var(--ac)",fontFamily:"var(--mo)",lineHeight:1}}>₹399</span>
-                  <span style={{fontSize:13,color:"#8892a4"}}>/month</span>
-                </div>
-                <div style={{fontSize:11,color:"#7c3aed",fontWeight:600,marginTop:3}}>🎓 ₹160/mo for students</div>
-              </div>
-              <div style={{fontSize:12,color:"#5a6272",textAlign:"right"}}>Full access<br/>All modules</div>
+              <div><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#1a56db",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>PRO</div><div style={{display:"flex",alignItems:"baseline",gap:5}}><span style={{fontSize:28,fontWeight:800,color:"#1a56db",fontFamily:"var(--mo)"}}>₹399</span><span style={{fontSize:13,color:"#8892a4"}}>/month</span></div><div style={{fontSize:11,color:"#7c3aed",fontWeight:600,marginTop:3}}>🎓 ₹160/mo for students</div></div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
+            <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
               {["All 6 modules","50+ simulations","Certificate of completion","National leaderboard","Badges + achievements","Priority support"].map(f=>(
-                <div key={f} style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <span style={{color:"#16a34a",fontWeight:700,fontSize:14,flexShrink:0}}>✓</span>
-                  <span style={{fontSize:13,color:"#2d3241"}}>{f}</span>
-                </div>
+                <div key={f} style={{display:"flex",gap:8}}><span style={{color:"#16a34a",fontWeight:700}}>✓</span><span style={{fontSize:13,color:"#2d3241"}}>{f}</span></div>
               ))}
             </div>
-            <button onClick={()=>nav("signup")} style={{width:"100%",background:"var(--ac)",color:"#fff",padding:"13px",borderRadius:9,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
-              Start Pro — ₹399/mo
-            </button>
+            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:9,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>Start Pro — ₹399/mo</button>
           </div>
-
-          {/* ANNUAL */}
-          <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px",position:"relative"}}>
+          <div style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px",position:"relative"}}>
             <div style={{position:"absolute",top:-10,right:16,background:"#16a34a",color:"#fff",padding:"2px 10px",borderRadius:100,fontSize:10,fontWeight:700,fontFamily:"var(--mo)"}}>SAVE 44%</div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#8892a4",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>ANNUAL</div>
-                <div style={{display:"flex",alignItems:"baseline",gap:6}}>
-                  <span style={{fontSize:28,fontWeight:800,color:"#111318",fontFamily:"var(--mo)",lineHeight:1}}>₹2,699</span>
-                  <span style={{fontSize:13,color:"#8892a4"}}>/year</span>
-                </div>
-                <div style={{fontSize:11,color:"#16a34a",fontWeight:600,marginTop:3}}>vs ₹4,788/yr monthly · Save ₹2,089</div>
-              </div>
-            </div>
-            <div style={{fontSize:13,color:"#2d3241",marginBottom:14,lineHeight:1.6}}>
-              Everything in Pro + Certification exam + LinkedIn badge + Team access (3 seats)
-            </div>
-            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#f0f2f6",color:"#2d3241",padding:"12px",borderRadius:9,fontSize:14,fontWeight:600,border:"1px solid #e1e4ed",cursor:"pointer"}}>
-              Get Annual — ₹2,699/yr
-            </button>
+            <div style={{marginBottom:4}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#8892a4",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>ANNUAL</div><div style={{display:"flex",alignItems:"baseline",gap:5}}><span style={{fontSize:28,fontWeight:800,color:"#111318",fontFamily:"var(--mo)"}}>₹2,699</span><span style={{fontSize:13,color:"#8892a4"}}>/year</span></div></div>
+            <div style={{fontSize:11,color:"#16a34a",fontWeight:600,marginBottom:12}}>vs ₹4,788/yr monthly · Save ₹2,089</div>
+            <div style={{fontSize:13,color:"#2d3241",marginBottom:14}}>Everything in Pro + Certification exam + LinkedIn badge + Team access (3 seats)</div>
+            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#f0f2f6",color:"#2d3241",padding:"12px",borderRadius:9,fontSize:14,fontWeight:600,border:"1px solid #e1e4ed",cursor:"pointer"}}>Get Annual — ₹2,699/yr</button>
             <div style={{textAlign:"center",marginTop:8,fontSize:11,color:"#8892a4"}}>🎓 Students: ₹1,079/yr</div>
           </div>
         </div>
-
-        <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"12px 16px",marginTop:14,display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"12px 16px",marginTop:14,display:"flex",gap:10,alignItems:"center",maxWidth:500,margin:"14px auto 0"}}>
           <span style={{fontSize:18,flexShrink:0}}>⏰</span>
-          <div>
-            <div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:1}}>Beta pricing ends soon</div>
-            <div style={{fontSize:11.5,color:"#b45309"}}>Lock in current rates before launch pricing.</div>
-          </div>
+          <div><div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:1}}>Beta pricing ends soon</div><div style={{fontSize:11.5,color:"#b45309"}}>Lock in current rates before launch pricing.</div></div>
         </div>
       </div>
 
-      {/* DOPAMINE — what you unlock */}
-      <div style={{background:"var(--w)",borderTop:"1px solid var(--bd)",borderBottom:"1px solid var(--bd)",padding:"28px 20px"}}>
-        <Ey t="Your Journey"/>
-        <h2 style={{fontSize:"clamp(18px,5vw,24px)",fontWeight:700,marginBottom:18,color:"var(--tx)"}}>Every step unlocks something new</h2>
-        <div style={{display:"flex",flexDirection:"column",gap:0}}>
+      {/* ── FAQ ── */}
+      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>FAQ</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318"}}>Frequently Asked Questions</h2>
+        </div>
+        <div style={{maxWidth:660,margin:"0 auto",display:"flex",flexDirection:"column",gap:8}}>
           {[
-            {xp:"0 XP",    title:"Start investigating",  desc:"First alert fired. Classify it.",       icon:"🔍",color:"var(--ac)"},
-            {xp:"120 XP",  title:"First badge earned",   desc:"Complete Spear-Phishing scenario.",     icon:"🏅",color:"#f97316"},
-            {xp:"500 XP",  title:"Level 2 unlocked",     desc:"Harder scenarios now available.",       icon:"⬆️",color:"#7c3aed"},
-            {xp:"1000 XP", title:"SOC Analyst L1",       desc:"Title change. Certificate eligible.",  icon:"📜",color:"#16a34a"},
-            {xp:"2500 XP", title:"Leaderboard top 50",   desc:"National ranking. Recruiters notice.", icon:"🏆",color:"#b45309"},
-          ].map((s,i,arr)=>(
-            <div key={i} style={{display:"flex",gap:0}}>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:40,flexShrink:0}}>
-                <div style={{width:36,height:36,borderRadius:"50%",background:s.color+"15",border:"2px solid "+s.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
-                  {s.icon}
-                </div>
-                {i<arr.length-1&&<div style={{width:2,height:24,background:"var(--bd)",margin:"4px 0"}}/>}
-              </div>
-              <div style={{paddingLeft:14,paddingBottom:i<arr.length-1?20:0,paddingTop:6}}>
-                <div style={{fontSize:10,color:s.color,fontWeight:700,fontFamily:"var(--mo)",marginBottom:2}}>{s.xp}</div>
-                <div style={{fontSize:14,fontWeight:700,color:"var(--tx)",marginBottom:2}}>{s.title}</div>
-                <div style={{fontSize:12.5,color:"var(--tx3)"}}>{s.desc}</div>
-              </div>
-            </div>
+            ["Do I need cybersecurity experience?","No. LearnBlueTeam is designed for complete beginners. Every scenario includes step-by-step coaching that explains what to do and why."],
+            ["Do I need a VM or special software?","No. Everything runs in your browser. No downloads, no VMs, no Kali Linux required. Works on any device."],
+            ["Can I use this on mobile?","Yes. The platform is mobile-optimised. You can investigate incidents on your phone or tablet."],
+            ["How is this different from TryHackMe?","TryHackMe focuses on offensive security (hacking). LearnBlueTeam is 100% defensive — SOC, DFIR, Threat Hunting, and Incident Response."],
+            ["How is this different from LetsDefend?","LetsDefend shows you alerts to classify. LearnBlueTeam simulates the full investigation workflow across multiple tools (SIEM, EDR, Threat Intel, Incident Desk)."],
+            ["Do I receive a certificate?","Yes. Pro and Annual plans include a LearnBlueTeam Certificate of Completion with a unique verifiable ID."],
+            ["What career path should I start with?","Start with SOC Analyst. It covers the foundational skills every defensive security professional needs regardless of their target role."],
+            ["Is LearnBlueTeam affiliated with any vendor?","No. LearnBlueTeam is an independent training platform. All tool names are fictional. We are not affiliated with any cybersecurity vendor or certification body."],
+          ].map(([q,a],i)=>(
+            <FAQItem key={i} q={q} a={a}/>
           ))}
         </div>
       </div>
 
-      {/* CTA */}
-      <div style={{background:"var(--ac)",padding:"48px 20px",textAlign:"center"}}>
-        <h2 style={{fontSize:"clamp(20px,5vw,28px)",fontWeight:700,color:"#fff",marginBottom:10,lineHeight:1.2}}>Open the SOC.<br/>Work a real incident.</h2>
-        <p style={{color:"rgba(255,255,255,0.75)",fontSize:14,marginBottom:22}}>No setup. No credit card. Click and start defending.</p>
-        <button onClick={()=>nav("sim-phishing-c2")} style={{background:"#fff",color:"var(--ac)",fontSize:15,fontWeight:700,padding:"14px 32px",borderRadius:12,border:"none",cursor:"pointer",boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
-          Open Live SOC Demo
+      {/* ── CTA ── */}
+      <div style={{background:"#1a56db",padding:"48px 20px",textAlign:"center"}}>
+        <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#fff",marginBottom:10,lineHeight:1.2}}>Start Your Investigation.<br/>No setup required.</h2>
+        <p style={{color:"rgba(255,255,255,0.75)",fontSize:14,marginBottom:22}}>Join analysts training for SOC, IR, and Threat Hunting roles.</p>
+        <button onClick={()=>nav("sim-phishing-c2")} style={{background:"#fff",color:"#1a56db",fontSize:15,fontWeight:700,padding:"14px 32px",borderRadius:12,border:"none",cursor:"pointer",boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
+          Open Live Investigation →
         </button>
       </div>
 
-      {/* FOOTER */}
-      <div style={{background:"var(--w)",borderTop:"1px solid var(--bd)",padding:"40px 20px 28px"}}>
+      {/* ── FOOTER ── */}
+      <div style={{background:"#fff",borderTop:"1px solid #e1e4ed",padding:"36px 20px 24px"}}>
         <div style={{maxWidth:900,margin:"0 auto"}}>
-          {/* Logo + tagline */}
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6,justifyContent:"center"}}>
-            <Logo size={40}/>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8,justifyContent:"center"}}>
+            <Logo size={36}/>
             <div>
-              <div style={{fontSize:18,fontWeight:800,color:"var(--tx)",letterSpacing:"0.02em"}}>
-                LEARN<span style={{color:"var(--ac)"}}>BLUETEAM</span>
-              </div>
-              <div style={{fontSize:10,color:"var(--tx4)",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive . Security . Reimagined</div>
+              <div style={{fontSize:16,fontWeight:800,color:"#111318",letterSpacing:"0.01em"}}>LEARN<span style={{color:"#1a56db"}}>BLUETEAM</span></div>
+              <div style={{fontSize:9,color:"#8892a4",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive · Security · Reimagined</div>
             </div>
           </div>
-          <div style={{textAlign:"center",marginBottom:24}}>
-            <a href="mailto:support.learnblueteam@gmail.com" style={{fontSize:13,color:"var(--ac)",fontWeight:500}}>support.learnblueteam@gmail.com</a>
-            <span style={{color:"var(--tx4)",margin:"0 8px"}}>·</span>
-            <span style={{fontSize:13,color:"var(--tx4)"}}>www.learnblueteam.cloud</span>
+          <div style={{textAlign:"center",marginBottom:16}}>
+            <a href="mailto:support.learnblueteam@gmail.com" style={{fontSize:13,color:"#1a56db",fontWeight:500}}>support.learnblueteam@gmail.com</a>
+            <span style={{color:"#8892a4",margin:"0 8px"}}>·</span>
+            <span style={{fontSize:13,color:"#8892a4"}}>www.learnblueteam.cloud</span>
           </div>
-          {/* Policy links */}
           <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:"4px 0",marginBottom:16}}>
             {[["Privacy Policy","privacy"],["Terms of Service","terms"],["Refund Policy","refund"],["AI Disclaimer","ai-disclaimer"],["Data Policy","data-policy"],["Community Rules","rules"],["Contact Us","contact"]].map(([l,p],i,arr)=>(
               <span key={p} style={{display:"flex",alignItems:"center"}}>
-                <button onClick={()=>nav(p)} style={{background:"none",border:"none",color:"var(--tx3)",fontSize:12,cursor:"pointer",padding:"4px 8px",transition:"color 0.13s"}}>{l}</button>
-                {i<arr.length-1&&<span style={{color:"var(--bd2)",fontSize:10}}>·</span>}
+                <button onClick={()=>nav(p)} style={{background:"none",border:"none",color:"#5a6272",fontSize:12,cursor:"pointer",padding:"4px 8px"}}>{l}</button>
+                {i<arr.length-1&&<span style={{color:"#dde0e9",fontSize:10}}>·</span>}
               </span>
             ))}
           </div>
-          <div style={{textAlign:"center",fontSize:11,color:"var(--tx4)"}}>
-            © 2026 LearnBlueTeam · All rights reserved · Mumbai, India
+          <div style={{textAlign:"center",fontSize:11,color:"#8892a4",lineHeight:1.7}}>
+            © 2026 LearnBlueTeam · All rights reserved · Mumbai, India<br/>
+            LearnBlueTeam is an independent cybersecurity training platform. All scenarios, users, domains, hostnames, alerts, and environments are fictional and created for educational purposes. Any resemblance to real organisations or incidents is coincidental.<br/>
+            LearnBlueTeam is not affiliated with, endorsed by, or associated with any cybersecurity vendor, certification body, or employer.
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 // ── dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({nav,appUser,prog,lvlPct}) {
