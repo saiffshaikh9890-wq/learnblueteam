@@ -4126,25 +4126,18 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
 
 function SOCConsole({incId,prog,addXP,finishSim,onBack,submitFeedback,analyst:analystProp}){
   const inc=INCIDENTS[incId];
-  if(!inc) return (
-    <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,background:"#0f1117",color:"#e8ecf4"}}>
+  if(!inc) return(
+    <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,background:"var(--bg)",color:"var(--tx)"}}>
       <div style={{fontSize:32}}>⚠</div>
       <div style={{fontSize:16,fontWeight:600}}>Investigation not found</div>
-      <button onClick={onBack} style={{background:"#1a56db",color:"#fff",padding:"10px 20px",borderRadius:8,border:"none",cursor:"pointer",fontSize:14}}>← Back to Dashboard</button>
+      <button onClick={onBack} style={{background:"var(--ac)",color:"#fff",padding:"10px 20px",borderRadius:8,border:"none",cursor:"pointer",fontSize:14}}>← Dashboard</button>
     </div>
   );
-  const scoreGrade=(xp,hints,sec)=>{
-    const pen=hints*15,bon=Math.max(0,300-sec),fin=Math.max(0,xp-pen+bon);
-    const pct=Math.round(fin/425*100);
-    return pct>=90?"S":pct>=75?"A":pct>=60?"B":"C";
-  };
-    const [activeTool,setActiveTool]=useState("siem");cket
+
+  const [activeTool,setActiveTool]=useState("siem");
   const [si,setSi]=useState(0);
-  const [status,setStatus]=useState("ticket_review"); // ticket_review | mode_select | coach | decision | action_idle | action_running | action_done
-  const [mode,setMode]=useState(null); // "beginner" | "analyst"
-  const [decisionCorrect,setDecisionCorrect]=useState(null);
-  const selectMode=(m)=>{setMode(m);setStatus("coach");};
-  const handleDecision=(correct)=>{setDecisionCorrect(correct);setStatus("action_idle");};
+  const [status,setStatus]=useState("ticket_review");
+  const [mode,setMode]=useState(null);
   const [doneSteps,setDoneSteps]=useState([]);
   const [hintCount,setHintCount]=useState(0);
   const [contained,setContained]=useState(false);
@@ -4152,38 +4145,45 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,submitFeedback,analyst:an
   const [showScore,setShowScore]=useState(false);
   const [xpBurstAmt,setXpBurstAmt]=useState(null);
 
-  useEffect(()=>{const t=setInterval(()=>setElapsed(s=>s+1),1000);return()=>clearInterval(t);},[]);
+  useEffect(()=>{
+    const t=setInterval(()=>setElapsed(s=>s+1),1000);
+    return()=>clearInterval(t);
+  },[]);
 
   const step=inc.steps[si];
-  const pct=doneSteps.length===0?0:Math.round((doneSteps.length/inc.steps.length)*100);
 
   const toolMap={
     "BlueTrace SIEM":"siem",
     "SentinelEDR":"edr",
     "ThreatLens":"ti",
+    "IdentityVault":"siem",
+    "MailShield":"siem",
+    "CloudGuard":"siem",
     "IncidentDesk":"desk",
   };
 
+  const selectMode=(m)=>{setMode(m);setStatus("coach");};
+  const handleDecision=(correct)=>{setStatus("action_idle");};
+
   const handleCoachClose=()=>{
-    setActiveTool(toolMap[step.tool]||"siem");
+    setActiveTool(toolMap[step?.tool]||"siem");
     setStatus("decision");
   };
+
   const handleBack=()=>{
     if(si>0){
-      // Remove last done step
-      setDone(d=>d.filter(i=>i!==si-1));
+      setDoneSteps(d=>d.filter(i=>i!==si-1));
       setSi(s=>s-1);
       setStatus("coach");
-      setActiveTool(toolMap[INC.steps[si-1]?.tool]||"siem");
     }
   };
 
   const handleAction=async()=>{
     setStatus("action_running");
     await new Promise(r=>setTimeout(r,1400));
-    if(step.phase==="CONTAINMENT") setContained(true);
+    if(step?.phase==="CONTAINMENT") setContained(true);
     setDoneSteps(p=>[...p,si]);
-    setXpBurstAmt(step.xp);
+    setXpBurstAmt(step?.xp||10);
     setStatus("action_done");
     setTimeout(()=>setXpBurstAmt(null),2000);
   };
@@ -4193,154 +4193,164 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,submitFeedback,analyst:an
       setSi(s=>s+1);
       setStatus("coach");
     } else {
-      addXP(doneSteps.reduce((a,i)=>a+inc.steps[i].xp,0));
-      finishSim(inc.id,doneSteps.length*100,"A",elapsed);
+      const totalXp=doneSteps.reduce((a,i)=>a+(inc.steps[i]?.xp||0),0);
+      addXP(totalXp);
+      finishSim(inc.id,totalXp,"A",elapsed);
       setShowScore(true);
     }
   };
 
+  const pct=doneSteps.length===0?0:Math.round((doneSteps.length/inc.steps.length)*100);
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0");
   const ss2=String(elapsed%60).padStart(2,"0");
+  const gradeCalc=()=>{
+    const x=doneSteps.reduce((s,i)=>s+(inc.steps[i]?.xp||0),0);
+    const fin=Math.max(0,x-hintCount*15+Math.max(0,300-elapsed));
+    const p=Math.round(fin/425*100);
+    return p>=90?"S":p>=75?"A":p>=60?"B":"C";
+  };
 
   return(
-    <div className="soc-root" style={{height:"100vh",display:"flex",flexDirection:"column",background:"var(--bg)",overflow:"hidden"}}>
+    <div style={{height:"100vh",display:"flex",flexDirection:"column",background:"var(--bg)",overflow:"hidden",fontFamily:"var(--fn)"}}>
+      {/* CSS */}
+      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@keyframes xpburst{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-40px) scale(1.5)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+      {/* COMPLETION SCREEN */}
       {showScore&&<CompletionScreen
         incId={inc.id}
         xp={doneSteps.reduce((s,i)=>s+(inc.steps[i]?.xp||0),0)}
         hints={hintCount}
         elapsed={elapsed}
-        grade={(()=>{const x=doneSteps.reduce((s,i)=>s+(inc.steps[i]?.xp||0),0),pen=hintCount*15,bon=Math.max(0,300-elapsed),fin=Math.max(0,x-pen+bon),pct=Math.round(fin/425*100);return pct>=90?"S":pct>=75?"A":pct>=60?"B":"C";})()}
-        onNext={()=>{const s=Object.keys(SCENARIO_TO_INC);const cur=s.find(k=>SCENARIO_TO_INC[k]===inc.id);const ni=s[s.indexOf(cur)+1];if(ni)onBack();}}
+        grade={gradeCalc()}
+        onNext={()=>onBack()}
         onDash={onBack}
         submitFeedback={submitFeedback}
       />}
-      {/* Ticket Review Overlay — first thing analyst sees */}
+
+      {/* TICKET REVIEW MODAL */}
       {status==="ticket_review"&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"var(--bg2)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:16,padding:28,maxWidth:540,width:"100%",boxShadow:"var(--sh3)",animation:"fadeUp 0.3s ease"}}>
-            <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:16}}>
-              <div style={{width:36,height:36,borderRadius:8,background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎫</div>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:"#f87171",letterSpacing:"0.1em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>New Ticket Assigned — {inc.desk.priority} Priority</div>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"var(--bg2)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:16,padding:26,maxWidth:520,width:"100%",animation:"fadeUp 0.3s ease"}}>
+            <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:14}}>
+              <div style={{width:36,height:36,borderRadius:8,background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🎫</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#f87171",letterSpacing:"0.1em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>New Ticket — P1 Priority</div>
                 <div style={{fontSize:16,fontWeight:700,color:"var(--tx)"}}>{inc.id}</div>
               </div>
               <SevBadge s={inc.severity}/>
             </div>
-            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)",marginBottom:10,lineHeight:1.35}}>{inc.title}</div>
-            <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:8,padding:"11px 13px",marginBottom:12,fontSize:12.5,color:"var(--tx2)",lineHeight:1.75}}>{inc.summary}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-              {[["Host",inc.host],["User",inc.user],["SLA",inc.desk.sla_minutes+" minutes"],["Priority",inc.desk.priority]].map(([k,v])=>(
-                <div key={k} style={{background:"var(--bg3)",borderRadius:6,padding:"8px 10px"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)",marginBottom:10}}>{inc.title}</div>
+            <div style={{background:"var(--bg3)",borderRadius:8,padding:"10px 12px",marginBottom:12,fontSize:12.5,color:"var(--tx2)",lineHeight:1.75}}>{inc.summary}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:14}}>
+              {[["Host",inc.host],["User",inc.user.split("@")[0]],["SLA",(inc.desk?.sla_minutes||60)+" minutes"],["Priority",inc.desk?.priority||"P1"]].map(([k,v])=>(
+                <div key={k} style={{background:"var(--bg3)",borderRadius:6,padding:"7px 10px"}}>
                   <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:2,textTransform:"uppercase",letterSpacing:"0.08em"}}>{k}</div>
                   <div style={{fontSize:12,color:"var(--tx2)",fontFamily:"var(--mo)",fontWeight:600}}>{v}</div>
                 </div>
               ))}
             </div>
-            <div style={{background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:8,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#93c5fd",lineHeight:1.6}}>
-              📋 Read the ticket carefully. Understand what happened and what tools detected it. Then start your investigation.
+            <div style={{background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:8,padding:"9px 12px",marginBottom:14,fontSize:12,color:"#93c5fd",lineHeight:1.6}}>
+              📋 Read the ticket carefully. Understand what happened. Then start your investigation.
             </div>
-            <button onClick={()=>setStatus("mode_select")} style={{width:"100%",background:"var(--err)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(239,68,68,0.4)"}}>
+            <button onClick={()=>setStatus("mode_select")} style={{width:"100%",background:"#dc2626",color:"#fff",padding:"13px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(220,38,38,0.35)"}}>
               Ticket Acknowledged — Start Investigation →
             </button>
           </div>
         </div>
       )}
+
+      {/* MODE SELECTOR */}
       {status==="mode_select"&&<ModeSelector inc={inc} onSelect={selectMode}/>}
+
+      {/* DECISION QUESTION */}
       {status==="decision"&&step?.decision&&<DecisionQuestion step={step} onDecide={handleDecision}/>}
       {status==="decision"&&!step?.decision&&(handleDecision(true),null)}
+
+      {/* COACH POPUP */}
       {status==="coach"&&<CoachPopup step={step} onClose={handleCoachClose} onHint={()=>setHintCount(h=>h+1)} hintUsed={false} stepsDone={doneSteps.length} totalSteps={inc.steps.length} mode={mode} onBack={si>0?handleBack:null}/>}
+
+      {/* ACTION OVERLAY */}
       {(status==="action_idle"||status==="action_running"||status==="action_done")&&(
         <ActionOverlay step={step} onConfirm={status==="action_done"?handleNext:handleAction} isRunning={status==="action_running"} isDone={status==="action_done"} xpBurst={xpBurstAmt}/>
       )}
 
-      {/* XP burst */}
+      {/* XP BURST */}
       {xpBurstAmt&&(
-        <div style={{position:"fixed",top:"40%",left:"50%",transform:"translateX(-50%)",zIndex:600,animation:"xpburst 2s ease forwards",pointerEvents:"none",fontSize:20,fontWeight:800,color:"#22c55e",fontFamily:"var(--mo)",textShadow:"0 0 20px rgba(34,197,94,0.8)"}}>
-          +{xpBurstAmt} XP ⚡
-        </div>
+        <div style={{position:"fixed",top:"38%",left:"50%",transform:"translateX(-50%)",zIndex:600,animation:"xpburst 2s ease forwards",pointerEvents:"none",fontSize:22,fontWeight:800,color:"#22c55e",fontFamily:"var(--mo)",textShadow:"0 0 20px rgba(34,197,94,0.8)"}}>+{xpBurstAmt} XP ⚡</div>
       )}
 
       {/* TOP BAR */}
-      <div style={{background:"var(--bg2)",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:48,display:"flex",alignItems:"center",gap:12,flexShrink:0,boxShadow:"var(--sh)"}}>
+      <div style={{background:"var(--bg2)",borderBottom:"1px solid var(--bd)",padding:"0 14px",height:46,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
         <div style={{display:"flex",gap:5,flexShrink:0}}>
-          <button onClick={onBack} style={{background:"var(--bg3)",color:"var(--tx3)",padding:"5px 9px",borderRadius:5,fontSize:11,border:"1px solid var(--bd)",cursor:"pointer"}}>← Exit</button>
+          <button onClick={onBack} style={{background:"var(--bg3)",color:"var(--tx3)",padding:"5px 10px",borderRadius:5,fontSize:11,border:"1px solid var(--bd)",cursor:"pointer"}}>← Exit</button>
           {si>0&&status!=="coach"&&status!=="ticket_review"&&status!=="mode_select"&&(
-            <button onClick={handleBack} style={{background:"var(--bg3)",color:"var(--ac)",padding:"5px 9px",borderRadius:5,fontSize:11,border:"1px solid var(--acb)",cursor:"pointer"}}>↩ Prev Step</button>
+            <button onClick={handleBack} style={{background:"var(--bg3)",color:"var(--ac)",padding:"5px 9px",borderRadius:5,fontSize:11,border:"1px solid var(--acb)",cursor:"pointer"}}>↩ Prev</button>
           )}
         </div>
         <div style={{flex:1,overflow:"hidden",marginLeft:4}}>
-          <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:1}}>{inc.id} · P1-Critical</div>
+          <div style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:1}}>{inc.id}</div>
           <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inc.title}</div>
         </div>
-        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-          <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",color:"var(--tx2)",fontWeight:600}}>{mm}:{ss2}</div>
-          <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",color:"var(--ac)",fontWeight:600}}>Step {si+1}/{inc.steps.length}</div>
-          <div style={{background:contained?"var(--okl)":"var(--errl)",border:"1px solid "+(contained?"var(--okb)":"var(--errb)"),borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",fontWeight:600,color:contained?"var(--ok)":"var(--err)"}}>
-            {contained?"CONTAINED":"LIVE THREAT"}
+        <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+          <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 8px",fontSize:10,fontFamily:"var(--mo)",color:"var(--tx2)",fontWeight:600}}>{mm}:{ss2}</div>
+          <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 8px",fontSize:10,fontFamily:"var(--mo)",color:"var(--ac)",fontWeight:600}}>{si+1}/{inc.steps.length}</div>
+          <div style={{background:contained?"var(--okl)":"var(--errl)",border:"1px solid "+(contained?"var(--okb)":"var(--errb)"),borderRadius:5,padding:"3px 8px",fontSize:10,fontFamily:"var(--mo)",fontWeight:600,color:contained?"var(--ok)":"var(--err)"}}>
+            {contained?"CONTAINED":"LIVE"}
           </div>
         </div>
       </div>
 
-      {/* PROGRESS */}
+      {/* PROGRESS BAR */}
       <div style={{height:3,background:"var(--bg3)",flexShrink:0}}>
         <div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,var(--ac),#7c3aed)",transition:"width 0.6s ease"}}/>
       </div>
 
       {/* TOOL SWITCHER */}
-      <div style={{background:"#0a0d14",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:40,display:"flex",alignItems:"center",gap:0,flexShrink:0}}>
-        <span style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginRight:12,letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Tools</span>
+      <div style={{background:"#0a0d14",borderBottom:"1px solid var(--bd)",height:38,display:"flex",alignItems:"center",padding:"0 14px",flexShrink:0}}>
+        <span style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginRight:10,letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Tools</span>
         {[
-          {id:"siem",label:"BlueTrace SIEM",color:"#3b82f6",shortLabel:"SIEM"},
-          {id:"edr",label:"SentinelEDR",color:"#ef4444",shortLabel:"EDR"},
-          {id:"ti",label:"ThreatLens",color:"#8b5cf6",shortLabel:"INTEL"},
-          {id:"desk",label:"IncidentDesk",color:"#10b981",shortLabel:"DESK"},
-          {id:"case",label:"Case Board",color:"#f59e0b",shortLabel:"CASE"},
-      ].map(t=>{
-          const isActive=activeTool===t.id;
-          const isStepTool=toolMap[step?.tool]===t.id;
+          {id:"siem",label:"SIEM",  color:"#3b82f6",match:"BlueTrace SIEM"},
+          {id:"edr", label:"EDR",   color:"#ef4444",match:"SentinelEDR"},
+          {id:"ti",  label:"INTEL", color:"#8b5cf6",match:"ThreatLens"},
+          {id:"desk",label:"DESK",  color:"#10b981",match:"IncidentDesk"},
+          {id:"case",label:"CASE",  color:"#f59e0b",match:""},
+        ].map(t=>{
+          const on=activeTool===t.id;
+          const isStep=t.match===step?.tool&&status!=="ticket_review"&&status!=="mode_select";
           return(
-            <button key={t.id} onClick={()=>setActiveTool(t.id)}
-              style={{padding:"0 14px",height:40,fontSize:11,fontWeight:isActive?700:500,color:isActive?t.color:"var(--tx4)",background:isActive?t.color+"18":"none",border:"none",borderBottom:isActive?"2px solid "+t.color:"2px solid transparent",cursor:"pointer",fontFamily:"var(--mo)",letterSpacing:"0.05em",transition:"all 0.13s",position:"relative",display:"flex",alignItems:"center",gap:5}}>
-              {t.shortLabel}
-              {isStepTool&&<span style={{width:6,height:6,borderRadius:"50%",background:t.color,animation:"pulse 1.5s ease-in-out infinite"}}/>}
+            <button key={t.id} onClick={()=>setActiveTool(t.id)} style={{padding:"0 12px",height:38,fontSize:10.5,fontWeight:on?700:400,color:on?t.color:"var(--tx4)",background:on?t.color+"18":"none",border:"none",borderBottom:on?"2px solid "+t.color:"2px solid transparent",cursor:"pointer",fontFamily:"var(--mo)",letterSpacing:"0.05em",display:"flex",alignItems:"center",gap:4}}>
+              {t.label}
+              {isStep&&<span style={{width:5,height:5,borderRadius:"50%",background:t.color,flexShrink:0}}/>}
             </button>
           );
         })}
         <div style={{flex:1}}/>
-        <div style={{display:"flex",gap:6}}>
+        <div style={{display:"flex",gap:4}}>
           {inc.steps.map((_,i)=>{
-            const d=doneSteps.includes(i),active=i===si;
-            const pc=phaseColor(inc.steps[i].phase);
-            return(
-              <div key={i} style={{width:8,height:8,borderRadius:"50%",background:d?pc:active?pc+"60":"var(--bg4)",border:"1px solid "+(d?pc:active?pc+"80":"var(--bd)"),transition:"all 0.3s"}}/>
-            );
+            const d=doneSteps.includes(i);
+            const a=i===si;
+            const pc=phaseColor(inc.steps[i]?.phase||"TRIAGE");
+            return <div key={i} style={{width:7,height:7,borderRadius:"50%",background:d?pc:a?pc+"80":"var(--bg4)",border:"1px solid "+(d?pc:"var(--bd)"),transition:"all 0.3s"}}/>;
           })}
         </div>
       </div>
 
       {/* TOOL CONTENT */}
-      <div style={{flex:1,overflow:"hidden",display:"flex",paddingBottom:(status==="action_idle"||status==="action_running"||status==="action_done")?90:0}}>
-        {activeTool==="siem"&&<BlueTraceSIEM inc={inc} activeStep={status!=="coach"?step:null}/>}
-        {activeTool==="edr"&&<SentinelEDR inc={inc} activeStep={status!=="coach"?step:null} isContained={contained}/>}
-        {activeTool==="ti"&&<ThreatLens inc={inc} activeStep={status!=="coach"?step:null}/>}
+      <div style={{flex:1,overflow:"hidden",display:"flex",paddingBottom:(status==="action_idle"||status==="action_running"||status==="action_done")?88:0}}>
+        {activeTool==="siem"&&<BlueTraceSIEM inc={inc} activeStep={step}/>}
+        {activeTool==="edr"&&<SentinelEDR inc={inc} activeStep={step} isContained={contained}/>}
+        {activeTool==="ti"&&<ThreatLens inc={inc} activeStep={step}/>}
+        {activeTool==="desk"&&<IncidentDesk inc={inc} activeStep={step} stepsDone={doneSteps.length} analyst={analystProp||ANALYST} elapsed={elapsed}/>}
         {activeTool==="case"&&(
           <div style={{flex:1,overflow:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
             <EvidenceBoard inc={inc} doneSteps={doneSteps} status={status}/>
             <NextUnlock currentScenarioKey={Object.keys(SCENARIO_TO_INC).find(k=>SCENARIO_TO_INC[k]===inc?.id)||""} prog={prog}/>
           </div>
         )}
-        {activeTool==="desk"&&<IncidentDesk inc={inc} activeStep={status!=="coach"?step:null} stepsDone={doneSteps.length} analyst={analystProp||ANALYST} elapsed={elapsed}/>}
       </div>
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ROOT APP
-// ─────────────────────────────────────────────────────────────────────────────
-
-
-
 
 
 function Pill({children,color,sm}) {
