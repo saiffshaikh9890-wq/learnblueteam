@@ -147,6 +147,274 @@ function lvlTitle(l) {
 }
 
 // ── persistence ───────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE CLIENT
+// Replace the URL and ANON KEY with your actual Supabase project values
+// Get them from: supabase.com → your project → Settings → API
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SUPABASE_URL = "https://gfprfirlffellsmpciwk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_OONuEdzfgcuNo42Lvuvjqg_If3aWKRm";
+
+async function supabaseRequest(path, options = {}) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": options.prefer || "return=representation",
+        ...options.headers,
+      },
+      ...options,
+    });
+    if (!res.ok) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  } catch { return null; }
+}
+
+async function supabaseAuth(action, body) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/${action}`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    return await res.json();
+  } catch { return null; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE HOOK — replaces useApp
+// ─────────────────────────────────────────────────────────────────────────────
+
+function useSupabase() {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("lbt_user") || "null"); } catch { return null; }
+  });
+  const [accessToken, setAccessToken] = useState(() => {
+    try { return localStorage.getItem("lbt_token") || null; } catch { return null; }
+  });
+  const [prog, setProg] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("lbt_prog") || '{"xp":0,"level":1,"done":{}}'); } catch { return {xp:0,level:1,done:{}}; }
+  });
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState(null);
+
+  // Save prog to both localStorage and Supabase
+  const saveProg = async (newProg) => {
+    setProg(newProg);
+    try { localStorage.setItem("lbt_prog", JSON.stringify(newProg)); } catch {}
+    if (user && accessToken) {
+      await supabaseRequest(`analyst_profiles?id=eq.${user.id}`, {
+        method: "PATCH",
+        prefer: "return=minimal",
+        headers: { "Authorization": `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          xp: newProg.xp,
+          level: newProg.level,
+          completed_scenarios: JSON.stringify(newProg.done),
+          updated_at: new Date().toISOString(),
+        }),
+      });
+    }
+  };
+
+  // Load progress from Supabase after login
+  const loadProg = async (userId, token) => {
+    const data = await supabaseRequest(`analyst_profiles?id=eq.${userId}&select=*`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (data && data[0]) {
+      const p = {
+        xp: data[0].xp || 0,
+        level: data[0].level || 1,
+        done: JSON.parse(data[0].completed_scenarios || "{}"),
+      };
+      setProg(p);
+      try { localStorage.setItem("lbt_prog", JSON.stringify(p)); } catch {}
+    }
+  };
+
+  const signup = async (name, email, password) => {
+    setLoading(true);
+    setAuthError(null);
+    const res = await supabaseAuth("signup", { email, password, data: { name } });
+    if (res?.user) {
+      const u = { id: res.user.id, name, email };
+      const token = res.access_token;
+      setUser(u);
+      setAccessToken(token);
+      try { localStorage.setItem("lbt_user", JSON.stringify(u)); } catch {}
+      try { localStorage.setItem("lbt_token", token); } catch {}
+      // Create profile row
+      await supabaseRequest("analyst_profiles", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        prefer: "return=minimal",
+        body: JSON.stringify({
+          id: res.user.id, name, email,
+          xp: 0, level: 1, completed_scenarios: "{}",
+          created_at: new Date().toISOString(),
+        }),
+      });
+      setLoading(false);
+      return { success: true };
+    }
+    setAuthError(res?.msg || res?.error_description || "Signup failed");
+    setLoading(false);
+    return { success: false, error: res?.msg };
+  };
+
+  const login = async (email, password) => {
+    setLoading(true);
+    setAuthError(null);
+    const res = await supabaseAuth("token?grant_type=password", { email, password });
+    if (res?.access_token) {
+      const u = { id: res.user.id, name: res.user.user_metadata?.name || email.split("@")[0], email };
+      const token = res.access_token;
+      setUser(u);
+      setAccessToken(token);
+      try { localStorage.setItem("lbt_user", JSON.stringify(u)); } catch {}
+      try { localStorage.setItem("lbt_token", token); } catch {}
+      await loadProg(u.id, token);
+      setLoading(false);
+      return { success: true };
+    }
+    setAuthError(res?.error_description || "Invalid email or password");
+    setLoading(false);
+    return { success: false, error: res?.error_description };
+  };
+
+  const logout = () => {
+    setUser(null);
+    setAccessToken(null);
+    try { localStorage.removeItem("lbt_user"); localStorage.removeItem("lbt_token"); } catch {}
+  };
+
+  const addXP = (n) => {
+    const nx = prog.xp + n;
+    const nl = Math.max(1, Math.floor(nx / 500) + 1);
+    saveProg({ ...prog, xp: nx, level: nl });
+  };
+
+  const finishSim = (id, score, grade, sec) => {
+    const newProg = { ...prog, done: { ...prog.done, [id]: { score, grade, sec, at: Date.now() } } };
+    saveProg(newProg);
+  };
+
+  const submitFeedback = async (incId, rating, difficulty, recommend, comment) => {
+    if (!accessToken) return;
+    await supabaseRequest("investigation_feedback", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${accessToken}` },
+      prefer: "return=minimal",
+      body: JSON.stringify({
+        user_id: user?.id,
+        incident_id: incId,
+        rating, difficulty, recommend, comment,
+        created_at: new Date().toISOString(),
+      }),
+    });
+  };
+
+  const lvlPct = () => Math.min(99, Math.round(((prog.xp % 500) / 500) * 100));
+
+  return { user, prog, loading, authError, signup, login, logout, addXP, finishSim, submitFeedback, lvlPct };
+}
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST-INVESTIGATION FEEDBACK MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FeedbackModal({ incId, onClose, onSubmit }) {
+  const [rating, setRating] = useState(0);
+  const [difficulty, setDifficulty] = useState("");
+  const [recommend, setRecommend] = useState("");
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const submit = async () => {
+    await onSubmit(incId, rating, difficulty, recommend, comment);
+    setSubmitted(true);
+    setTimeout(onClose, 2000);
+  };
+
+  const stars = [1,2,3,4,5];
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)",zIndex:900,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:16,padding:24,maxWidth:440,width:"100%",boxShadow:"0 8px 32px rgba(0,0,0,0.15)"}}>
+        {submitted ? (
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:40,marginBottom:10}}>🙏</div>
+            <div style={{fontSize:17,fontWeight:700,color:"#111318",marginBottom:4}}>Thank you!</div>
+            <div style={{fontSize:13,color:"#6b7280"}}>Your feedback helps us improve LearnThreatOps.</div>
+          </div>
+        ) : (
+          <>
+            <div style={{marginBottom:18}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#1a56db",letterSpacing:"0.15em",fontFamily:"monospace",marginBottom:4,textTransform:"uppercase"}}>Beta Feedback</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#111318"}}>How was this investigation?</div>
+            </div>
+
+            {/* Star rating */}
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:8}}>Overall rating</div>
+              <div style={{display:"flex",gap:8}}>
+                {stars.map(s => (
+                  <button key={s} onClick={() => setRating(s)} style={{fontSize:24,background:"none",border:"none",cursor:"pointer",opacity:s<=rating?1:0.3,transition:"all 0.1s"}}>⭐</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Difficulty */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:8}}>Difficulty felt:</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {["Too easy","Just right","Too hard","Overwhelming"].map(d => (
+                  <button key={d} onClick={() => setDifficulty(d)} style={{padding:"6px 12px",borderRadius:6,border:"1px solid "+(difficulty===d?"#1a56db":"#e1e4ed"),background:difficulty===d?"rgba(26,86,219,0.08)":"#f7f8fa",color:difficulty===d?"#1a56db":"#374151",fontSize:12,fontWeight:difficulty===d?600:400,cursor:"pointer"}}>{d}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Recommend */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:8}}>Would you recommend LBT to others?</div>
+              <div style={{display:"flex",gap:6}}>
+                {["Yes","Maybe","No"].map(r => (
+                  <button key={r} onClick={() => setRecommend(r)} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(recommend===r?"#1a56db":"#e1e4ed"),background:recommend===r?"rgba(26,86,219,0.08)":"#f7f8fa",color:recommend===r?"#1a56db":"#374151",fontSize:13,fontWeight:recommend===r?600:400,cursor:"pointer"}}>{r}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Comment */}
+            <div style={{marginBottom:18}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:6}}>Any comments? (optional)</div>
+              <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="What worked well? What was confusing? What should we improve?" style={{width:"100%",minHeight:80,padding:"9px 11px",border:"1px solid #e1e4ed",borderRadius:8,fontSize:13,fontFamily:"inherit",color:"#111318",background:"#f7f8fa",resize:"vertical",outline:"none",lineHeight:1.5}}/>
+            </div>
+
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={onClose} style={{flex:1,padding:"11px",borderRadius:8,border:"1px solid #e1e4ed",background:"#f7f8fa",color:"#6b7280",fontSize:13,cursor:"pointer"}}>Skip</button>
+              <button onClick={submit} disabled={rating===0} style={{flex:2,padding:"11px",borderRadius:8,border:"none",background:rating>0?"#1a56db":"#e1e4ed",color:rating>0?"#fff":"#9ca3af",fontSize:13,fontWeight:600,cursor:rating>0?"pointer":"default",transition:"all 0.15s"}}>
+                Submit Feedback
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 function useApp() {
   const load = (k,d) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):d; } catch { return d; } };
   const save = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} };
@@ -184,7 +452,7 @@ const SCENARIOS = {
   "fp-vuln-scan":{id:"fp-vuln-scan",incId:"INC-2026-0544",title:"Vulnerability Scanner — False Positive?",difficulty:"Beginner",duration:15,xpReward:60,category:"SOC L1",tags:["Port Scan","False Positive","Scanner"],brief:"Internal IP scanning 847 hosts on standard ports. Looks like reconnaissance. Is it an attacker — or your own security team?",type:"FP",concept:"Scanner vs attacker recognition"},
   "usb-insider":{id:"usb-insider",incId:"INC-2026-0561",title:"Malicious USB — Insider Threat",difficulty:"Intermediate",duration:30,xpReward:160,category:"SOC L1",tags:["USB","Insider","DLP","Data Exfiltration"],brief:"Departing employee copied 4.7GB of HR compensation data to USB on their penultimate day. robocopy. CONFIDENTIAL files. Investigate.",type:"TP",concept:"Insider threat investigation"},
   "dns-beacon":{id:"dns-beacon",incId:"INC-2026-0578",title:"DNS Beaconing — C2 Over DNS",difficulty:"Intermediate",duration:30,xpReward:170,category:"SOC L1",tags:["DNS","C2","IcedID","Threat Hunting"],brief:"2,847 DNS queries in 4 hours to randomised subdomains. No TCP connections. UpdateService.exe in AppData. Investigate the silent beacon.",type:"TP",concept:"DNS C2 detection"},
-  "fp-pentest":{id:"fp-pentest",incId:"INC-2026-0591",title:"Security Team Pentest — False Positive?",difficulty:"Intermediate",duration:20,xpReward:90,category:"SOC L1",tags:["Nmap","Metasploit","False Positive","Pentest"],brief:"Nmap and Metasploit detected on an internal workstation. Scanning the entire internal subnet. No Change Ticket. Attack or authorized test?",type:"FP",concept:"Authorized security activity recognition"},
+  "fp-pentest":{id:"fp-pentest",incId:"INC-2026-0591",title:"Security Team Pentest — False Positive?",difficulty:"Intermediate",duration:20,xpReward:90,category:"SOC L1",tags:["Nmap","PentestKit","False Positive","Pentest"],brief:"Nmap and PentestKit detected on an internal workstation. Scanning the entire internal subnet. No Change Ticket. Attack or authorized test?",type:"FP",concept:"Authorized security activity recognition"},
   "bec-fraud":{id:"bec-fraud",incId:"INC-2026-0612",title:"Business Email Compromise — CFO Fraud",difficulty:"Intermediate",duration:25,xpReward:180,category:"SOC L1",tags:["BEC","Wire Transfer","Email Fraud","Social Engineering"],brief:"Email from 'CFO Rajesh Mehta' requesting ₹47L wire transfer. From rajesh.mehta@corp.com — not corp.internal. Payment not yet processed.",type:"TP",concept:"BEC investigation"},
   "s3-exposure":{id:"s3-exposure",incId:"INC-2026-0634",title:"Public AWS S3 Bucket — Data Exposed",difficulty:"Advanced",duration:35,xpReward:200,category:"SOC L1",tags:["AWS","S3","Cloud","PII","Misconfiguration"],brief:"127,000 customer records in a public S3 bucket for 3 days. Security researcher reported it. CloudTrail shows 2,847 external access requests.",type:"TP",concept:"Cloud security incident response"},
   "fp-auth-storm":{id:"fp-auth-storm",incId:"INC-2026-0651",title:"Auth Failure Storm — Brute Force or System Change?",difficulty:"Advanced",duration:25,xpReward:110,category:"SOC L1",tags:["Authentication","Brute Force","False Positive","AD"],brief:"3,847 auth failures across 1,247 accounts in 10 minutes. All internal IPs. Zero successful logins. Brute force — or something operational?",type:"FP",concept:"Operational noise vs real attacks"},
@@ -193,7 +461,7 @@ const SCENARIOS = {
 
 
 const SHIFT_START = "08:00";
-const ANALYST = { name:"Saif Al-Rashid", tier:"SOC Analyst I", id:"ANLST-047", team:"Blue Team Alpha" };
+const ANALYST = { name:"Saif Al-Rashid", tier:"SOC Analyst I", id:"ANLST-047", team:"Threat Ops Alpha" };
 
 function tsNow(offset=0){
   const d = new Date("2026-05-28T08:00:00Z");
@@ -217,7 +485,7 @@ const INCIDENTS = {
   c2Ip:"185.220.101.47",
   assignee:null,
   tags:["Phishing","C2","Credential Theft","LSASS"],
-  summary:"BlueTrace SIEM correlated 4 rules on WS-CORP-FIN-044. Finance user opened macro-enabled document at 08:17. EDR detected process injection into lsass.exe. Outbound beacon to 185.220.101.47:443 (geo: RU, Tor exit). Incident auto-promoted to Critical by correlation engine.",
+  summary:<><GT t="SIEM">BlueTrace SIEM</GT> correlated 4 rules on WS-CORP-FIN-044. Finance user opened <GT t="Macro">macro-enabled document</GT> at 08:17. <GT t="EDR">EDR</GT> detected process injection into <GT t="LSASS">lsass.exe</GT>. Outbound <GT t="Beacon">beacon</GT> to 185.220.101.47:443 (geo: RU, Tor exit). Incident auto-promoted to Critical by correlation engine.</>,
   mitre:["T1566.001","T1059.001","T1071.001","T1003.001","T1547.001"],
 
   // ── BLUETRACE SIEM ─────────────────────────────────────────────────────────
@@ -269,7 +537,7 @@ const INCIDENTS = {
       {time:"08:17:09",sev:"high",src:"SentinelEDR",event:"cmd.exe (PID:4398) spawned from WINWORD.EXE — score:91 — unusual parent-child"},
       {time:"08:17:14",sev:"high",src:"SentinelEDR",event:"powershell.exe (PID:4501) — -Enc flag — AMSI bypass in process memory — score:97"},
       {time:"08:17:33",sev:"crit",src:"SentinelEDR",event:"svchost32.exe dropped to AppData\\Temp — SHA256: a3f19c2d — VT: 48/72 — beacon started"},
-      {time:"08:18:12",sev:"crit",src:"SentinelEDR",event:"LSASS memory access — GrantedAccess=0x1fffff — full credential access — Cobalt Strike pattern"},
+      {time:"08:18:12",sev:"crit",src:"SentinelEDR",event:"LSASS memory access — GrantedAccess=0x1fffff — full credential access — Cobalt Strike-type pattern"},
       {time:"08:18:44",sev:"high",src:"SentinelEDR",event:"Registry Run key written — HKCU\\Run\\WindowsUpdate — persistence established"},
       {time:"08:19:01",sev:"high",src:"SentinelEDR",event:"SMB lateral attempt: 10.10.44.112 → 10.10.44.60:445 — blocked by FW ACL"},
     ],
@@ -300,13 +568,13 @@ const INCIDENTS = {
         type:"Hash",value:"a3f19c2d8e4b7f1c9d2e",
         vt_score:"48/72 detections",
         abuse_score:0,
-        categories:["Cobalt Strike Beacon","RAT","C2 Client"],
+        categories:["Cobalt Strike-type beacon","RAT","C2 Client"],
         country:"",asn:"",
         last_seen:"2026-05-27",
         campaigns:["Cobalt Strike — beacon.dll packed with UPX","Finance sector targeting 2026"],
         passive_dns:[],
         first_seen:"2026-05-01",
-        verdict:"MALICIOUS — 48/72 AV detections — Cobalt Strike Beacon",
+        verdict:"MALICIOUS — 48/72 AV detections — Cobalt Strike-type beacon",
         verdictColor:"#dc2626",
       },
       {
@@ -401,7 +669,7 @@ const INCIDENTS = {
       lookFor:["AbuseIPDB score — percentage of reporters flagging this IP","VirusTotal — how many out of 72 engines detect this file?","Domain age — how many days since registration?","Associated campaigns — linked to known threat actors?"],
       seniorThinking:"I check three things: IP reputation, file hash on VirusTotal, and domain age. If all three are bad, I have confirmation. A 27-day domain + 48/72 detections tells me this was purpose-built for this campaign.",
       instruction:"Look up 3 IOCs in ThreatLens: IP 185.220.101.47, hash a3f19c2d, domain corp-financegroup.com. Check raw scores first — form your own verdict.",
-      analyst_note:"AbuseIPDB: 100/100 — Tor exit for C2. Hash: 48/72 — Cobalt Strike Beacon. Domain: 27 days old — created for this campaign.",
+      analyst_note:"AbuseIPDB: 100/100 — Tor exit for C2. Hash: 48/72 — Cobalt Strike-type beacon. Domain: 27 days old — created for this campaign.",
       decision:{
         question:"IP 185.220.101.47 scores 100/100 on AbuseIPDB. What action do you take?",
         options:[
@@ -1461,7 +1729,7 @@ earliest=-30m
 | stats count by dest_port, dest_ip
 | sort -count`,
     correlated_hosts:["10.10.5.20"],
-    previous_incidents:["INC-2026-0512 (Low, same source, closed — Nessus scan, 7 days ago)","INC-2026-0498 (Low, same source, closed — Nessus scan, 14 days ago)"],
+    previous_incidents:["INC-2026-0512 (Low, same source, closed — vulnerability scan, 7 days ago)","INC-2026-0498 (Low, same source, closed — vulnerability scan, 14 days ago)"],
   },
   edr:{
     tool:"SentinelEDR",sensor_id:"",sensor_version:"",
@@ -1471,7 +1739,7 @@ earliest=-30m
       {time:"10:15:00",proto:"TCP",src:"10.10.5.20:12000+",dst:"192.168.1.0/24:22,80,443",proc:"nessusd",bytes:"low",state:"SYN only — no sessions",bad:false},
     ],
     timeline:[
-      {time:"10:00:00",sev:"info",src:"Network",event:"10.10.5.20 — Nessus Professional process nessusd began outbound connections"},
+      {time:"10:00:00",sev:"info",src:"Network",event:"10.10.5.20 — VulnScanner Pro process nessusd began outbound connections"},
       {time:"10:15:00",sev:"med", src:"Network",event:"Port scan detected: 10.10.5.20 → 192.168.1.0/24 ports 22,80,443,3389,445"},
       {time:"10:21:00",sev:"info",src:"Network",event:"Scan completed — all connections SYN only — no sessions established — pattern: vulnerability scanner"},
       {time:"10:21:05",sev:"info",src:"CMDB",  event:"Asset lookup: 10.10.5.20 = VULN-SCAN-01 — registered vulnerability scanner — owner: IT Security team"},
@@ -1499,21 +1767,21 @@ earliest=-30m
       title:"Port Scan Alert — Context Before Conclusions",
       objective:"A port scan from an internal IP triggered a Medium alert. Port scans are used by attackers for reconnaissance — but they are also used every day by legitimate security tools. Before you panic, what context can you gather from the SIEM alone?",
       lookFor:["The source IP — is 10.10.5.20 a known asset?","Previous incidents from this same source","The scan pattern — which ports? Does it match a known tool?","The time — is this during business hours when IT teams work?"],
-      seniorThinking:"I see this type of alert every week. Before I do anything, I check two things: (1) what is that source IP in our asset inventory, and (2) has this IP fired alerts before. Two closed Low incidents with 'Nessus scan' in the notes is a very strong signal this is scheduled vulnerability scanning.",
+      seniorThinking:"I see this type of alert every week. Before I do anything, I check two things: (1) what is that source IP in our asset inventory, and (2) has this IP fired alerts before. Two closed Low incidents with 'vulnerability scan' in the notes is a very strong signal this is scheduled vulnerability scanning.",
       instruction:"Read the alert. Check previous incidents for 10.10.5.20. What does the history tell you before you open the EDR?",
-      analyst_note:"Two previous incidents from same IP, both closed as Nessus scans. Risk score 58. Scan pattern matches Nessus Professional. Strong False Positive signal.",
+      analyst_note:"Two previous incidents from same IP, both closed as vulnerability scans. Risk score 58. Scan pattern matches VulnScanner Pro. Strong False Positive signal.",
       decision:{
-        question:"The source IP 10.10.5.20 has two previous incidents in 14 days, both closed as 'Nessus scan'. What is your initial assessment?",
+        question:"The source IP 10.10.5.20 has two previous incidents in 14 days, both closed as 'vulnerability scan'. What is your initial assessment?",
         options:[
-          {text:"Likely False Positive — scheduled vulnerability scanner",correct:true,why:"Correct. Two previous identical incidents confirmed as Nessus scans, same source, same pattern, same ports. Your prior is FP. Verify in the asset database before closing."},
+          {text:"Likely False Positive — scheduled vulnerability scanner",correct:true,why:"Correct. Two previous identical incidents confirmed as vulnerability scans, same source, same pattern, same ports. Your prior is FP. Verify in the asset database before closing."},
           {text:"Escalate to P1 — internal recon is serious",correct:false,why:"Premature. Internal recon IS serious — if it is an attacker. But the history shows two previous confirmed scans from this IP. Investigate before escalating."},
           {text:"Block 10.10.5.20 immediately",correct:false,why:"Dangerous. If this is your authorized vulnerability scanner, blocking it breaks your security program. Never block an internal asset without confirming what it is."},
           {text:"The previous incidents prove it is safe — close without investigating",correct:false,why:"Incorrect shortcut. History suggests FP but you must verify the asset identity. Attackers have been known to spoof or pivot to scanner IPs. Check the CMDB."},
         ]
       },
-      evidence_bullets:["Source IP: 10.10.5.20 — unknown until verified","Risk Score: 58/100 — Medium, not High or Critical","Ports scanned: 22,80,443,3389,445 — standard vuln scanner ports","Previous: 2 identical incidents in 14 days — both closed as Nessus","Time: 10:15 — business hours — IT team typically runs scans during work hours"],
+      evidence_bullets:["Source IP: 10.10.5.20 — unknown until verified","Risk Score: 58/100 — Medium, not High or Critical","Ports scanned: 22,80,443,3389,445 — standard vuln scanner ports","Previous: 2 identical incidents in 14 days — both closed as VulnScanner Pro","Time: 10:15 — business hours — IT team typically runs scans during work hours"],
       action_label:"Check Asset Database — Verify 10.10.5.20",
-      action_result:"CMDB lookup: 10.10.5.20\nHostname: VULN-SCAN-01\nOwner: IT Security Team\nPurpose: Nessus Professional — weekly vulnerability scans\nSchedule: Tuesdays and Thursdays 10:00-11:00\nApproved: Yes — security policy ITP-0044\nStatus: Moving to ThreatLens to confirm",
+      action_result:"CMDB lookup: 10.10.5.20\nHostname: VULN-SCAN-01\nOwner: IT Security Team\nPurpose: VulnScanner Pro — weekly vulnerability scans\nSchedule: Tuesdays and Thursdays 10:00-11:00\nApproved: Yes — security policy ITP-0044\nStatus: Moving to ThreatLens to confirm",
     },
     {
       id:1,phase:"INVESTIGATION",xp:15,
@@ -1523,9 +1791,9 @@ earliest=-30m
       lookFor:["Does ThreatLens show this as an internal registered asset?","What is the hostname? Does it match what the CMDB said?","Are there any threat intel hits on this IP?","Does anything contradict the False Positive theory?"],
       seniorThinking:"Always verify twice. The CMDB says one thing, ThreatLens says another — which do you trust? In this case, both agree. That is your confirmation. If they ever disagree, that is your red flag.",
       instruction:"Look up 10.10.5.20 in ThreatLens. Confirm the asset identity matches what the CMDB returned.",
-      analyst_note:"ThreatLens confirms: internal IP, registered asset, Nessus scanner, no threat intelligence hits. False Positive confirmed.",
+      analyst_note:"ThreatLens confirms: internal IP, registered asset, vulnerability scanner, no threat intelligence hits. False Positive confirmed.",
       decision:{
-        question:"CMDB and ThreatLens both confirm 10.10.5.20 is VULN-SCAN-01, the authorized Nessus scanner. What do you do?",
+        question:"CMDB and ThreatLens both confirm 10.10.5.20 is VULN-SCAN-01, the authorized vulnerability scanner. What do you do?",
         options:[
           {text:"Close as False Positive — add exception rule for this scanner",correct:true,why:"Correct. Two independent sources confirm this is an authorized scanner. Close as FP and add a tuning rule so this scanner does not keep generating noise every week."},
           {text:"Still suspicious — keep investigating",correct:false,why:"There is nothing left to investigate. CMDB, ThreatLens, previous incident history, scan pattern, and timing all confirm this is the authorized scanner. More investigation is wasted time."},
@@ -1535,7 +1803,7 @@ earliest=-30m
       },
       evidence_bullets:["ThreatLens: 10.10.5.20 = VULN-SCAN-01 (confirmed)","AbuseIPDB: N/A — internal RFC1918 IP","VirusTotal: N/A — internal asset","CMDB match: VULN-SCAN-01 — IT Security — Authorized","Scan schedule: Tuesdays and Thursdays 10:00 — matches alert time"],
       action_label:"Close FALSE POSITIVE — Add Exception + Notify Scanner Team",
-      action_result:"INC-2026-0544 — FALSE POSITIVE — CLOSED\n\nCLASSIFICATION: False Positive — Authorized vulnerability scanner\nSOURCE: VULN-SCAN-01 — Nessus Professional — IT Security\n\nACTION: Added exception: source=10.10.5.20 suppress INTERNAL_PORT_SCAN\nNOTIFIED: IT Security team — recommend pre-scan SOC notification\nRECOMMENDATION: IT Security to open a Change ticket before scheduled scans so SOC can expect the traffic\n\n+15 XP for fast accurate False Positive identification",
+      action_result:"INC-2026-0544 — FALSE POSITIVE — CLOSED\n\nCLASSIFICATION: False Positive — Authorized vulnerability scanner\nSOURCE: VULN-SCAN-01 — VulnScanner Pro — IT Security\n\nACTION: Added exception: source=10.10.5.20 suppress INTERNAL_PORT_SCAN\nNOTIFIED: IT Security team — recommend pre-scan SOC notification\nRECOMMENDATION: IT Security to open a Change ticket before scheduled scans so SOC can expect the traffic\n\n+15 XP for fast accurate False Positive identification",
     },
   ],
 },
@@ -1794,22 +2062,22 @@ earliest=-30m
 // ── SCENARIO 07: Security Team Infrastructure — FALSE POSITIVE ─────────────
 "INC-2026-0591":{
   id:"INC-2026-0591",
-  title:"Nmap Scan + Metasploit Modules — Security Team Activity?",
+  title:"Nmap Scan + PentestKit Modules — Security Team Activity?",
   severity:"High",status:"New",created:tsNow(0),
   host:"WS-CORP-SEC-002",user:"soc-infra@corp.internal",
   srcIp:"10.10.99.5",c2Ip:null,assignee:null,
-  tags:["Nmap","Metasploit","Pentest","False Positive","Security Tools","Change Management"],
-  summary:"BlueTrace SIEM triggered ATTACK_TOOL_DETECTED on 10.10.99.5. Nmap 7.94 and Metasploit modules detected. Source is scanning internal subnet 10.10.0.0/16. No Change Ticket found in IncidentDesk. Possible internal attacker using security tools OR authorized penetration test. Cannot determine without verification.",
+  tags:["Nmap","PentestKit","Pentest","False Positive","Security Tools","Change Management"],
+  summary:"BlueTrace SIEM triggered ATTACK_TOOL_DETECTED on 10.10.99.5. PortScan 7.94 and PentestKit modules detected. Source is scanning internal subnet 10.10.0.0/16. No Change Ticket found in IncidentDesk. Possible internal attacker using security tools OR authorized penetration test. Cannot determine without verification.",
   mitre:["T1046","T1595"],isTP:false,
   siem:{
     tool:"BlueTrace SIEM",
     correlation_rule:"CORP-RULE-7744 — Attack Tool Execution + Internal Scan",
     fired_at:tsNow(0),risk_score:76,
     alerts:[
-      {id:"BT-8801",time:"14:00:15",sev:"High",rule:"ATTACK_TOOL_DETECTED",src:"EDR",msg:"Nmap 7.94 and Metasploit Framework detected on WS-CORP-SEC-002 — active network scanning 10.10.0.0/16"},
+      {id:"BT-8801",time:"14:00:15",sev:"High",rule:"ATTACK_TOOL_DETECTED",src:"EDR",msg:"PortScan 7.94 and PentestKit Framework detected on WS-CORP-SEC-002 — active network scanning 10.10.0.0/16"},
       {id:"BT-8802",time:"14:00:30",sev:"Medium",rule:"NO_CHANGE_TICKET",src:"IncidentDesk",msg:"No active Change Ticket found for penetration testing activity — check with security team before escalating"},
     ],
-    raw_search:`index=endpoint host=WS-CORP-SEC-002 ImageFileName IN ("nmap.exe","msfconsole.exe") earliest=13:00
+    raw_search:`index=endpoint host=WS-CORP-SEC-002 ImageFileName IN ("portscan.exe","pkitconsole.exe") earliest=13:00
 | table _time, ImageFileName, CommandLine, UserName`,
     correlated_hosts:["WS-CORP-SEC-002"],
     previous_incidents:["INC-2026-0556 (Medium, closed — authorized pentest, Change Ticket CHG-2026-0122, 30 days ago)"],
@@ -1819,13 +2087,13 @@ earliest=-30m
     prevention_policy:"CORP-SECURITY-TEAM-POLICY",policy_note:"Security team workstation — reduced restrictions",
     process_tree:[
       {pid:"3300",ppid:"1100",depth:0,name:"cmd.exe",sha256:"",score:0,bad:false,time:"14:00:00",user:"CORP\\soc-infra",cmd:"C:\\Windows\\System32\\cmd.exe"},
-      {pid:"4400",ppid:"3300",depth:1,name:"nmap.exe",sha256:"",score:65,bad:false,time:"14:00:15",user:"CORP\\soc-infra",cmd:"nmap.exe -sS -O -p 22,80,443,8080,3389,445 10.10.0.0/16 --open"},
-      {pid:"4401",ppid:"3300",depth:1,name:"msfconsole.exe",sha256:"",score:71,bad:false,time:"14:00:30",user:"CORP\\soc-infra",cmd:"msfconsole.exe -q"},
+      {pid:"4400",ppid:"3300",depth:1,name:"portscan.exe",sha256:"",score:65,bad:false,time:"14:00:15",user:"CORP\\soc-infra",cmd:"portscan.exe -sS -O -p 22,80,443,8080,3389,445 10.10.0.0/16 --open"},
+      {pid:"4401",ppid:"3300",depth:1,name:"pkitconsole.exe",sha256:"",score:71,bad:false,time:"14:00:30",user:"CORP\\soc-infra",cmd:"pkitconsole.exe -q"},
     ],
     network:[],timeline:[
       {time:"14:00:00",sev:"med",src:"SentinelEDR",event:"soc-infra logged into WS-CORP-SEC-002 — security team workstation"},
-      {time:"14:00:15",sev:"high",src:"SentinelEDR",event:"nmap.exe — scanning 10.10.0.0/16 — ports 22,80,443,8080,3389,445"},
-      {time:"14:00:30",sev:"high",src:"SentinelEDR",event:"msfconsole.exe launched — no exploitation modules loaded yet"},
+      {time:"14:00:15",sev:"high",src:"SentinelEDR",event:"portscan.exe — scanning 10.10.0.0/16 — ports 22,80,443,8080,3389,445"},
+      {time:"14:00:30",sev:"high",src:"SentinelEDR",event:"pkitconsole.exe launched — no exploitation modules loaded yet"},
     ],
     file_events:[],
   },
@@ -1846,14 +2114,14 @@ earliest=-30m
     {
       id:0,phase:"TRIAGE",xp:20,
       tool:"BlueTrace SIEM",toolIcon:"📊",toolAnalogy:"like a security camera control room",
-      title:"Nmap and Metasploit — Always Malicious?",
-      objective:"Nmap and Metasploit are used by attackers. They are also used every day by legitimate security teams. The key question is not WHAT tools — it is WHO is using them and WHETHER it is authorized. What evidence helps you determine this?",
+      title:"Nmap and PentestKit — Always Malicious?",
+      objective:"Nmap and PentestKit are used by attackers. They are also used every day by legitimate security teams. The key question is not WHAT tools — it is WHO is using them and WHETHER it is authorized. What evidence helps you determine this?",
       lookFor:["What workstation are the tools running from?","What user account is running them?","Is there a Change Ticket for a pentest today?","Is there a previous incident showing authorized use of these tools?"],
-      seniorThinking:"I work with a red team. When I see Nmap and Metasploit alerts, my first call is to the Security Team Lead — not an escalation to P1. Half the time it is our own team doing their job. The other half it is a real threat. The SIEM alert even says 'check with security team before escalating' — that is a built-in hint.",
+      seniorThinking:"I work with a red team. When I see Nmap and PentestKit alerts, my first call is to the Security Team Lead — not an escalation to P1. Half the time it is our own team doing their job. The other half it is a real threat. The SIEM alert even says 'check with security team before escalating' — that is a built-in hint.",
       instruction:"Read both alerts carefully. The second alert says 'No active Change Ticket — check with security team before escalating.' What is your next action?",
       analyst_note:"Security team workstation + soc-infra account + previous authorized pentest from same host = very likely authorized activity. Verify before escalating.",
       decision:{
-        question:"Nmap and Metasploit are running on a security team workstation with no Change Ticket. What do you do?",
+        question:"Nmap and PentestKit are running on a security team workstation with no Change Ticket. What do you do?",
         options:[
           {text:"Contact the Security Team Lead to verify if this is authorized before taking any action",correct:true,why:"Correct. The workstation is registered to the security team, the account is soc-infra (a security team account), and there is previous history of authorized testing from this host. Verify with the team before acting — a false escalation would disrupt an active pentest."},
           {text:"Immediately isolate WS-CORP-SEC-002 and escalate to P1",correct:false,why:"Premature. Isolating a security team workstation mid-pentest would disrupt authorized security testing, alert defenders (if this is a red team exercise), and create significant noise. Verify first."},
@@ -1861,7 +2129,7 @@ earliest=-30m
           {text:"Watch and wait — see if exploitation occurs",correct:false,why:"Incorrect. Passive monitoring without verification leaves you unable to respond appropriately in either direction. If it IS an attacker, you waited. If it IS the security team, you wasted time."},
         ]
       },
-      evidence_bullets:["Source: WS-CORP-SEC-002 — Security Operations workstation (CMDB confirmed)","User: soc-infra — Security team service account","Tools: Nmap + Metasploit — standard pentest tools","Change Ticket: NONE found — missing authorization paper trail","Previous: CHG-2026-0122 authorized pentest 30 days ago from same host"],
+      evidence_bullets:["Source: WS-CORP-SEC-002 — Security Operations workstation (CMDB confirmed)","User: soc-infra — Security team service account","Tools: Nmap + PentestKit — standard pentest tools","Change Ticket: NONE found — missing authorization paper trail","Previous: CHG-2026-0122 authorized pentest 30 days ago from same host"],
       action_label:"Call Security Team Lead — Verify Authorization",
       action_result:"Security Team Lead contacted (14:04):\n'Yes — we have a quarterly vulnerability assessment running today. Change Ticket was submitted but went to wrong queue. CHG-2026-0198 created now — apologies for the noise.'\n\nChange Ticket CHG-2026-0198: CONFIRMED\nAuthorization: Quarterly vulnerability assessment — approved by CISO\nStatus: FALSE POSITIVE — authorized security activity",
     },
@@ -1878,8 +2146,8 @@ earliest=-30m
         question:"This is the second authorized pentest that triggered SOC alerts without proper Change Ticket notification. What is the best recommendation?",
         options:[
           {text:"Require security team to notify SOC and file Change Ticket at least 24h before any testing activity",correct:true,why:"Correct. This fixes the root cause. A 24-hour advance notification gives SOC time to expect and suppress authorized alerts. The Change Ticket creates an audit trail. Both protect the security team and SOC from wasted time."},
-          {text:"Add a permanent exception rule to suppress all Nmap and Metasploit alerts",correct:false,why:"Dangerous. Suppressing all Nmap/Metasploit alerts would blind you to real attackers using those tools. The exception should be specific: source IP + authorized user + active Change Ticket."},
-          {text:"Recommend the security team stop using Nmap and Metasploit",correct:false,why:"Not realistic or appropriate. These are industry-standard security tools. The problem is process, not tooling."},
+          {text:"Add a permanent exception rule to suppress all Nmap and PentestKit alerts",correct:false,why:"Dangerous. Suppressing all Nmap/PentestKit alerts would blind you to real attackers using those tools. The exception should be specific: source IP + authorized user + active Change Ticket."},
+          {text:"Recommend the security team stop using Nmap and PentestKit",correct:false,why:"Not realistic or appropriate. These are industry-standard security tools. The problem is process, not tooling."},
           {text:"Nothing — this resolved itself without action",correct:false,why:"Incorrect. The same process failure has now occurred twice. Without a fix, it will happen again every quarter. Incidents that repeat are process failures waiting to be documented."},
         ]
       },
@@ -2234,6 +2502,477 @@ function Dot({color,pulse}){
 // SCORE MODAL
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PRIORITY 1 — GLOBAL GLOSSARY SYSTEM
+// ─────────────────────────────────────────────────────────────────────────────
+
+const GLOSSARY = {
+  "C2": {
+    term: "C2 (Command and Control)",
+    plain: "A server that attackers use to remotely control malware on a victim's computer.",
+    why: "Once malware is on a system, it calls home to the C2 server to receive instructions — what to steal, where to move next, or when to activate.",
+    example: "svchost32.exe connects to 185.220.101.47:443 every 30 seconds. That IP is the C2 server. The attacker is watching and can send commands at any time."
+  },
+  "Beacon": {
+    term: "Beacon",
+    plain: "Malware that regularly checks in with its C2 server on a fixed schedule — like clockwork.",
+    why: "The regularity is what gives it away. A process making a network connection every exactly 30 seconds is not normal. That pattern is called beaconing.",
+    example: "svchost32.exe → 185.220.101.47:443 every 30s. The SIEM fires OUTBOUND_C2_BEACON because the interval is too perfect to be human activity."
+  },
+  "IOC": {
+    term: "IOC (Indicator of Compromise)",
+    plain: "A piece of evidence that proves a system was attacked — like a fingerprint at a crime scene.",
+    why: "IOCs let you block threats across your entire network. Find one IP used for an attack, block it everywhere so no other host can be hit.",
+    example: "IP 185.220.101.47, file hash a3f19c2d, domain corp-financegroup.com — all confirmed malicious. These become IOCs that get added to your blocklist."
+  },
+  "SIEM": {
+    term: "SIEM (Security Information and Event Management)",
+    plain: "Software that watches all your security logs at once and alerts you when something suspicious happens.",
+    why: "No human can read thousands of logs per second. The SIEM does it automatically and correlates events across multiple systems to find attacks.",
+    example: "Email gateway sees a suspicious attachment. Endpoint sees a macro run. Network sees an outbound C2 connection. The SIEM correlates all three and fires one Critical alert."
+  },
+  "EDR": {
+    term: "EDR (Endpoint Detection and Response)",
+    plain: "Software installed on every computer that records everything happening — every process, every file, every network connection.",
+    why: "If something bad happens, the EDR is your CCTV footage. You can rewind and see exactly what ran, what it spawned, and what it did.",
+    example: "The EDR shows WINWORD.EXE spawned cmd.exe at 08:17:09. That single relationship proves a macro ran and is your first solid evidence of compromise."
+  },
+  "AMSI": {
+    term: "AMSI (Antimalware Scan Interface)",
+    plain: "A Windows security feature that scans PowerShell commands before they run — like a checkpoint.",
+    why: "Attackers encode their PowerShell commands in Base64 to bypass AMSI. When you see -Enc in a PowerShell command, it means the attacker is trying to hide what they are running.",
+    example: "powershell.exe -Enc SUVYKEku... — the -Enc flag means the command is Base64-encoded. This is a classic AMSI bypass technique."
+  },
+  "LSASS": {
+    term: "LSASS (Local Security Authority Subsystem Service)",
+    plain: "A Windows process that stores user passwords and credentials in memory so you only need to log in once.",
+    why: "Attackers target LSASS to steal credentials. If they can read LSASS memory, they get every password currently in use on that machine.",
+    example: "svchost32.exe opened lsass.exe with GrantedAccess=0x1fffff — the 0x1fffff flag means full memory access. The attacker is attempting to dump all credentials."
+  },
+  "Macro": {
+    term: "Macro",
+    plain: "A small program embedded inside a Word or Excel document that runs automatically when you open the file.",
+    why: "Attackers hide malicious code in macros. When a user opens the document, the macro executes — often downloading malware in the background without the user knowing.",
+    example: "kiran.mehta opened INV_Q4_2026_FINAL.docm. The .docm extension means it contains macros. WINWORD.EXE spawning cmd.exe immediately after is proof the macro ran malicious code."
+  },
+  "Process Tree": {
+    term: "Process Tree",
+    plain: "A diagram showing which programs started which other programs — like a family tree for software.",
+    why: "The parent-child relationships tell you the story of an attack. Legitimate programs have predictable parents. When Word spawns cmd.exe, that is never normal.",
+    example: "OUTLOOK.EXE → WINWORD.EXE → cmd.exe → powershell.exe → svchost32.exe. Each arrow means the left program started the right one. Reading this chain reveals the full attack."
+  },
+  "Threat Intelligence": {
+    term: "Threat Intelligence",
+    plain: "A database of known malicious IPs, domains, and files built by thousands of security researchers around the world.",
+    why: "Instead of figuring out if an IP is malicious yourself, you look it up. If 500 security teams already flagged it, you do not need to investigate from scratch.",
+    example: "IP 185.220.101.47 — AbuseIPDB: 100/100. This means hundreds of organisations have already confirmed this IP as malicious. You block it immediately."
+  },
+  "False Positive": {
+    term: "False Positive",
+    plain: "A security alert that fired correctly based on the rules but turned out to be legitimate, non-malicious activity.",
+    why: "Most SOC alerts are false positives. Closing them correctly and quickly is as important as catching real attacks. Escalating a false positive wastes everyone's time.",
+    example: "Nessus vulnerability scanner triggers INTERNAL_PORT_SCAN alert. The scanner is authorised. The alert fired correctly but the activity is legitimate. That is a False Positive."
+  },
+  "Account Takeover": {
+    term: "Account Takeover (ATO)",
+    plain: "When an attacker gains access to a real user's account — usually by stealing or guessing their password.",
+    why: "Once an attacker is inside a real account, they look like a legitimate user. Traditional security controls are useless. You detect ATO through behavioural signals like impossible travel.",
+    example: "priya.sharma logged in from Mumbai at 11:20 and Amsterdam at 11:24. That is physically impossible in 4 minutes. The Amsterdam login is the attacker — this is an ATO."
+  },
+  "MFA Fatigue": {
+    term: "MFA Fatigue",
+    plain: "An attack where criminals spam a user with dozens of authentication approval requests, hoping the user approves one out of frustration or confusion.",
+    why: "MFA is supposed to protect accounts. MFA fatigue turns the protection into the attack vector. One accidental tap is all it takes.",
+    example: "priya.sharma received 47 MFA push notifications in 8 minutes. She approved number 47. The attacker had her password already — they just needed her to tap Approve once."
+  },
+  "Lateral Movement": {
+    term: "Lateral Movement",
+    plain: "When an attacker moves from one compromised computer to another within the same network to reach more valuable systems.",
+    why: "Attackers rarely stop at the first computer they compromise. They use it as a stepping stone to reach servers, databases, or other high-value targets.",
+    example: "After compromising WS-CORP-FIN-044, svchost32.exe attempted an SMB connection to 10.10.44.60. The attacker was trying to spread to another internal host."
+  },
+  "Containment": {
+    term: "Containment",
+    plain: "Cutting a compromised computer off from the network to stop the attacker from doing more damage — without turning it off.",
+    why: "Isolation stops the attack from spreading while keeping the computer alive for forensic investigation. Turning it off destroys evidence in memory.",
+    example: "Network Containment on WS-CORP-FIN-044 — the host is isolated from all network traffic but the EDR sensor stays connected. The attacker is cut off. Evidence is preserved."
+  },
+};
+
+// Glossary Modal
+function GlossaryModal({term, onClose}) {
+  const g = GLOSSARY[term];
+  if(!g) return null;
+  return(
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(4px)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:14,padding:22,maxWidth:420,width:"100%",boxShadow:"0 8px 32px rgba(0,0,0,0.15)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+          <div style={{fontSize:16,fontWeight:800,color:"#111318"}}>{g.term}</div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:18,color:"#9ca3af",cursor:"pointer",lineHeight:1}}>✕</button>
+        </div>
+        <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:9,padding:"11px 13px",marginBottom:11}}>
+          <div style={{fontSize:9,fontWeight:700,color:"#1d4ed8",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:5,textTransform:"uppercase"}}>Plain English</div>
+          <div style={{fontSize:13.5,color:"#1e3a5f",lineHeight:1.7}}>{g.plain}</div>
+        </div>
+        <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:9,padding:"11px 13px",marginBottom:11}}>
+          <div style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:5,textTransform:"uppercase"}}>Why it matters</div>
+          <div style={{fontSize:13,color:"#374151",lineHeight:1.7}}>{g.why}</div>
+        </div>
+        <div style={{background:"#111318",borderRadius:9,padding:"11px 13px"}}>
+          <div style={{fontSize:9,fontWeight:700,color:"#60a5fa",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:5,textTransform:"uppercase"}}>Real example</div>
+          <div style={{fontSize:12,color:"#93c5fd",lineHeight:1.75,fontFamily:"monospace"}}>{g.example}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inline glossary term with (?) icon
+function GT({t,children}) {
+  const [open,setOpen] = useState(false);
+  const hasDef = !!GLOSSARY[t||children];
+  if(!hasDef) return <span>{children}</span>;
+  return(
+    <>
+      <span style={{display:"inline-flex",alignItems:"center",gap:2,cursor:"pointer"}} onClick={()=>setOpen(true)}>
+        <span style={{borderBottom:"1px dashed #1a56db",color:"inherit"}}>{children}</span>
+        <span style={{fontSize:9,fontWeight:700,color:"#1a56db",background:"rgba(26,86,219,0.1)",borderRadius:"50%",width:14,height:14,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,lineHeight:1}}>?</span>
+      </span>
+      {open&&<GlossaryModal term={t||children} onClose={()=>setOpen(false)}/>}
+    </>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRIORITY 2 — INVESTIGATION COMPLETION FLOW
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SCENARIO_ORDER = [
+  "phishing-c2","fp-powershell","impossible-travel","fp-vuln-scan",
+  "usb-insider","dns-beacon","fp-pentest","bec-fraud","s3-exposure","fp-auth-storm"
+];
+
+const SCENARIO_LESSONS = {
+  "INC-2026-0441": {
+    title:"Spear-Phishing → C2 Beacon",
+    skills:["Process tree analysis","Macro execution patterns","IOC validation","Network containment"],
+    lessons:["WINWORD spawning cmd.exe is always suspicious","Evidence before verdict — check ThreatLens before blocking","Containment preserves forensics — never just power off","Root cause is the EDR policy gap, not the phishing email"],
+    nextId:"fp-powershell",
+    nextTitle:"IT Admin PowerShell — False Positive?",
+    nextPreview:"Not every suspicious alert is an attack. Learn how to tell the difference."
+  },
+  "INC-2026-0502": {
+    title:"IT Admin PowerShell — False Positive",
+    skills:["False positive identification","Service account context","Alert history analysis","CMDB verification"],
+    lessons:["Check previous incidents before escalating","Service accounts running at 2AM is expected behaviour","A 62/100 risk score with clean history is not a crisis","Always tune rules after confirming a false positive"],
+    nextId:"impossible-travel",
+    nextTitle:"Impossible Travel — Account Takeover",
+    nextPreview:"No malware. No endpoint. Just a stolen account. Identity attacks are different."
+  },
+  "INC-2026-0521": {
+    title:"Impossible Travel — Account Takeover",
+    skills:["Identity attack investigation","MFA fatigue detection","Session revocation","Persistence removal"],
+    lessons:["Revoke the session first — investigate second","MFA fatigue exploits approval fatigue, not technical weakness","Rogue MFA devices are persistence mechanisms","PII exposure triggers legal notification obligations"],
+    nextId:"fp-vuln-scan",
+    nextTitle:"Vulnerability Scanner — False Positive?",
+    nextPreview:"Your own security tools can trigger alerts. Know what authorised scanning looks like."
+  },
+  "INC-2026-0544": {
+    title:"Vulnerability Scanner — False Positive",
+    skills:["Scanner recognition","Asset verification","CMDB usage","Alert tuning"],
+    lessons:["Always check the asset database before escalating","Port scans from known scanners are authorised activity","Tune rules to reduce noise — do not disable detection","Previous incident history is your fastest triage tool"],
+    nextId:"usb-insider",
+    nextTitle:"Malicious USB — Insider Threat",
+    nextPreview:"The threat is already inside. Departing employees and sensitive data — a dangerous combination."
+  },
+  "INC-2026-0561": {
+    title:"Malicious USB — Insider Threat",
+    skills:["Insider threat investigation","DLP alert handling","Evidence preservation","Legal escalation"],
+    lessons:["robocopy with /COPYALL is deliberate — not accidental","Never contact the suspected insider without HR and Legal","Stick to facts in reports — Legal determines intent","USB serial numbers are evidence — document them"],
+    nextId:"dns-beacon",
+    nextTitle:"DNS Beaconing — C2 Over DNS",
+    nextPreview:"Some malware never makes a TCP connection. It hides in DNS queries instead."
+  },
+  "INC-2026-0578": {
+    title:"DNS Beaconing — IcedID C2",
+    skills:["DNS anomaly detection","DGA pattern recognition","IcedID malware family","Threat actor attribution"],
+    lessons:["DNS port 53 is almost never blocked — ideal for C2","Perfect 5-second intervals = automated beacon, not human","IcedID is a loader — check for secondary payloads","Wildcard DNS responses are a red flag for C2 infrastructure"],
+    nextId:"fp-pentest",
+    nextTitle:"Security Team Pentest — False Positive?",
+    nextPreview:"Your own red team can look like an attacker. Communication is a security control."
+  },
+  "INC-2026-0591": {
+    title:"Security Team Pentest — False Positive",
+    skills:["Authorised activity recognition","Change management","Security team coordination","Process improvement"],
+    lessons:["Always call the team before isolating a security workstation","Missing Change Tickets are a process failure, not an attack","The second occurrence means a process must change","Verify then close — never close without verifying"],
+    nextId:"bec-fraud",
+    nextTitle:"Business Email Compromise — CFO Fraud",
+    nextPreview:"No malware. No endpoint. Just a convincing email and ₹47L about to disappear."
+  },
+  "INC-2026-0612": {
+    title:"Business Email Compromise — CFO Fraud",
+    skills:["BEC investigation","Email header analysis","Lookalike domain detection","Fraud prevention"],
+    lessons:["corp.com vs corp.internal — one character can cost millions","Stop the payment first, investigate second","DMARC enforcement would have flagged this domain","A 6-day-old domain is almost always malicious"],
+    nextId:"s3-exposure",
+    nextTitle:"Public AWS S3 Bucket — Data Exposed",
+    nextPreview:"A single misconfiguration. 127,000 customer records. 3 days of exposure."
+  },
+  "INC-2026-0634": {
+    title:"Public AWS S3 Bucket — Data Exposed",
+    skills:["Cloud incident response","AWS S3 security","PII breach assessment","Regulatory notification"],
+    lessons:["Make the bucket private immediately — investigate after","CloudTrail logs every access — use it","DPDPA 2023 breach notification may be required","S3 Block Public Access should be enabled account-wide"],
+    nextId:"fp-auth-storm",
+    nextTitle:"Authentication Failure Storm — Brute Force or System Change?",
+    nextPreview:"3,847 auth failures in 10 minutes. Is it an attack — or did something break?"
+  },
+  "INC-2026-0651": {
+    title:"Authentication Failure Storm — False Positive",
+    skills:["Auth failure analysis","Change management context","Operational vs attack distinction","Detection gap awareness"],
+    lessons:["1,247 accounts failing simultaneously is not credential stuffing","Change tickets protect the SOC from operational noise","A real attack could hide in this noise — monitor for successes","Never raise the detection threshold — fix the process instead"],
+    nextId:null,
+    nextTitle:"SOC Analyst L1 Path Complete",
+    nextPreview:"You have completed all 10 investigations. SOC Analyst L1 certification coming soon."
+  },
+};
+
+function CompletionScreen({incId,xp,hints,elapsed,grade,onNext,onDash,submitFeedback}) {
+  const mm=String(Math.floor(elapsed/60)).padStart(2,"0");
+  const ss=String(elapsed%60).padStart(2,"0");
+  const lesson=SCENARIO_LESSONS[incId];
+  const penalty=hints*15, bonus=Math.max(0,300-elapsed), final=Math.max(0,xp-penalty+bonus);
+  const gc={S:"#a855f7",A:"#22c55e",B:"#3b82f6",C:"#f59e0b"}[grade]||"#3b82f6";
+
+  // Feedback state
+  const [rating,setRating]=useState(0);
+  const [diff,setDiff]=useState("");
+  const [rec,setRec]=useState("");
+  const [comment,setComment]=useState("");
+  const [feedbackDone,setFeedbackDone]=useState(false);
+  const [tab,setTab]=useState("results"); // results | feedback
+
+  const submitFB=async()=>{
+    if(submitFeedback) await submitFeedback(incId,rating,diff,rec,comment);
+    setFeedbackDone(true);
+    setTimeout(()=>setTab("results"),1500);
+  };
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+      <div style={{background:"#fff",borderRadius:16,padding:24,maxWidth:480,width:"100%",animation:"fadeUp 0.4s ease"}}>
+
+        {/* Tab switcher */}
+        <div style={{display:"flex",background:"#f7f8fa",borderRadius:8,padding:3,marginBottom:20,gap:3}}>
+          {[["results","📊 Results"],["feedback","💬 Feedback"]].map(([id,label])=>(
+            <button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"7px",borderRadius:6,border:"none",background:tab===id?"#fff":"transparent",fontWeight:tab===id?700:400,fontSize:13,color:tab===id?"#111318":"#6b7280",cursor:"pointer",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,0.08)":"none",transition:"all 0.15s"}}>{label}</button>
+          ))}
+        </div>
+
+        {tab==="results"&&(
+          <>
+            {/* Grade */}
+            <div style={{textAlign:"center",marginBottom:18}}>
+              <div style={{fontSize:52,fontWeight:800,color:gc,fontFamily:"monospace",lineHeight:1,marginBottom:4}}>{grade}</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#111318"}}>Investigation Complete</div>
+              <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>{lesson?.title}</div>
+            </div>
+
+            {/* XP row */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
+              {[["XP Earned",final,"#1a56db"],["Time",mm+":"+ss,elapsed<3600?"#16a34a":"#f59e0b"],["Hints",hints,hints===0?"#16a34a":"#f59e0b"]].map(([l,v,c])=>(
+                <div key={l} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:9,padding:"10px 6px",textAlign:"center"}}>
+                  <div style={{fontSize:20,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
+                  <div style={{fontSize:9,color:"#9ca3af",textTransform:"uppercase",letterSpacing:"0.08em"}}>{l}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Skills learned */}
+            {lesson?.skills&&(
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#6b7280",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:8,textTransform:"uppercase"}}>Skills Demonstrated</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {lesson.skills.map(s=>(
+                    <span key={s} style={{background:"rgba(26,86,219,0.08)",border:"1px solid rgba(26,86,219,0.2)",color:"#1a56db",padding:"3px 9px",borderRadius:4,fontSize:11.5,fontWeight:500}}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Key lessons */}
+            {lesson?.lessons&&(
+              <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,padding:"12px 14px",marginBottom:16}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#6b7280",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:8,textTransform:"uppercase"}}>Key Analyst Lessons</div>
+                {lesson.lessons.map((l,i)=>(
+                  <div key={i} style={{display:"flex",gap:8,marginBottom:5,alignItems:"flex-start"}}>
+                    <span style={{color:"#22c55e",fontWeight:700,flexShrink:0,fontSize:13}}>✓</span>
+                    <span style={{fontSize:12.5,color:"#374151",lineHeight:1.5}}>{l}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Next investigation */}
+            {lesson?.nextId&&(
+              <div style={{background:"linear-gradient(135deg,#eff6ff,#f0fdf4)",border:"1px solid #bfdbfe",borderRadius:10,padding:"14px",marginBottom:14,cursor:"pointer"}} onClick={onNext}>
+                <div style={{fontSize:9,fontWeight:700,color:"#1a56db",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:4,textTransform:"uppercase"}}>Recommended Next</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:4}}>{lesson.nextTitle}</div>
+                <div style={{fontSize:12.5,color:"#5a6272",marginBottom:10,lineHeight:1.5}}>{lesson.nextPreview}</div>
+                <button style={{width:"100%",background:"#1a56db",color:"#fff",padding:"11px",borderRadius:8,fontSize:13,fontWeight:700,border:"none",cursor:"pointer"}}>
+                  Start Next Investigation →
+                </button>
+              </div>
+            )}
+            {!lesson?.nextId&&(
+              <div style={{background:"linear-gradient(135deg,#faf5ff,#eff6ff)",border:"1px solid #e9d5ff",borderRadius:10,padding:"14px",marginBottom:14,textAlign:"center"}}>
+                <div style={{fontSize:22,marginBottom:6}}>🏆</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:4}}>SOC Analyst Path Complete!</div>
+                <div style={{fontSize:12.5,color:"#5a6272",marginBottom:10}}>You have completed all 10 investigations. Certificate coming soon.</div>
+                <button onClick={onDash} style={{width:"100%",background:"#7c3aed",color:"#fff",padding:"11px",borderRadius:8,fontSize:13,fontWeight:700,border:"none",cursor:"pointer"}}>
+                  View Your Profile →
+                </button>
+              </div>
+            )}
+
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={onDash} style={{flex:1,padding:"10px",borderRadius:8,border:"1px solid #e1e4ed",background:"#f7f8fa",color:"#6b7280",fontSize:13,cursor:"pointer"}}>Dashboard</button>
+              <button onClick={()=>setTab("feedback")} style={{flex:1,padding:"10px",borderRadius:8,border:"1px solid #bfdbfe",background:"#eff6ff",color:"#1a56db",fontSize:13,fontWeight:600,cursor:"pointer"}}>Rate This →</button>
+            </div>
+          </>
+        )}
+
+        {tab==="feedback"&&(
+          <>
+            {feedbackDone?(
+              <div style={{textAlign:"center",padding:"30px 0"}}>
+                <div style={{fontSize:36,marginBottom:10}}>🙏</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#111318",marginBottom:4}}>Thank you!</div>
+                <div style={{fontSize:13,color:"#6b7280"}}>Your feedback shapes LearnThreatOps.</div>
+              </div>
+            ):(
+              <>
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:4}}>How was this investigation?</div>
+                  <div style={{fontSize:12,color:"#6b7280"}}>Your feedback is read by the team and directly shapes what we improve.</div>
+                </div>
+
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:600,color:"#374151",marginBottom:8}}>Overall rating</div>
+                  <div style={{display:"flex",gap:6}}>
+                    {[1,2,3,4,5].map(s=>(
+                      <button key={s} onClick={()=>setRating(s)} style={{fontSize:24,background:"none",border:"none",cursor:"pointer",opacity:s<=rating?1:0.3,transition:"opacity 0.1s"}}>⭐</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:600,color:"#374151",marginBottom:7}}>Difficulty felt:</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {["Too easy","Just right","Too hard","Overwhelming"].map(d=>(
+                      <button key={d} onClick={()=>setDiff(d)} style={{padding:"6px 12px",borderRadius:6,border:"1px solid "+(diff===d?"#1a56db":"#e1e4ed"),background:diff===d?"rgba(26,86,219,0.08)":"#f7f8fa",color:diff===d?"#1a56db":"#374151",fontSize:12,fontWeight:diff===d?600:400,cursor:"pointer"}}>{d}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:600,color:"#374151",marginBottom:7}}>Would you recommend LearnThreatOps?</div>
+                  <div style={{display:"flex",gap:6}}>
+                    {["Yes","Maybe","No"].map(r=>(
+                      <button key={r} onClick={()=>setRec(r)} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(rec===r?"#1a56db":"#e1e4ed"),background:rec===r?"rgba(26,86,219,0.08)":"#f7f8fa",color:rec===r?"#1a56db":"#374151",fontSize:13,fontWeight:rec===r?600:400,cursor:"pointer"}}>{r}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:11,fontWeight:600,color:"#374151",marginBottom:6}}>Comments (optional)</div>
+                  <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="What worked? What confused you? What should we improve?" style={{width:"100%",minHeight:72,padding:"9px 11px",border:"1px solid #e1e4ed",borderRadius:8,fontSize:13,fontFamily:"inherit",color:"#111318",background:"#f7f8fa",resize:"vertical",outline:"none",lineHeight:1.5}}/>
+                </div>
+
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setTab("results")} style={{flex:1,padding:"11px",borderRadius:8,border:"1px solid #e1e4ed",background:"#f7f8fa",color:"#6b7280",fontSize:13,cursor:"pointer"}}>← Back</button>
+                  <button onClick={submitFB} disabled={rating===0} style={{flex:2,padding:"11px",borderRadius:8,border:"none",background:rating>0?"#1a56db":"#e1e4ed",color:rating>0?"#fff":"#9ca3af",fontSize:13,fontWeight:600,cursor:rating>0?"pointer":"default"}}>
+                    Submit Feedback
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRIORITY 3 — EVIDENCE BOARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+function EvidenceBoard({inc, doneSteps, status}) {
+  const phases = [
+    {phase:"TRIAGE",     icon:"📋", label:"Alert Reviewed",    step:0},
+    {phase:"INVESTIGATION",icon:"🔍",label:"Evidence Collected",step:1},
+    {phase:"INVESTIGATION",icon:"🧪",label:"IOCs Validated",   step:2},
+    {phase:"CONTAINMENT",icon:"🔒", label:"Host Contained",    step:3},
+    {phase:"ERADICATION",icon:"🧹", label:"Blast Radius Checked",step:4},
+    {phase:"CLOSE",      icon:"📝", label:"Case Documented",   step:5},
+  ];
+
+  const totalSteps = inc?.steps?.length||6;
+  const doneCount = doneSteps?.length||0;
+
+  return(
+    <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+      <div style={{fontSize:9,fontWeight:700,color:"var(--tx4)",letterSpacing:"0.12em",fontFamily:"var(--mo)",marginBottom:10,textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span>Case Evidence</span>
+        <span style={{color:doneCount===totalSteps?"var(--ok)":"var(--tx4)"}}>{doneCount}/{totalSteps} Complete</span>
+      </div>
+      {phases.slice(0,totalSteps).map((item,i)=>{
+        const done = i < doneCount;
+        const active = i === doneCount && status!=="score";
+        return(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<phases.slice(0,totalSteps).length-1?"1px solid var(--bd)":"none"}}>
+            <div style={{width:18,height:18,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:done?"rgba(34,197,94,0.15)":active?"rgba(26,86,219,0.12)":"var(--bg3)",border:"1px solid "+(done?"rgba(34,197,94,0.4)":active?"rgba(26,86,219,0.3)":"var(--bd)"),fontSize:9}}>
+              {done?"✓":active?"●":"○"}
+            </div>
+            <span style={{fontSize:11.5,color:done?"var(--ok)":active?"var(--ac)":"var(--tx4)",fontWeight:done||active?600:400,transition:"color 0.3s"}}>
+              {item.label}
+            </span>
+            {active&&<span style={{fontSize:9,color:"var(--ac)",fontFamily:"var(--mo)",marginLeft:"auto"}}>IN PROGRESS</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRIORITY 7 — NEXT UNLOCK TEASER
+// ─────────────────────────────────────────────────────────────────────────────
+
+function NextUnlock({currentScenarioKey, prog}) {
+  const order = ["phishing-c2","fp-powershell","impossible-travel","fp-vuln-scan",
+    "usb-insider","dns-beacon","fp-pentest","bec-fraud","s3-exposure","fp-auth-storm"];
+  const currentIdx = order.indexOf(currentScenarioKey);
+  if(currentIdx < 0 || currentIdx >= order.length-1) return null;
+
+  const nextKey = order[currentIdx+1];
+  const nextScenario = SCENARIOS[nextKey];
+  if(!nextScenario) return null;
+
+  const isUnlocked = prog?.done?.[nextScenario.incId];
+  if(isUnlocked) return null;
+
+  return(
+    <div style={{background:"rgba(26,86,219,0.06)",border:"1px solid rgba(26,86,219,0.2)",borderRadius:9,padding:"10px 12px",marginBottom:10}}>
+      <div style={{fontSize:9,fontWeight:700,color:"#1a56db",letterSpacing:"0.1em",fontFamily:"var(--mo)",marginBottom:5,textTransform:"uppercase"}}>Next Unlock</div>
+      <div style={{fontSize:12.5,color:"var(--tx2)",marginBottom:4,fontWeight:600}}>{nextScenario.title}</div>
+      <div style={{fontSize:11.5,color:"var(--tx3)",lineHeight:1.5}}>Complete this investigation to unlock it.</div>
+    </div>
+  );
+}
+
+
 function ScoreModal({inc,steps,elapsed,hintCount,onBack}){
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0");
   const ss=String(elapsed%60).padStart(2,"0");
@@ -2286,7 +3025,7 @@ function ScoreModal({inc,steps,elapsed,hintCount,onBack}){
 // NEW COACH POPUP — Socratic method, never gives answers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function CoachPopup({step,onClose,onHint,hintUsed,stepsDone,totalSteps,mode}){
+function CoachPopup({step,onClose,onHint,hintUsed,stepsDone,totalSteps,mode,onBack}){
   const pc=phaseColor(step.phase);
   const [showHint,setShowHint]=useState(hintUsed);
   const isBeginner = mode==="beginner";
@@ -2295,6 +3034,12 @@ function CoachPopup({step,onClose,onHint,hintUsed,stepsDone,totalSteps,mode}){
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 80px"}}>
       <div style={{background:"#fff",border:"1px solid "+pc+"40",borderRadius:16,padding:22,maxWidth:540,width:"100%",margin:"0 16px",boxShadow:"0 0 40px "+pc+"20",animation:"fadeUp 0.3s ease"}}>
 
+        {/* Back button — visible inside coach overlay */}
+        {onBack&&(
+          <button onClick={onBack} style={{background:"none",border:"1px solid #e1e4ed",color:"#9ca3af",padding:"4px 10px",borderRadius:6,fontSize:11.5,cursor:"pointer",marginBottom:12,display:"flex",alignItems:"center",gap:5,fontFamily:"inherit"}}>
+            ← Previous Step
+          </button>
+        )}
         {/* Step header */}
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
           <div style={{width:36,height:36,borderRadius:"50%",background:pc+"15",border:"2px solid "+pc+"50",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{step.toolIcon}</div>
@@ -2321,6 +3066,16 @@ function CoachPopup({step,onClose,onHint,hintUsed,stepsDone,totalSteps,mode}){
           <span style={{fontSize:10,fontWeight:700,color:"#111318",fontFamily:"var(--mo)"}}>{step.tool}</span>
           {isBeginner&&step.toolAnalogy&&<span style={{fontSize:9,color:"#8892a4",fontFamily:"var(--mo)"}}>— {step.toolAnalogy}</span>}
         </div>
+
+        {/* Glossary quick-reference for beginners */}
+        {isBeginner&&(
+          <div style={{background:"rgba(26,86,219,0.06)",border:"1px solid rgba(26,86,219,0.15)",borderRadius:7,padding:"7px 10px",marginBottom:10,display:"flex",flexWrap:"wrap",gap:5,alignItems:"center"}}>
+            <span style={{fontSize:9.5,color:"#6b7280",fontFamily:"var(--mo)",marginRight:2}}>New here?</span>
+            {["SIEM","EDR","IOC","Beacon","C2","LSASS","Macro","False Positive"].map(t=>(
+              <GT key={t} t={t}><span style={{fontSize:10,background:"#fff",border:"1px solid #bfdbfe",color:"#1a56db",padding:"1px 7px",borderRadius:4,cursor:"pointer",fontFamily:"var(--mo)"}}>{t}</span></GT>
+            ))}
+          </div>
+        )}
 
         {/* Objective — Socratic, asks questions not directions */}
         <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
@@ -2991,7 +3746,8 @@ function IncidentDesk({inc,activeStep,stepsDone,analyst,elapsed}){
 
             <div>
               <div style={{fontSize:11,fontWeight:600,color:"var(--tx4)",marginBottom:6,fontFamily:"var(--mo)"}}>MITRE ATT&CK</div>
-              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{inc.mitre.map(t=><Badge key={t} color="blue">{t}</Badge>)}</div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:4}}>{inc.mitre.map(t=><Badge key={t} color="blue">{t}</Badge>)}</div>
+              <div style={{fontSize:9,color:"var(--tx4)"}}>ATT&amp;CK® is a registered trademark of The MITRE Corporation. Used for educational reference only.</div>
             </div>
           </div>
         )}
@@ -3216,7 +3972,7 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
           <div style={{width:28,height:28,borderRadius:6,background:"linear-gradient(135deg,#3b82f6,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>LBT</div>
           <div>
             <span style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>LEARN</span>
-            <span style={{fontSize:14,fontWeight:700,color:"#60a5fa"}}>BLUETEAM</span>
+            <span style={{fontSize:14,fontWeight:700,color:"#60a5fa"}}>THREATOPS</span>
             <span style={{fontSize:9,color:"var(--tx4)",marginLeft:8,fontFamily:"var(--mo)"}}>SOC Operations Center</span>
           </div>
         </div>
@@ -3368,9 +4124,14 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
 // SOC CONSOLE — main investigation view
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SOCConsole({incId,prog,addXP,finishSim,onBack,analyst:analystProp}){
+function SOCConsole({incId,prog,addXP,finishSim,onBack,submitFeedback,analyst:analystProp}){
   const inc=INCIDENTS[incId];
-  const [activeTool,setActiveTool]=useState("desk"); // Start on ticket
+  const scoreGrade=(xp,hints,sec)=>{
+    const pen=hints*15,bon=Math.max(0,300-sec),fin=Math.max(0,xp-pen+bon);
+    const pct=Math.round(fin/425*100);
+    return pct>=90?"S":pct>=75?"A":pct>=60?"B":"C";
+  };
+    const [activeTool,setActiveTool]=useState("desk"); // Start on ticket
   const [si,setSi]=useState(0);
   const [status,setStatus]=useState("ticket_review"); // ticket_review | mode_select | coach | decision | action_idle | action_running | action_done
   const [mode,setMode]=useState(null); // "beginner" | "analyst"
@@ -3400,6 +4161,15 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,analyst:analystProp}){
     setActiveTool(toolMap[step.tool]||"siem");
     setStatus("decision");
   };
+  const handleBack=()=>{
+    if(si>0){
+      // Remove last done step
+      setDone(d=>d.filter(i=>i!==si-1));
+      setSi(s=>s-1);
+      setStatus("coach");
+      setActiveTool(toolMap[INC.steps[si-1]?.tool]||"siem");
+    }
+  };
 
   const handleAction=async()=>{
     setStatus("action_running");
@@ -3427,7 +4197,16 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,analyst:analystProp}){
 
   return(
     <div className="soc-root" style={{height:"100vh",display:"flex",flexDirection:"column",background:"var(--bg)",overflow:"hidden"}}>
-      {showScore&&<ScoreModal inc={inc} steps={inc.steps} elapsed={elapsed} hintCount={hintCount} onBack={onBack}/>}
+      {showScore&&<CompletionScreen
+        incId={inc.id}
+        xp={doneSteps.reduce((s,i)=>s+(inc.steps[i]?.xp||0),0)}
+        hints={hintCount}
+        elapsed={elapsed}
+        grade={(()=>{const x=doneSteps.reduce((s,i)=>s+(inc.steps[i]?.xp||0),0),pen=hintCount*15,bon=Math.max(0,300-elapsed),fin=Math.max(0,x-pen+bon),pct=Math.round(fin/425*100);return pct>=90?"S":pct>=75?"A":pct>=60?"B":"C";})()}
+        onNext={()=>{const s=Object.keys(SCENARIO_TO_INC);const cur=s.find(k=>SCENARIO_TO_INC[k]===inc.id);const ni=s[s.indexOf(cur)+1];if(ni)onBack();}}
+        onDash={onBack}
+        submitFeedback={submitFeedback}
+      />}
       {/* Ticket Review Overlay — first thing analyst sees */}
       {status==="ticket_review"&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
@@ -3462,7 +4241,7 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,analyst:analystProp}){
       {status==="mode_select"&&<ModeSelector inc={inc} onSelect={selectMode}/>}
       {status==="decision"&&step?.decision&&<DecisionQuestion step={step} onDecide={handleDecision}/>}
       {status==="decision"&&!step?.decision&&(handleDecision(true),null)}
-      {status==="coach"&&<CoachPopup step={step} onClose={handleCoachClose} onHint={()=>setHintCount(h=>h+1)} hintUsed={false} stepsDone={doneSteps.length} totalSteps={inc.steps.length} mode={mode}/>}
+      {status==="coach"&&<CoachPopup step={step} onClose={handleCoachClose} onHint={()=>setHintCount(h=>h+1)} hintUsed={false} stepsDone={doneSteps.length} totalSteps={inc.steps.length} mode={mode} onBack={si>0?handleBack:null}/>}
       {(status==="action_idle"||status==="action_running"||status==="action_done")&&(
         <ActionOverlay step={step} onConfirm={status==="action_done"?handleNext:handleAction} isRunning={status==="action_running"} isDone={status==="action_done"} xpBurst={xpBurstAmt}/>
       )}
@@ -3476,9 +4255,14 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,analyst:analystProp}){
 
       {/* TOP BAR */}
       <div style={{background:"var(--bg2)",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:48,display:"flex",alignItems:"center",gap:12,flexShrink:0,boxShadow:"var(--sh)"}}>
-        <button onClick={onBack} style={{background:"var(--bg3)",color:"var(--tx3)",padding:"5px 10px",borderRadius:5,fontSize:11,border:"1px solid var(--bd)",cursor:"pointer"}}>← Dashboard</button>
-        <div style={{flex:1,overflow:"hidden"}}>
-          <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:1}}>{inc.id} · {(analystProp?.name||ANALYST.name)} · P1-Critical</div>
+        <div style={{display:"flex",gap:5,flexShrink:0}}>
+          <button onClick={onBack} style={{background:"var(--bg3)",color:"var(--tx3)",padding:"5px 9px",borderRadius:5,fontSize:11,border:"1px solid var(--bd)",cursor:"pointer"}}>← Exit</button>
+          {si>0&&status!=="coach"&&status!=="ticket_review"&&status!=="mode_select"&&(
+            <button onClick={handleBack} style={{background:"var(--bg3)",color:"var(--ac)",padding:"5px 9px",borderRadius:5,fontSize:11,border:"1px solid var(--acb)",cursor:"pointer"}}>↩ Prev Step</button>
+          )}
+        </div>
+        <div style={{flex:1,overflow:"hidden",marginLeft:4}}>
+          <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:1}}>{inc.id} · P1-Critical</div>
           <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inc.title}</div>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
@@ -3503,7 +4287,8 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,analyst:analystProp}){
           {id:"edr",label:"SentinelEDR",color:"#ef4444",shortLabel:"EDR"},
           {id:"ti",label:"ThreatLens",color:"#8b5cf6",shortLabel:"INTEL"},
           {id:"desk",label:"IncidentDesk",color:"#10b981",shortLabel:"DESK"},
-        ].map(t=>{
+          {id:"case",label:"Case Board",color:"#f59e0b",shortLabel:"CASE"},
+      ].map(t=>{
           const isActive=activeTool===t.id;
           const isStepTool=toolMap[step?.tool]===t.id;
           return(
@@ -3531,6 +4316,12 @@ function SOCConsole({incId,prog,addXP,finishSim,onBack,analyst:analystProp}){
         {activeTool==="siem"&&<BlueTraceSIEM inc={inc} activeStep={status!=="coach"?step:null}/>}
         {activeTool==="edr"&&<SentinelEDR inc={inc} activeStep={status!=="coach"?step:null} isContained={contained}/>}
         {activeTool==="ti"&&<ThreatLens inc={inc} activeStep={status!=="coach"?step:null}/>}
+        {activeTool==="case"&&(
+          <div style={{flex:1,overflow:"auto",padding:12,display:"flex",flexDirection:"column",gap:10}}>
+            <EvidenceBoard inc={inc} doneSteps={doneSteps} status={status}/>
+            <NextUnlock currentScenarioKey={Object.keys(SCENARIO_TO_INC).find(k=>SCENARIO_TO_INC[k]===inc?.id)||""} prog={prog}/>
+          </div>
+        )}
         {activeTool==="desk"&&<IncidentDesk inc={inc} activeStep={status!=="coach"?step:null} stepsDone={doneSteps.length} analyst={analystProp||ANALYST} elapsed={elapsed}/>}
       </div>
     </div>
@@ -3597,7 +4388,7 @@ function ContactPage({nav}) {
       <h1 style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:700,color:"var(--tx)",marginBottom:6}}>Get in Touch</h1>
       <p style={{fontSize:14,color:"var(--tx3)",lineHeight:1.7,marginBottom:28}}>Questions, feedback, or support? We reply within 24 hours.</p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,marginBottom:28}}>
-        {[["📧","Email","support.learnblueteam@gmail.com"],["🌐","Website","www.learnblueteam.cloud"],["📍","Based in","Mumbai, India"]].map(([ic,l,v])=>(
+        {[["📧","Email","support.learnthreatops@gmail.com"],["🌐","Website","learnthreatops.cloud"],["📍","Based in","Mumbai, India"]].map(([ic,l,v])=>(
           <div key={l} style={{background:"var(--w)",border:"1px solid var(--bd)",borderRadius:10,padding:"14px",boxShadow:"var(--sh)"}}>
             <div style={{fontSize:20,marginBottom:7}}>{ic}</div>
             <div style={{fontSize:10,fontWeight:700,color:"var(--tx4)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3,fontFamily:"var(--mo)"}}>{l}</div>
@@ -3729,16 +4520,23 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac)}
 
 // ── logo component ────────────────────────────────────────────────────────────
 function Logo({size=32}) {
-  // LB monogram matching the uploaded logo: dark L + blue B with terminal prompt
   const s = size;
   return (
     <svg width={s} height={s} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Dark L */}
-      <path d="M18 14 L18 72 L58 72 L58 86 L8 86 L8 14 Z" fill="#2d3748"/>
-      {/* Blue B */}
-      <path d="M38 14 L38 86 L65 86 C80 86 92 76 92 62 C92 54 88 48 82 44 C86 40 89 35 89 28 C89 20 82 14 70 14 Z M50 26 L66 26 C71 26 75 30 75 35 C75 40 71 44 66 44 L50 44 Z M50 56 L68 56 C74 56 79 60 79 66 C79 72 74 76 68 76 L50 76 Z" fill="#2563eb"/>
-      {/* Terminal prompt > _ inside B */}
-      <text x="49" y="55" fontSize="14" fontFamily="monospace" fill="white" fontWeight="bold">{">"}_</text>
+      <defs>
+        <linearGradient id="ltGrad" x1="40" y1="20" x2="100" y2="80" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#4f7ef8"/>
+          <stop offset="100%" stopColor="#1a3bdb"/>
+        </linearGradient>
+      </defs>
+      {/* L — dark charcoal */}
+      <rect x="14" y="18" width="11" height="52" rx="2" fill="#1e2235"/>
+      <rect x="14" y="59" width="30" height="11" rx="2" fill="#1e2235"/>
+      {/* T — gradient blue with arrow/slash */}
+      <rect x="42" y="18" width="44" height="11" rx="2" fill="url(#ltGrad)"/>
+      <rect x="58" y="18" width="11" height="42" rx="2" fill="url(#ltGrad)"/>
+      {/* Slash/arrow accent */}
+      <path d="M52 70 L72 42 L80 50 L60 78 Z" fill="url(#ltGrad)" opacity="0.85"/>
     </svg>
   );
 }
@@ -3750,16 +4548,16 @@ const POLICIES = {
     ["How We Use Your Data","To operate the platform, personalise your experience, track progress, issue certificates, send service updates, and respond to support. We never sell your data."],
     ["Data Storage & Security","Stored securely with HTTPS encryption in transit and encryption at rest. Progress also saved in localStorage for offline access."],
     ["Cookies","Essential cookies only — login state and preferences. No advertising or tracking cookies."],
-    ["Your Rights","You can request access, correction, or deletion of your data anytime. Email support.learnblueteam@gmail.com. We process within 30 days."],
+    ["Your Rights","You can request access, correction, or deletion of your data anytime. Email support.learnthreatops@gmail.com. We process within 30 days."],
     ["Children","Platform is for users 16+. We do not knowingly collect data from children under 16."],
     ["Changes","We will notify registered users of significant changes via email."],
   ]},
   terms:{title:"Terms of Service",sections:[
-    ["Acceptance","By using www.learnblueteam.cloud you agree to these Terms. If you disagree, please do not use the platform."],
-    ["Platform Use","LearnBlueTeam provides simulated defensive security exercises for education only. You may not use knowledge gained here to attack systems you do not own or have explicit permission to test."],
+    ["Acceptance","By using learnthreatops.cloud you agree to these Terms. If you disagree, please do not use the platform."],
+    ["Platform Use","LearnThreatOps provides simulated defensive security exercises for education only. You may not use knowledge gained here to attack systems you do not own or have explicit permission to test."],
     ["Account Responsibility","You are responsible for all activity under your account. Do not share credentials. Notify us immediately of any unauthorised use."],
     ["Acceptable Use","Do not reverse-engineer platform content, scrape data, impersonate others, post harmful content, or circumvent security measures."],
-    ["Intellectual Property","All content — simulations, scenarios, UI, logos — is owned by LearnBlueTeam and protected by copyright. No reproduction without written permission."],
+    ["Intellectual Property","All content — simulations, scenarios, UI, logos — is owned by LearnThreatOps and protected by copyright. No reproduction without written permission."],
     ["Limitation of Liability","Platform is provided as-is. We are not liable for indirect or consequential damages. Total liability shall not exceed amounts paid in the prior 12 months."],
     ["Governing Law","Governed by the laws of India. Disputes resolved in courts of Mumbai, Maharashtra."],
   ]},
@@ -3768,7 +4566,7 @@ const POLICIES = {
     ["Pro Monthly","Full refund within 7 days of initial purchase. After 7 days, no refund for current period but cancel anytime to prevent future charges."],
     ["Annual","Refund within 14 days if less than 10% content used. After 14 days, prorated credits at our discretion."],
     ["Certification Exam","Non-refundable once started. Refundable within 7 days if not started."],
-    ["How to Request","Email support.learnblueteam@gmail.com with subject 'Refund Request'. Include registered email, order details, and reason. Processed within 7-10 business days."],
+    ["How to Request","Email support.learnthreatops@gmail.com with subject 'Refund Request'. Include registered email, order details, and reason. Processed within 7-10 business days."],
     ["Exceptions","No refunds for accounts suspended due to ToS violations."],
   ]},
   "ai-disclaimer":{title:"AI Disclaimer",sections:[
@@ -3784,14 +4582,14 @@ const POLICIES = {
     ["Data Retention","Active account data retained for account lifetime. On deletion, all personal data removed within 30 days."],
     ["Security","Passwords hashed with bcrypt. HTTPS for all data in transit. Regular security reviews."],
     ["Third Parties","We use Railway (hosting), Gmail (email), analytics. Minimum necessary data shared under strict agreements."],
-    ["Portability","Request a data export anytime at support.learnblueteam@gmail.com. Delivered in 14 days."],
+    ["Portability","Request a data export anytime at support.learnthreatops@gmail.com. Delivered in 14 days."],
   ]},
   rules:{title:"Community Rules",sections:[
     ["Be Respectful","Treat all community members, staff, and content with respect. Harassment, hate speech, or personal attacks result in immediate suspension."],
     ["No Real-World Attacks","Knowledge from this platform must only be used defensively and on systems you own or have explicit permission to test. Using techniques learned here illegally is strictly prohibited."],
     ["No Cheating","Do not manipulate scores, exploit bugs, or share scenario answers publicly. Shortcuts undermine your own growth."],
     ["Privacy","Do not share other users' personal information without consent."],
-    ["Responsible Disclosure","If you find a security vulnerability in our platform, report it to support.learnblueteam@gmail.com before public disclosure."],
+    ["Responsible Disclosure","If you find a security vulnerability in our platform, report it to support.learnthreatops@gmail.com before public disclosure."],
     ["Consequences","Violations result in warnings, suspension, or permanent ban depending on severity."],
   ]},
 };
@@ -3803,7 +4601,7 @@ function PolicyPage({policyKey,nav}) {
     <div style={{maxWidth:720,margin:"0 auto",padding:"28px 20px 60px"}}>
       <button onClick={()=>nav("landing")} style={{background:"var(--w)",border:"1px solid var(--bd)",color:"var(--tx3)",padding:"6px 12px",borderRadius:6,fontSize:12,marginBottom:22,cursor:"pointer",boxShadow:"var(--sh)"}}>Home</button>
       <h1 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:700,color:"var(--tx)",marginBottom:5,lineHeight:1.2}}>{p.title}</h1>
-      <div style={{fontSize:12,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:28}}>Updated May 2026 · www.learnblueteam.cloud</div>
+      <div style={{fontSize:12,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:28}}>Updated May 2026 · learnthreatops.cloud</div>
       <div style={{display:"flex",flexDirection:"column",gap:22}}>
         {p.sections.map(([title,body],i)=>(
           <div key={i}>
@@ -3814,7 +4612,7 @@ function PolicyPage({policyKey,nav}) {
       </div>
       <div style={{marginTop:40,padding:"18px",background:"var(--bg)",border:"1px solid var(--bd)",borderRadius:10,textAlign:"center"}}>
         <div style={{fontSize:13,color:"var(--tx3)",marginBottom:5}}>Questions?</div>
-        <a href="mailto:support.learnblueteam@gmail.com" style={{fontSize:14,fontWeight:600,color:"var(--ac)"}}>support.learnblueteam@gmail.com</a>
+        <a href="mailto:support.learnthreatops@gmail.com" style={{fontSize:14,fontWeight:600,color:"var(--ac)"}}>support.learnthreatops@gmail.com</a>
       </div>
     </div>
   );
@@ -3850,7 +4648,7 @@ function OnboardingModal({onStart}) {
           <>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:32,marginBottom:10}}>👋</div>
-              <h2 style={{fontSize:20,fontWeight:800,color:"#111318",marginBottom:6}}>Welcome to LearnBlueTeam</h2>
+              <h2 style={{fontSize:20,fontWeight:800,color:"#111318",marginBottom:6}}>Welcome to LearnThreatOps</h2>
               <p style={{fontSize:14,color:"#5a6272",lineHeight:1.7}}>You are about to investigate a real-world security incident. You will use the same tools professional SOC analysts use every day.</p>
             </div>
             <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,padding:"14px",marginBottom:16,fontSize:13,color:"#5a6272",lineHeight:1.7}}>
@@ -3918,7 +4716,7 @@ function Landing({nav,appUser}) {
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:20,position:"relative",zIndex:1}}>
           <Logo size={44}/>
           <div style={{textAlign:"left"}}>
-            <div style={{fontSize:20,fontWeight:800,color:"#111318",letterSpacing:"0.01em",lineHeight:1}}>LEARN<span style={{color:"#1a56db"}}>BLUETEAM</span></div>
+            <div style={{fontSize:20,fontWeight:800,color:"#111318",letterSpacing:"0.01em",lineHeight:1}}>LEARN<span style={{color:"#1a56db"}}>THREATOPS</span></div>
             <div style={{fontSize:9,color:"#8892a4",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive · Security · Reimagined</div>
           </div>
         </div>
@@ -4030,7 +4828,7 @@ function Landing({nav,appUser}) {
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Defensive Security Paths</div>
           <h2 style={{fontSize:"clamp(20px,4vw,30px)",fontWeight:800,color:"#111318",marginBottom:8,lineHeight:1.2}}>Choose Your Defensive Security Path</h2>
-          <p style={{fontSize:14,color:"#5a6272",maxWidth:480,margin:"0 auto"}}>LearnBlueTeam covers the full spectrum of defensive security careers.</p>
+          <p style={{fontSize:14,color:"#5a6272",maxWidth:480,margin:"0 auto"}}>LearnThreatOps covers the full spectrum of defensive security careers.</p>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,maxWidth:1060,margin:"0 auto"}}>
           {[
@@ -4170,26 +4968,39 @@ function Landing({nav,appUser}) {
         </div>
       </div>
 
-      {/* ── WHAT YOU'LL LEARN ── */}
+            {/* ── WHAT YOU'LL BE ABLE TO DO ── */}
       <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Curriculum</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:6}}>What You'll Learn</h2>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Learning Outcomes</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:6}}>What You'll Be Able To Do</h2>
+          <p style={{fontSize:14,color:"#5a6272",maxWidth:480,margin:"0 auto"}}>Real skills. Real workflows. Built through hands-on investigation — not theory.</p>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8,maxWidth:760,margin:"0 auto"}}>
-          {["Alert Triage & Classification","Phishing Investigation","Malware Analysis Basics","Threat Hunting Foundations","Threat Intelligence Lookup","Incident Response Process","Cloud Security Fundamentals","Identity Attack Investigation","EDR Investigation Techniques","SIEM Correlation Analysis","IOC Validation & Enrichment","Security Operations Reporting"].map(item=>(
-            <div key={item} style={{display:"flex",gap:9,alignItems:"center",padding:"10px 12px",background:"#f7f8fa",borderRadius:8,border:"1px solid #e1e4ed"}}>
-              <span style={{color:"#16a34a",fontWeight:700,fontSize:14,flexShrink:0}}>✓</span>
-              <span style={{fontSize:13,color:"#2d3241",fontWeight:500}}>{item}</span>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,maxWidth:860,margin:"0 auto"}}>
+          {[
+            {icon:"🎣",skill:"Investigate Phishing",desc:"Trace macro docs to C2 beacons",level:"Beginner"},
+            {icon:"🔍",skill:"Identify False Positives",desc:"Context over pattern — not every alert is an attack",level:"Beginner"},
+            {icon:"🌍",skill:"Identity Attacks",desc:"MFA fatigue, impossible travel, ATO",level:"Beginner"},
+            {icon:"📊",skill:"Use SIEM Effectively",desc:"Correlated alerts, searches, timelines",level:"Beginner"},
+            {icon:"🔬",skill:"Validate Threat Intel",desc:"IPs, hashes, domains — evidence before verdict",level:"Intermediate"},
+            {icon:"☁️",skill:"Cloud Incident Response",desc:"S3 exposure, IAM abuse, key exposure",level:"Intermediate"},
+            {icon:"📋",skill:"Write IR Reports",desc:"Root cause, blast radius, recommendations",level:"All levels"},
+            {icon:"⚡",skill:"Work Under SLA Pressure",desc:"Triage P1 incidents within 60 minutes",level:"All levels"},
+          ].map(item=>(
+            <div key={item.skill} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:12,padding:"16px",display:"flex",flexDirection:"column",gap:6}}>
+              <div style={{fontSize:22}}>{item.icon}</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#111318",lineHeight:1.3}}>{item.skill}</div>
+              <div style={{fontSize:12,color:"#5a6272",lineHeight:1.6,flex:1}}>{item.desc}</div>
+              <div style={{fontSize:9.5,fontWeight:600,color:item.level==="Beginner"?"#16a34a":item.level==="Intermediate"?"#d97706":"#6b7280",background:item.level==="Beginner"?"rgba(22,163,74,0.08)":item.level==="Intermediate"?"rgba(217,119,6,0.08)":"rgba(107,114,128,0.08)",padding:"2px 7px",borderRadius:4,alignSelf:"flex-start",fontFamily:"var(--mo)"}}>{item.level}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── WHY LEARNBLUETEAM ── */}
+
+      {/* ── WHY LEARNTHREATOPS ── */}
       <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",padding:"48px 20px"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnBlueTeam</div>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnThreatOps</div>
           <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Different from everything else</h2>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,maxWidth:860,margin:"0 auto"}}>
@@ -4199,7 +5010,7 @@ function Landing({nav,appUser}) {
             ["📱","Zero Setup","Runs in your browser in seconds. Mobile-friendly. No VMs, no downloads."],
             ["🏆","Blue Team Focused","100% defensive security. SOC, DFIR, Threat Hunting, Cloud Security."],
             ["📊","Career Progression","XP, levels, badges. A clear path from beginner to senior analyst."],
-            ["📜","Verified Certificates","LearnBlueTeam Certificate of Completion. Unique verifiable ID."],
+            ["📜","Verified Certificates","LearnThreatOps Certificate of Completion. Unique verifiable ID."],
           ].map(([ic,tl,ds])=>(
             <div key={tl} style={{display:"flex",gap:13,alignItems:"flex-start",padding:"16px",background:"#fff",borderRadius:12,border:"1px solid #e1e4ed",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
               <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{ic}</span>
@@ -4212,88 +5023,101 @@ function Landing({nav,appUser}) {
         </div>
       </div>
 
-      {/* ── TESTIMONIALS ── */}
-      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Early Access Feedback</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318"}}>What Analysts Say</h2>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,maxWidth:900,margin:"0 auto"}}>
-          {[
-            {q:"Finally understood how SIEM and EDR work together in a real investigation. No other platform shows this.",name:"Arjun M.",role:"Fresher → SOC Analyst L1",loc:"Bangalore"},
-            {q:"The guided walkthrough feels like having a senior analyst sitting next to you. This is what was missing.",name:"Priya S.",role:"IT Graduate",loc:"Mumbai"},
-            {q:"I've tried TryHackMe and LetsDefend. LBT is different — it's defensive, realistic, and career-focused.",name:"Rohan K.",role:"SOC Analyst",loc:"Delhi"},
-          ].map(t=>(
-            <div key={t.name} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
-              <div style={{fontSize:20,color:"#1a56db",marginBottom:8}}>❝</div>
-              <div style={{fontSize:13.5,color:"#2d3241",lineHeight:1.7,marginBottom:14,fontStyle:"italic"}}>{t.q}</div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#111318"}}>{t.name}</div>
-                  <div style={{fontSize:11.5,color:"#5a6272"}}>{t.role}</div>
-                </div>
-                <div style={{fontSize:11,color:"#8892a4",fontFamily:"var(--mo)"}}>{t.loc}</div>
+                  {/* ── WHY LEARNTHREATOPS — TRUST ── */}
+      <div style={{padding:"40px 20px",background:"#111318",borderBottom:"1px solid #1f2937"}}>
+        <div style={{maxWidth:860,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#3b82f6",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnThreatOps</div>
+            <h2 style={{fontSize:"clamp(18px,4vw,24px)",fontWeight:800,color:"#f9fafb",marginBottom:4}}>Built for Defenders. Not Hackers.</h2>
+            <p style={{fontSize:13.5,color:"#6b7280",maxWidth:440,margin:"0 auto"}}>Most security platforms teach offensive hacking. We teach defensive security — the skills actually needed in a SOC role.</p>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+            {[
+              {icon:"🛡",title:"Defensive Security Only",desc:"Zero offensive hacking content. Every investigation is blue team work."},
+              {icon:"🔍",title:"Realistic Investigations",desc:"Real alert patterns, real tools, real analyst decisions."},
+              {icon:"🎯",title:"Built for SOC Analysts",desc:"Designed around the actual daily workflow of a Level 1 SOC analyst."},
+              {icon:"⚖️",title:"True + False Positives",desc:"40% of scenarios are false positives — because real SOCs are too."},
+              {icon:"🧠",title:"Socratic Coaching",desc:"The coach asks questions, never gives answers. You build real judgment."},
+              {icon:"🆓",title:"Free During Beta",desc:"All 10 investigations, both modes, full platform. No credit card."},
+            ].map(item=>(
+              <div key={item.title} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"16px"}}>
+                <div style={{fontSize:22,marginBottom:8}}>{item.icon}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#f9fafb",marginBottom:5}}>{item.title}</div>
+                <div style={{fontSize:12,color:"#6b7280",lineHeight:1.65}}>{item.desc}</div>
               </div>
-            </div>
-          ))}
-        </div>
-        <div style={{textAlign:"center",marginTop:14,fontSize:12,color:"#8892a4"}}>
-          * Testimonials from Beta access users. Names used with permission.
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── PRICING ── */}
-      <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
+{/* ── BETA FEEDBACK ── */}
+      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Pricing</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:4}}>Start free. Upgrade when ready.</h2>
-          <p style={{color:"#5a6272",fontSize:13,marginBottom:14}}>UPI · Cards · Cancel anytime</p>
-          <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#7c3aed,#4f46e5)",borderRadius:10,padding:"10px 18px"}}>
-            <span style={{fontSize:16}}>🎓</span>
-            <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>Students get 60% OFF on all paid plans</span>
-            <span style={{background:"#fff",color:"#7c3aed",fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:5}}>60% OFF</span>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(26,86,219,0.08)",border:"1px solid rgba(26,86,219,0.2)",borderRadius:100,padding:"5px 16px",marginBottom:12}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:"#1a56db"}}/>
+            <span style={{fontSize:10,fontWeight:700,color:"#1a56db",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase"}}>Open Beta</span>
           </div>
+          <h2 style={{fontSize:"clamp(18px,4vw,24px)",fontWeight:800,color:"#111318",marginBottom:8}}>Help Shape LearnThreatOps</h2>
+          <p style={{fontSize:14,color:"#5a6272",lineHeight:1.7,maxWidth:480,margin:"0 auto"}}>We are in open beta. Your feedback after each investigation directly shapes what gets built next.</p>
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:12,maxWidth:500,margin:"0 auto"}}>
-          <div style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#8892a4",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>FREE</div><div style={{fontSize:28,fontWeight:800,color:"#111318",fontFamily:"var(--mo)"}}>₹0</div></div>
-              <div style={{fontSize:12,color:"#5a6272",textAlign:"right"}}>Try it out<br/>No credit card</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10,maxWidth:720,margin:"0 auto 20px"}}>
+          {[
+            {icon:"🔍",title:"Complete an Investigation",desc:"Try any scenario and tell us how realistic it felt."},
+            {icon:"⭐",title:"Rate the Difficulty",desc:"Was it too easy, just right, or overwhelming?"},
+            {icon:"💬",title:"Share Feedback",desc:"Every response is read and acted on by the team."},
+          ].map(c=>(
+            <div key={c.title} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:12,padding:"18px"}}>
+              <div style={{fontSize:26,marginBottom:8}}>{c.icon}</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#111318",marginBottom:5}}>{c.title}</div>
+              <div style={{fontSize:12.5,color:"#5a6272",lineHeight:1.65}}>{c.desc}</div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
-              {["2 SOC investigations (preview)","Real SOC workstation","AI coaching + XP system"].map(f=>(
-                <div key={f} style={{display:"flex",gap:8}}><span style={{color:"#16a34a",fontWeight:700}}>✓</span><span style={{fontSize:13,color:"#2d3241"}}>{f}</span></div>
-              ))}
-              {["All 6 modules","50+ simulations","Certificates","Leaderboard"].map(f=>(
-                <div key={f} style={{display:"flex",gap:8}}><span style={{color:"#d1d5db",fontWeight:700}}>✕</span><span style={{fontSize:13,color:"#9ca3af"}}>{f}</span></div>
-              ))}
-            </div>
-            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#f0f2f6",color:"#2d3241",padding:"12px",borderRadius:9,fontSize:14,fontWeight:600,border:"1px solid #e1e4ed",cursor:"pointer"}}>Get Started Free</button>
-          </div>
-          <div style={{background:"#fff",border:"2px solid #1a56db",borderRadius:14,padding:"20px",position:"relative",boxShadow:"0 0 0 4px rgba(26,86,219,0.07)"}}>
-            <div style={{position:"absolute",top:-12,left:"50%",transform:"translateX(-50%)",background:"#1a56db",color:"#fff",padding:"2px 14px",borderRadius:100,fontSize:10,fontWeight:700,letterSpacing:"0.1em",whiteSpace:"nowrap",fontFamily:"var(--mo)"}}>MOST POPULAR</div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-              <div><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#1a56db",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>PRO</div><div style={{display:"flex",alignItems:"baseline",gap:5}}><span style={{fontSize:28,fontWeight:800,color:"#1a56db",fontFamily:"var(--mo)"}}>₹399</span><span style={{fontSize:13,color:"#8892a4"}}>/month</span></div><div style={{fontSize:11,color:"#7c3aed",fontWeight:600,marginTop:3}}>🎓 ₹160/mo for students</div></div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
-              {["All 6 modules","50+ simulations","Certificate of completion","National leaderboard","Badges + achievements","Priority support"].map(f=>(
-                <div key={f} style={{display:"flex",gap:8}}><span style={{color:"#16a34a",fontWeight:700}}>✓</span><span style={{fontSize:13,color:"#2d3241"}}>{f}</span></div>
-              ))}
-            </div>
-            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:9,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>Start Pro — ₹399/mo</button>
-          </div>
-          <div style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:14,padding:"20px",position:"relative"}}>
-            <div style={{position:"absolute",top:-10,right:16,background:"#16a34a",color:"#fff",padding:"2px 10px",borderRadius:100,fontSize:10,fontWeight:700,fontFamily:"var(--mo)"}}>SAVE 44%</div>
-            <div style={{marginBottom:4}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"#8892a4",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>ANNUAL</div><div style={{display:"flex",alignItems:"baseline",gap:5}}><span style={{fontSize:28,fontWeight:800,color:"#111318",fontFamily:"var(--mo)"}}>₹2,699</span><span style={{fontSize:13,color:"#8892a4"}}>/year</span></div></div>
-            <div style={{fontSize:11,color:"#16a34a",fontWeight:600,marginBottom:12}}>vs ₹4,788/yr monthly · Save ₹2,089</div>
-            <div style={{fontSize:13,color:"#2d3241",marginBottom:14}}>Everything in Pro + Certification exam + LinkedIn badge + Team access (3 seats)</div>
-            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#f0f2f6",color:"#2d3241",padding:"12px",borderRadius:9,fontSize:14,fontWeight:600,border:"1px solid #e1e4ed",cursor:"pointer"}}>Get Annual — ₹2,699/yr</button>
-            <div style={{textAlign:"center",marginTop:8,fontSize:11,color:"#8892a4"}}>🎓 Students: ₹1,079/yr</div>
-          </div>
+          ))}
         </div>
-        <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"12px 16px",marginTop:14,display:"flex",gap:10,alignItems:"center",maxWidth:500,margin:"14px auto 0"}}>
-          <span style={{fontSize:18,flexShrink:0}}>⏰</span>
-          <div><div style={{fontSize:12,fontWeight:700,color:"#92400e",marginBottom:1}}>Beta pricing ends soon</div><div style={{fontSize:11.5,color:"#b45309"}}>Lock in current rates before launch pricing.</div></div>
+        <div style={{textAlign:"center"}}>
+          <button onClick={()=>nav("signup")} style={{background:"#1a56db",color:"#fff",padding:"12px 28px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.25)"}}>Start Your First Investigation →</button>
+        </div>
+      </div>
+
+      {/* ── BETA PRICING ── */}
+      <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Access</div>
+          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Free During Beta</h2>
+          <p style={{fontSize:14,color:"#5a6272",maxWidth:400,margin:"0 auto"}}>Everything is free while we improve the platform based on your feedback.</p>
+        </div>
+        <div style={{maxWidth:400,margin:"0 auto"}}>
+          <div style={{background:"#fff",border:"2px solid #1a56db",borderRadius:16,padding:"24px",boxShadow:"0 0 0 4px rgba(26,86,219,0.07)",position:"relative"}}>
+            <div style={{position:"absolute",top:-13,left:"50%",transform:"translateX(-50%)",background:"#1a56db",color:"#fff",padding:"3px 16px",borderRadius:100,fontSize:11,fontWeight:700,fontFamily:"var(--mo)",whiteSpace:"nowrap"}}>BETA ACCESS</div>
+            <div style={{textAlign:"center",marginBottom:18}}>
+              <div style={{fontSize:44,fontWeight:800,color:"#111318",fontFamily:"var(--mo)",lineHeight:1}}>₹0</div>
+              <div style={{fontSize:13,color:"#6b7280",marginTop:3}}>No credit card · No commitment</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:18}}>
+              {["All 10 SOC Investigations","Investigation Zero","Beginner Mode + Analyst Mode","XP + Level progression","Future beta updates"].map(f=>(
+                <div key={f} style={{display:"flex",gap:9,alignItems:"center"}}>
+                  <span style={{color:"#1a56db",fontWeight:700,fontSize:15,flexShrink:0}}>✓</span>
+                  <span style={{fontSize:13,color:"#111318"}}>{f}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:9,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
+              Start Free →
+            </button>
+            <div style={{textAlign:"center",marginTop:8,fontSize:11.5,color:"#9ca3af"}}>Paid plans after beta. Early users get discounted rates.</div>
+          </div>
+          <div style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:10,padding:"16px",marginTop:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:10}}>Coming After Beta</div>
+            {[["🏆","SOC Analyst L1 Certificate","Complete all 10 investigations"],["💼","Pro Plan","Advanced scenarios + IR + Threat Hunting"],["🎯","Team Access","For bootcamps and training programs"]].map(([ic,t,d])=>(
+              <div key={t} style={{display:"flex",gap:9,alignItems:"flex-start",marginBottom:8}}>
+                <span style={{fontSize:16,flexShrink:0}}>{ic}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12.5,fontWeight:600,color:"#374151"}}>{t}</div>
+                  <div style={{fontSize:11,color:"#9ca3af"}}>{d}</div>
+                </div>
+                <span style={{fontSize:9,fontWeight:700,color:"#6b7280",background:"#f3f4f6",padding:"2px 6px",borderRadius:3,fontFamily:"var(--mo)",flexShrink:0}}>SOON</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -4301,84 +5125,153 @@ function Landing({nav,appUser}) {
       <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>FAQ</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318"}}>Frequently Asked Questions</h2>
+          <h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>Frequently Asked Questions</h2>
         </div>
-        <div style={{maxWidth:660,margin:"0 auto",display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{maxWidth:640,margin:"0 auto",display:"flex",flexDirection:"column",gap:0}}>
           {[
-            ["Do I need cybersecurity experience?","No. LearnBlueTeam is designed for complete beginners. Every scenario includes step-by-step coaching that explains what to do and why."],
-            ["Do I need a VM or special software?","No. Everything runs in your browser. No downloads, no VMs, no Kali Linux required. Works on any device."],
-            ["Can I use this on mobile?","Yes. The platform is mobile-optimised. You can investigate incidents on your phone or tablet."],
-            ["How is this different from TryHackMe?","TryHackMe focuses on offensive security (hacking). LearnBlueTeam is 100% defensive — SOC, DFIR, Threat Hunting, and Incident Response."],
-            ["How is this different from LetsDefend?","LetsDefend shows you alerts to classify. LearnBlueTeam simulates the full investigation workflow across multiple tools (SIEM, EDR, Threat Intel, Incident Desk)."],
-            ["Do I receive a certificate?","Yes. Pro and Annual plans include a LearnBlueTeam Certificate of Completion with a unique verifiable ID."],
-            ["What career path should I start with?","Start with SOC Analyst. It covers the foundational skills every defensive security professional needs regardless of their target role."],
-            ["Is LearnBlueTeam affiliated with any vendor?","No. LearnBlueTeam is an independent training platform. All tool names are fictional. We are not affiliated with any cybersecurity vendor or certification body."],
+            ["What is LearnThreatOps?","LearnThreatOps is a defensive security training platform. You investigate realistic security incidents using simulated SOC tools — SIEM, EDR, Threat Intelligence, and Incident Desk — and learn how real analysts think and work."],
+            ["Who is this for?","Anyone who wants to become a SOC analyst. Whether you are a complete beginner, an IT professional pivoting to security, or a student preparing for your first role — LBT is designed to get you there through practice, not just theory."],
+            ["Do I need prior experience?","No. Start with Investigation Zero — a 10-minute beginner course that explains what SIEM, EDR, and Threat Intelligence mean before your first investigation. Then work through the SOC Analyst path at your own pace."],
+            ["Are the investigations realistic?","Yes. Each investigation is based on real attack patterns — phishing to C2 beacons, MFA fatigue account takeovers, DNS beaconing, insider threats, cloud misconfigurations. The tool interfaces mimic real enterprise SOC platforms."],
+            ["What is the difference between Beginner Mode and Analyst Mode?","Beginner Mode gives you step-by-step coaching, tool explanations, and hints. Analyst Mode removes all guidance — you investigate under realistic pressure with no coaching. Switch between them at any time."],
+            ["Is it free?","Yes. All 10 investigations are completely free during beta. Paid plans will be introduced after the beta period. Early users will get discounted rates."],
+            ["Does my progress save?","Yes — if you create a free account. Your XP, level, and completed investigations are saved to your profile and sync across devices."],
+            ["What tools and platforms does it cover?","BlueTrace SIEM, SentinelEDR, ThreatLens (threat intelligence), and IncidentDesk — all simulated but based on real enterprise SOC platforms. Scenarios also cover Azure AD, AWS S3, and Active Directory."],
           ].map(([q,a],i)=>(
             <FAQItem key={i} q={q} a={a}/>
           ))}
         </div>
       </div>
 
-      {/* ── CTA ── */}
-      <div style={{background:"#1a56db",padding:"48px 20px",textAlign:"center"}}>
-        <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#fff",marginBottom:10,lineHeight:1.2}}>Start Your Investigation.<br/>No setup required.</h2>
-        <p style={{color:"rgba(255,255,255,0.75)",fontSize:14,marginBottom:22}}>Join analysts training for SOC, IR, and Threat Hunting roles.</p>
-        <button onClick={()=>nav("sim-phishing-c2")} style={{background:"#fff",color:"#1a56db",fontSize:15,fontWeight:700,padding:"14px 32px",borderRadius:12,border:"none",cursor:"pointer",boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
-          Open Live Investigation →
-        </button>
-      </div>
-
       {/* ── FOOTER ── */}
-      <div style={{background:"#fff",borderTop:"1px solid #e1e4ed",padding:"36px 20px 24px"}}>
+      <footer style={{background:"#111318",color:"#b8c0d4",padding:"40px 20px 28px"}}>
         <div style={{maxWidth:900,margin:"0 auto"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8,justifyContent:"center"}}>
-            <Logo size={36}/>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:28,marginBottom:32}}>
             <div>
-              <div style={{fontSize:16,fontWeight:800,color:"#111318",letterSpacing:"0.01em"}}>LEARN<span style={{color:"#1a56db"}}>BLUETEAM</span></div>
-              <div style={{fontSize:9,color:"#8892a4",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive · Security · Reimagined</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <Logo size={24}/>
+                <div><span style={{fontSize:12,fontWeight:800,color:"#fff"}}>LEARN</span><span style={{fontSize:12,fontWeight:800,color:"#3b82f6"}}>THREATOPS</span></div>
+              </div>
+              <div style={{fontSize:12,color:"#6b7280",lineHeight:1.7}}>Real SOC workflows. Real decisions. Real analyst skills.</div>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:"#fff",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10,fontFamily:"var(--mo)"}}>Platform</div>
+              {[["SOC Analyst Path","sim-phishing-c2"],["Investigation Zero","inv-zero"],["Dashboard","dash"],["Contact","contact"]].map(([l,p])=>(
+                <div key={l} onClick={()=>nav(p)} style={{fontSize:12.5,color:"#6b7280",marginBottom:6,cursor:"pointer"}}>{l}</div>
+              ))}
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:"#fff",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10,fontFamily:"var(--mo)"}}>Legal</div>
+              {[["Privacy Policy","privacy"],["Terms of Service","terms"],["Refund Policy","refund"],["AI Disclaimer","ai-disclaimer"]].map(([l,p])=>(
+                <div key={l} onClick={()=>nav(p)} style={{fontSize:12.5,color:"#6b7280",marginBottom:6,cursor:"pointer"}}>{l}</div>
+              ))}
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:"#fff",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10,fontFamily:"var(--mo)"}}>Contact</div>
+              <div style={{fontSize:12.5,color:"#6b7280",marginBottom:6}}>support.learnthreatops@gmail.com</div>
+              <div style={{fontSize:12.5,color:"#6b7280"}}>learnthreatops.cloud</div>
             </div>
           </div>
-          <div style={{textAlign:"center",marginBottom:16}}>
-            <a href="mailto:support.learnblueteam@gmail.com" style={{fontSize:13,color:"#1a56db",fontWeight:500}}>support.learnblueteam@gmail.com</a>
-            <span style={{color:"#8892a4",margin:"0 8px"}}>·</span>
-            <span style={{fontSize:13,color:"#8892a4"}}>www.learnblueteam.cloud</span>
-          </div>
-          <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:"4px 0",marginBottom:16}}>
-            {[["Privacy Policy","privacy"],["Terms of Service","terms"],["Refund Policy","refund"],["AI Disclaimer","ai-disclaimer"],["Data Policy","data-policy"],["Community Rules","rules"],["Contact Us","contact"]].map(([l,p],i,arr)=>(
-              <span key={p} style={{display:"flex",alignItems:"center"}}>
-                <button onClick={()=>nav(p)} style={{background:"none",border:"none",color:"#5a6272",fontSize:12,cursor:"pointer",padding:"4px 8px"}}>{l}</button>
-                {i<arr.length-1&&<span style={{color:"#dde0e9",fontSize:10}}>·</span>}
-              </span>
-            ))}
-          </div>
-          <div style={{textAlign:"center",fontSize:11,color:"#8892a4",lineHeight:1.7}}>
-            © 2026 LearnBlueTeam · All rights reserved · Mumbai, India<br/>
-            LearnBlueTeam is an independent cybersecurity training platform. All scenarios, users, domains, hostnames, alerts, and environments are fictional and created for educational purposes. Any resemblance to real organisations or incidents is coincidental.<br/>
-            LearnBlueTeam is not affiliated with, endorsed by, or associated with any cybersecurity vendor, certification body, or employer.
+          <div style={{borderTop:"1px solid #1f2937",paddingTop:20,fontSize:11,color:"#4a5568",lineHeight:1.7}}>
+            <div style={{marginBottom:6}}>© 2026 LearnThreatOps. All rights reserved.</div>
+            <div>LearnThreatOps is an independent educational platform. All product names, company names, and trademarks are property of their respective owners and are used for educational reference only. LearnThreatOps is not affiliated with, sponsored by, or endorsed by any cybersecurity vendor, employer, certification body, or government organisation.</div>
+            <div style={{marginTop:6}}>ATT&CK® is a registered trademark of The MITRE Corporation. Used for educational reference only.</div>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
 
 
+function FeedbackButton({submitFeedback}) {
+  const [open,setOpen] = useState(false);
+  const [rating,setRating] = useState(0);
+  const [comment,setComment] = useState("");
+  const [done,setDone] = useState(false);
+
+  const submit = async() => {
+    if(submitFeedback) await submitFeedback("general",rating,"","",comment);
+    setDone(true);
+    setTimeout(()=>{setOpen(false);setDone(false);setRating(0);setComment("");},2000);
+  };
+
+  return(
+    <>
+      <button onClick={()=>setOpen(o=>!o)} style={{position:"fixed",bottom:20,right:20,zIndex:300,background:"#1a56db",color:"#fff",border:"none",borderRadius:50,padding:"10px 16px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 16px rgba(26,86,219,0.4)",display:"flex",alignItems:"center",gap:6}}>
+        💬 Feedback
+      </button>
+      {open&&(
+        <div style={{position:"fixed",bottom:70,right:20,zIndex:300,background:"#fff",border:"1px solid #e1e4ed",borderRadius:14,padding:18,width:280,boxShadow:"0 8px 32px rgba(0,0,0,0.15)",animation:"fadeUp 0.2s ease"}}>
+          {done?(
+            <div style={{textAlign:"center",padding:"12px 0"}}>
+              <div style={{fontSize:28,marginBottom:6}}>🙏</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#111318"}}>Thank you!</div>
+            </div>
+          ):(
+            <>
+              <div style={{fontSize:13,fontWeight:700,color:"#111318",marginBottom:12}}>How is LearnThreatOps?</div>
+              <div style={{display:"flex",gap:4,marginBottom:12}}>
+                {[1,2,3,4,5].map(s=>(
+                  <button key={s} onClick={()=>setRating(s)} style={{fontSize:20,background:"none",border:"none",cursor:"pointer",opacity:s<=rating?1:0.3,transition:"opacity 0.1s"}}>⭐</button>
+                ))}
+              </div>
+              <textarea value={comment} onChange={e=>setComment(e.target.value)} placeholder="Any thoughts? We read everything." style={{width:"100%",height:64,padding:"8px",border:"1px solid #e1e4ed",borderRadius:7,fontSize:12,fontFamily:"inherit",resize:"none",outline:"none",marginBottom:10}}/>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>setOpen(false)} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid #e1e4ed",background:"#f7f8fa",color:"#6b7280",fontSize:12,cursor:"pointer"}}>Cancel</button>
+                <button onClick={submit} disabled={rating===0} style={{flex:2,padding:"8px",borderRadius:6,border:"none",background:rating>0?"#1a56db":"#e1e4ed",color:rating>0?"#fff":"#9ca3af",fontSize:12,fontWeight:600,cursor:rating>0?"pointer":"default"}}>Send</button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── dashboard ─────────────────────────────────────────────────────────────────
-function Dashboard({nav,appUser,prog,lvlPct,invZeroDone}) {
+function Dashboard({nav,appUser,prog,lvlPct,invZeroDone,logout}) {
   const allSims=Object.values(SCENARIOS);
   return (
     <div style={{padding:"20px"}}>
-      <div style={{marginBottom:24}}>
-        <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"var(--ac)",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:4}}>Welcome back</div>
-        <div style={{fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:2}}>{appUser?.name||"Analyst"}</div>
-        <div style={{fontSize:13,color:"var(--tx3)"}}>{lvlTitle(prog.level)} · Level {prog.level} · {prog.xp} XP</div>
+      {/* Enhanced Analyst Profile */}
+      <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:14,padding:"18px",marginBottom:16,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,var(--ac),#7c3aed)"}}/>
+        <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:14}}>
+          <div style={{width:52,height:52,borderRadius:14,background:"linear-gradient(135deg,var(--ac),#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:"#fff",fontFamily:"var(--mo)",flexShrink:0}}>
+            {(appUser?.name||"A").charAt(0).toUpperCase()}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:9,fontWeight:700,color:"var(--ac)",letterSpacing:"0.15em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:3}}>Analyst Profile</div>
+            <div style={{fontSize:20,fontWeight:700,color:"var(--tx)",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{appUser?.name||"Analyst"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{background:"rgba(26,86,219,0.12)",border:"1px solid rgba(26,86,219,0.25)",color:"var(--ac)",padding:"2px 8px",borderRadius:4,fontSize:10,fontWeight:700,fontFamily:"var(--mo)"}}>{lvlTitle(prog.level)}</span>
+              <span style={{fontSize:11,color:"var(--tx3)",fontFamily:"var(--mo)"}}>Level {prog.level} · {prog.xp.toLocaleString()} XP</span>
+            </div>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:2}}>Completion</div>
+            <div style={{fontSize:20,fontWeight:700,color:Object.keys(prog.done).length===Object.values(SCENARIOS).length?"var(--ok)":"var(--ac)",fontFamily:"var(--mo)"}}>{Math.round(Object.keys(prog.done).length/Object.values(SCENARIOS).length*100)}%</div>
+            <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{Object.keys(prog.done).length}/{Object.values(SCENARIOS).length} done</div>
+          </div>
+        </div>
+        {/* XP progress bar */}
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:5}}>
+            <span>Level {prog.level} → {prog.level+1}</span>
+            <span>{500-(prog.xp%500)} XP to next level</span>
+          </div>
+          <div style={{height:6,background:"var(--bg3)",borderRadius:3,overflow:"hidden"}}>
+            <div style={{height:"100%",width:lvlPct()+"%",background:"linear-gradient(90deg,var(--ac),#7c3aed)",transition:"width 0.5s ease",borderRadius:3}}/>
+          </div>
+        </div>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-        {[["XP",prog.xp.toLocaleString(),"var(--ac)"],["Level",prog.level,"var(--ok)"],["Done",Object.keys(prog.done).length+"/"+allSims.length,"#7c3aed"],["Streak",(prog.streak||0)+"d","var(--warn)"]].map(([l,v,c])=>(
-          <div key={l} style={{background:"var(--w)",border:"1px solid var(--bd)",borderRadius:12,padding:"16px",boxShadow:"var(--sh)"}}>
-            <div style={{fontSize:24,fontWeight:700,color:c,fontFamily:"var(--mo)",marginBottom:3}}>{v}</div>
-            <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase"}}>{l}</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+        {[["Investigations",Object.keys(prog.done).length+"/"+Object.values(SCENARIOS).length,"var(--ac)"],["XP Earned",prog.xp.toLocaleString(),"var(--ok)"],["Rank",lvlTitle(prog.level),"#7c3aed"]].map(([l,v,c])=>(
+          <div key={l} style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:9,padding:"12px 10px",textAlign:"center"}}>
+            <div style={{fontSize:16,fontWeight:700,color:c,fontFamily:"var(--mo)",marginBottom:2}}>{v}</div>
+            <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.08em",textTransform:"uppercase"}}>{l}</div>
           </div>
         ))}
       </div>
@@ -4393,25 +5286,6 @@ function Dashboard({nav,appUser,prog,lvlPct,invZeroDone}) {
         </div>
       </div>
 
-      {!invZeroDone&&(
-        <div style={{background:"linear-gradient(135deg,#eff6ff,#e0e7ff)",border:"2px solid #bfdbfe",borderRadius:14,padding:"18px",marginBottom:16,cursor:"pointer"}} onClick={()=>nav("inv-zero")}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:28}}>🎓</span>
-              <div>
-                <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",letterSpacing:"0.1em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>Start Here — Required</div>
-                <div style={{fontSize:15,fontWeight:700,color:"#111318"}}>Investigation Zero</div>
-              </div>
-            </div>
-            <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:100,background:"#1a56db",color:"#fff",fontFamily:"var(--mo)"}}>FREE</span>
-          </div>
-          <div style={{fontSize:13,color:"#1e3a5f",lineHeight:1.6,marginBottom:10}}>New to security operations? Start here. Learn what SIEM, EDR, and Threat Intelligence mean before your first real investigation.</div>
-          <div style={{display:"flex",gap:10,fontSize:11.5,color:"#1d4ed8",fontFamily:"var(--mo)",marginBottom:10}}>
-            <span>⏱ 10 min</span><span>⚡ 50 XP</span><span>5 lessons</span>
-          </div>
-          <button style={{width:"100%",background:"#1a56db",color:"#fff",padding:"11px",borderRadius:8,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>Start Investigation Zero →</button>
-        </div>
-      )}
       <div style={{fontSize:12,fontWeight:700,color:"var(--tx)",marginBottom:14,letterSpacing:"0.05em",textTransform:"uppercase"}}>Simulations</div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {allSims.map(s=>{
@@ -4421,13 +5295,7 @@ function Dashboard({nav,appUser,prog,lvlPct,invZeroDone}) {
               <div style={{position:"absolute",top:16,right:16}}>
                 {d?<Pill color="green" sm>Done · {d.grade}</Pill>:<Pill color="blue" sm>Play</Pill>}
               </div>
-              <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
-                <Pill color={s.difficulty==="Beginner"?"green":s.difficulty==="Intermediate"?"amber":"red"} sm>{s.difficulty}</Pill>
-                {s.type&&<span style={{fontSize:9.5,fontWeight:700,padding:"2px 7px",borderRadius:3,background:s.type==="FP"?"rgba(234,88,12,0.1)":"rgba(22,163,74,0.1)",color:s.type==="FP"?"#ea580c":"#16a34a",fontFamily:"var(--mo)",border:"1px solid "+(s.type==="FP"?"rgba(234,88,12,0.25)":"rgba(22,163,74,0.25)")}}>
-                  {s.type==="FP"?"⚠ False Positive?":"✓ True Positive"}
-                </span>}
-                {s.concept&&<span style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{s.concept}</span>}
-              </div>
+              <div style={{marginBottom:8}}><Pill color={s.difficulty==="Easy"?"green":"amber"} sm>{s.difficulty}</Pill></div>
               <div style={{fontSize:16,fontWeight:700,color:"var(--tx)",marginBottom:4,paddingRight:70,lineHeight:1.3}}>{s.title}</div>
               <div style={{fontSize:12.5,color:"var(--tx3)",lineHeight:1.6,marginBottom:12}}>{s.brief.slice(0,80)}...</div>
               <div style={{display:"flex",gap:14,fontSize:11.5,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:10}}>
@@ -4443,22 +5311,26 @@ function Dashboard({nav,appUser,prog,lvlPct,invZeroDone}) {
 }
 
 // ── auth ──────────────────────────────────────────────────────────────────────
-function AuthPage({nav,mode,saveUser}) {
+function AuthPage({nav,mode,login,signup,authError,loading:authLoading}) {
   const [form,setForm]=useState({name:"",email:"",password:""});
   const [err,setErr]=useState("");
-  const [loading,setLoading]=useState(false);
   const handle=async(e)=>{
     e.preventDefault();
     if(mode==="signup"&&!form.name.trim()){setErr("Name is required");return;}
     if(!form.email.includes("@")){setErr("Enter a valid email");return;}
-    if(form.password.length<6){setErr("Password must be at least 6 characters");return;}
-    setLoading(true);
-    await new Promise(r=>setTimeout(r,700));
-    setLoading(false);
-    saveUser({name:form.name||form.email.split("@")[0],email:form.email});
-    nav("dash");
+    if(form.password.length<6){setErr("Password must be 6+ characters");return;}
+    setErr(null);
+    if(mode==="signup"){
+      const res=await signup(form.name,form.email,form.password);
+      if(res?.success)nav("dash");
+      else setErr(res?.error||"Signup failed. Please try again.");
+    } else {
+      const res=await login(form.email,form.password);
+      if(res?.success)nav("dash");
+      else setErr(res?.error||"Invalid email or password.");
+    }
   };
-  const inp={width:"100%",padding:"12px 14px",border:"1px solid #d1d5db",borderRadius:8,fontSize:14,fontFamily:"var(--fn)",outline:"none",background:"#fff",color:"#111318"};
+  const inp={width:"100%",padding:"13px",border:"1px solid var(--bd)",borderRadius:10,fontSize:15,fontFamily:"var(--fn)",outline:"none",background:"var(--w)",color:"var(--tx)"};
   return (
     <div style={{minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20,background:"var(--bg)"}}>
       <div style={{width:"100%",maxWidth:400}}>
@@ -4484,7 +5356,7 @@ function AuthPage({nav,mode,saveUser}) {
               <input style={inp} type="password" placeholder="Min 6 characters" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}/>
             </div>
             {err&&<div style={{background:"var(--errl)",border:"1px solid var(--errb)",color:"var(--err)",padding:"10px 13px",borderRadius:8,fontSize:13,marginBottom:14}}>{err}</div>}
-            <button type="submit" disabled={loading} style={{width:"100%",background:"var(--ac)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:600,border:"none",cursor:"pointer",opacity:loading?0.7:1,boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
+            <button type="submit" disabled={authLoading} style={{width:"100%",background:"var(--ac)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:600,border:"none",cursor:"pointer",opacity:loading?0.7:1,boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
               {loading?"Loading...":mode==="login"?"Login →":"Create Account — Free →"}
             </button>
           </form>
@@ -4504,19 +5376,15 @@ function AuthPage({nav,mode,saveUser}) {
 export default function App() {
   const [page,setPage]=useState("landing");
   const [simId,setSimId]=useState("phishing-c2");
-  const {user,saveUser,prog,addXP,finishSim,lvlPct}=useApp();
-  const SCENARIO_TO_INC={"phishing-c2":"INC-2026-0441","fp-powershell":"INC-2026-0502","impossible-travel":"INC-2026-0521","fp-vuln-scan":"INC-2026-0544","usb-insider":"INC-2026-0561","dns-beacon":"INC-2026-0578","fp-pentest":"INC-2026-0591","bec-fraud":"INC-2026-0612","s3-exposure":"INC-2026-0634","fp-auth-storm":"INC-2026-0651"};
+  const {user,prog,loading,authError,signup,login,logout,addXP,finishSim,submitFeedback,lvlPct}=useSupabase();
   const [invZeroDone,setInvZeroDone]=useState(()=>{try{return!!localStorage.getItem("lbt_iz_done");}catch{return false;}});
-  const [assigned,setAssigned]=useState([]);
+  const SCENARIO_TO_INC={"phishing-c2":"INC-2026-0441","fp-powershell":"INC-2026-0502","impossible-travel":"INC-2026-0521","fp-vuln-scan":"INC-2026-0544","usb-insider":"INC-2026-0561","dns-beacon":"INC-2026-0578","fp-pentest":"INC-2026-0591","bec-fraud":"INC-2026-0612","s3-exposure":"INC-2026-0634","fp-auth-storm":"INC-2026-0651"};
   const nav=p=>{
     if(p.startsWith("sim-")){
       const key=p.replace("sim-","");
-      const incMap={"phishing-c2":"INC-2026-0441","fp-powershell":"INC-2026-0502","impossible-travel":"INC-2026-0521","fp-vuln-scan":"INC-2026-0544","usb-insider":"INC-2026-0561","dns-beacon":"INC-2026-0578","fp-pentest":"INC-2026-0591","bec-fraud":"INC-2026-0612","s3-exposure":"INC-2026-0634","fp-auth-storm":"INC-2026-0651"};
-      setSimId(incMap[key]||key);
+      setSimId(SCENARIO_TO_INC[key]||key);
       setPage("sim");
-    } else {
-      setPage(p);
-    }
+    } else setPage(p);
     window.scrollTo(0,0);
   };
   const completeInvZero=()=>{try{localStorage.setItem("lbt_iz_done","1");}catch{} setInvZeroDone(true); nav("dash");};
@@ -4528,14 +5396,15 @@ export default function App() {
         <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:54,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"var(--sh)"}}>
           <div onClick={()=>nav("landing")} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
             <Logo size={28}/>
-            <div><span style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,color:"var(--ac)"}}>BLUETEAM</span></div>
+            <div><span style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,color:"var(--ac)"}}>THREATOPS</span></div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             {user?(
+              <><button onClick={()=>{logout&&logout();nav("landing");}} style={{background:"none",border:"1px solid var(--bd)",color:"var(--tx3)",fontSize:12,padding:"6px 10px",borderRadius:7,cursor:"pointer"}}>Logout</button>
               <button onClick={()=>nav("dash")} style={{display:"flex",alignItems:"center",gap:6,background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"7px 12px",cursor:"pointer"}}>
                 <div style={{width:22,height:22,borderRadius:"50%",background:"var(--acl)",border:"1.5px solid var(--ac)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"var(--ac)",fontFamily:"var(--mo)"}}>{prog.level}</div>
                 <span style={{fontSize:13,color:"var(--tx2)",fontWeight:500}}>{user.name.split(" ")[0]}</span>
-              </button>
+              </button></>
             ):(
               <button onClick={()=>nav("login")} style={{background:"none",border:"1px solid var(--bd)",color:"var(--tx2)",fontSize:13,fontWeight:500,padding:"7px 12px",borderRadius:8,cursor:"pointer"}}>Login</button>
             )}
@@ -4543,14 +5412,15 @@ export default function App() {
           </div>
         </nav>
       )}
-      {page==="inv-zero"     && <InvestigationZero onComplete={completeInvZero} addXP={addXP}/>}
+      {page==="inv-zero"     && <InvestigationZero onComplete={completeInvZero} addXP={addXP}/> }
       {page==="landing"      && <Landing nav={nav} appUser={user}/>}
-      {page==="sim"          && <SOCConsole incId={simId} prog={prog} addXP={addXP} finishSim={finishSim} onBack={()=>nav("dash")} analyst={{name:user?.name||"Analyst",tier:"SOC Analyst I",id:"ANLST-"+(user?.email?.slice(0,3).toUpperCase()||"047"),team:"Blue Team Alpha"}}/>}
-      {page==="dash"         && (user?<Dashboard nav={nav} appUser={user} prog={prog} lvlPct={lvlPct} invZeroDone={invZeroDone}/>:<AuthPage nav={nav} mode="signup" saveUser={saveUser}/>)}
-      {page==="login"        && <AuthPage nav={nav} mode="login"  saveUser={saveUser}/>}
-      {page==="signup"       && <AuthPage nav={nav} mode="signup" saveUser={saveUser}/>}
+      {page==="sim"          && <SOCConsole incId={simId} prog={prog} addXP={addXP} finishSim={finishSim} onBack={()=>nav("dash")} submitFeedback={submitFeedback} analyst={{name:user?.name||"Analyst",tier:"SOC Analyst I",id:"ANLST-"+(user?.email?.slice(0,3).toUpperCase()||"047"),team:"Threat Ops Alpha"}}/>}
+      {page==="dash"         && (user?<Dashboard nav={nav} appUser={user} prog={prog} lvlPct={lvlPct} invZeroDone={invZeroDone} logout={logout}/>:<AuthPage nav={nav} mode="signup" login={login} signup={signup} authError={authError} loading={loading}/>)}
+      {page==="login"        && <AuthPage nav={nav} mode="login" login={login} signup={signup} authError={authError} loading={loading}/>}
+      {page==="signup"       && <AuthPage nav={nav} mode="signup" login={login} signup={signup} authError={authError} loading={loading}/>}
       {["privacy","terms","refund","ai-disclaimer","data-policy","rules"].includes(page) && <PolicyPage policyKey={page} nav={nav}/>}
       {page==="contact" && <ContactPage nav={nav}/>}
+      <FeedbackButton submitFeedback={submitFeedback}/>
     </div>
   );
 }
