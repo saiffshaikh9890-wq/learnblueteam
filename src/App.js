@@ -4126,12 +4126,19 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
 
 function SOCConsole({incId,prog,addXP,finishSim,onBack,submitFeedback,analyst:analystProp}){
   const inc=INCIDENTS[incId];
+  if(!inc) return (
+    <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,background:"#0f1117",color:"#e8ecf4"}}>
+      <div style={{fontSize:32}}>⚠</div>
+      <div style={{fontSize:16,fontWeight:600}}>Investigation not found</div>
+      <button onClick={onBack} style={{background:"#1a56db",color:"#fff",padding:"10px 20px",borderRadius:8,border:"none",cursor:"pointer",fontSize:14}}>← Back to Dashboard</button>
+    </div>
+  );
   const scoreGrade=(xp,hints,sec)=>{
     const pen=hints*15,bon=Math.max(0,300-sec),fin=Math.max(0,xp-pen+bon);
     const pct=Math.round(fin/425*100);
     return pct>=90?"S":pct>=75?"A":pct>=60?"B":"C";
   };
-    const [activeTool,setActiveTool]=useState("desk"); // Start on ticket
+    const [activeTool,setActiveTool]=useState("siem");cket
   const [si,setSi]=useState(0);
   const [status,setStatus]=useState("ticket_review"); // ticket_review | mode_select | coach | decision | action_idle | action_running | action_done
   const [mode,setMode]=useState(null); // "beginner" | "analyst"
@@ -4977,14 +4984,12 @@ function Landing({nav,appUser}) {
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,maxWidth:860,margin:"0 auto"}}>
           {[
-            {icon:"🎣",skill:"Investigate Phishing",desc:"Trace macro docs to C2 beacons",level:"Beginner"},
-            {icon:"🔍",skill:"Identify False Positives",desc:"Context over pattern — not every alert is an attack",level:"Beginner"},
-            {icon:"🌍",skill:"Identity Attacks",desc:"MFA fatigue, impossible travel, ATO",level:"Beginner"},
-            {icon:"📊",skill:"Use SIEM Effectively",desc:"Correlated alerts, searches, timelines",level:"Beginner"},
-            {icon:"🔬",skill:"Validate Threat Intel",desc:"IPs, hashes, domains — evidence before verdict",level:"Intermediate"},
-            {icon:"☁️",skill:"Cloud Incident Response",desc:"S3 exposure, IAM abuse, key exposure",level:"Intermediate"},
-            {icon:"📋",skill:"Write IR Reports",desc:"Root cause, blast radius, recommendations",level:"All levels"},
-            {icon:"⚡",skill:"Work Under SLA Pressure",desc:"Triage P1 incidents within 60 minutes",level:"All levels"},
+            {icon:"🎣",skill:"Investigate Real Attacks",desc:"Trace phishing emails to C2 beacons using SIEM and EDR",level:"Beginner"},
+            {icon:"🔍",skill:"Spot False Positives",desc:"Tell IT maintenance from real attacks — context over pattern",level:"Beginner"},
+            {icon:"🌍",skill:"Handle Identity Attacks",desc:"MFA fatigue, impossible travel, account takeovers",level:"Beginner"},
+            {icon:"🔬",skill:"Validate Threat Intelligence",desc:"Look up IPs, hashes, domains — evidence before verdict",level:"Intermediate"},
+            {icon:"🔒",skill:"Contain Active Threats",desc:"Isolate endpoints, block IOCs, preserve forensics",level:"Intermediate"},
+            {icon:"📋",skill:"Write Analyst Reports",desc:"Document root cause, blast radius, recommendations",level:"All levels"},
           ].map(item=>(
             <div key={item.skill} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:12,padding:"16px",display:"flex",flexDirection:"column",gap:6}}>
               <div style={{fontSize:22}}>{item.icon}</div>
@@ -4997,33 +5002,7 @@ function Landing({nav,appUser}) {
       </div>
 
 
-      {/* ── WHY LEARNTHREATOPS ── */}
-      <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",padding:"48px 20px"}}>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnThreatOps</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Different from everything else</h2>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,maxWidth:860,margin:"0 auto"}}>
-          {[
-            ["🖥","Real SOC Workstation","Full SIEM, EDR, and Threat Intel tools on every investigation. Not a quiz. Not a video."],
-            ["🎯","Step-by-Step Coaching","Your analyst coach guides every decision — what to look for, why it matters."],
-            ["📱","Zero Setup","Runs in your browser in seconds. Mobile-friendly. No VMs, no downloads."],
-            ["🏆","Blue Team Focused","100% defensive security. SOC, DFIR, Threat Hunting, Cloud Security."],
-            ["📊","Career Progression","XP, levels, badges. A clear path from beginner to senior analyst."],
-            ["📜","Verified Certificates","LearnThreatOps Certificate of Completion. Unique verifiable ID."],
-          ].map(([ic,tl,ds])=>(
-            <div key={tl} style={{display:"flex",gap:13,alignItems:"flex-start",padding:"16px",background:"#fff",borderRadius:12,border:"1px solid #e1e4ed",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
-              <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{ic}</span>
-              <div>
-                <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:3}}>{tl}</div>
-                <div style={{fontSize:12.5,color:"#5a6272",lineHeight:1.6}}>{ds}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-                  {/* ── WHY LEARNTHREATOPS — TRUST ── */}
+      {/* ── WHY LEARNTHREATOPS — TRUST ── */}
       <div style={{padding:"40px 20px",background:"#111318",borderBottom:"1px solid #1f2937"}}>
         <div style={{maxWidth:860,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:24}}>
