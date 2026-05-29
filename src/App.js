@@ -4507,6 +4507,18 @@ export default function App() {
   const {user,saveUser,prog,addXP,finishSim,lvlPct}=useApp();
   const SCENARIO_TO_INC={"phishing-c2":"INC-2026-0441","fp-powershell":"INC-2026-0502","impossible-travel":"INC-2026-0521","fp-vuln-scan":"INC-2026-0544","usb-insider":"INC-2026-0561","dns-beacon":"INC-2026-0578","fp-pentest":"INC-2026-0591","bec-fraud":"INC-2026-0612","s3-exposure":"INC-2026-0634","fp-auth-storm":"INC-2026-0651"};
   const [invZeroDone,setInvZeroDone]=useState(()=>{try{return!!localStorage.getItem("lbt_iz_done");}catch{return false;}});
+  const [assigned,setAssigned]=useState([]);
+  const nav=p=>{
+    if(p.startsWith("sim-")){
+      const key=p.replace("sim-","");
+      const incMap={"phishing-c2":"INC-2026-0441","fp-powershell":"INC-2026-0502","impossible-travel":"INC-2026-0521","fp-vuln-scan":"INC-2026-0544","usb-insider":"INC-2026-0561","dns-beacon":"INC-2026-0578","fp-pentest":"INC-2026-0591","bec-fraud":"INC-2026-0612","s3-exposure":"INC-2026-0634","fp-auth-storm":"INC-2026-0651"};
+      setSimId(incMap[key]||key);
+      setPage("sim");
+    } else {
+      setPage(p);
+    }
+    window.scrollTo(0,0);
+  };
   const completeInvZero=()=>{try{localStorage.setItem("lbt_iz_done","1");}catch{} setInvZeroDone(true); nav("dash");};
   const isSim=page==="sim";
   return (
