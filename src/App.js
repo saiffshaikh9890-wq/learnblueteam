@@ -252,11 +252,19 @@ function useSupabase() {
       const data = await res.json();
       if (data?.user) {
         const token = data.access_token;
+        // If no token = email confirmation required
+        if (!token) {
+          setLoading(false);
+          // Save locally so they can still use the app
+          const u = {id:data.user.id, name, email, pendingConfirm:true};
+          localStorage.setItem("lbt_user", JSON.stringify(u));
+          setUser(u);
+          return {success:true, needsConfirm:true};
+        }
         const u = {id:data.user.id, name, email};
         localStorage.setItem("lbt_user", JSON.stringify(u));
         localStorage.setItem("lbt_token", token);
         setUser(u);
-        // Create profile in DB
         fetch(`${SUPABASE_URL}/rest/v1/analyst_profiles`, {
           method:"POST",
           headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":`Bearer ${token}`,
@@ -4800,8 +4808,13 @@ function AuthPage({nav,mode,login=()=>({}),signup=()=>({}),authError=null,loadin
     setErr(null);
     if(mode==="signup"){
       const res=await signup(form.name,form.email,form.password);
-      if(res?.success)nav("dash");
-      else setErr(res?.error||"Signup failed. Please try again.");
+      if(res?.success){
+        if(res?.needsConfirm){
+          setErr("✅ Account created! Check your email to confirm, then come back and log in.");
+        } else {
+          nav("dash");
+        }
+      } else setErr(res?.error||"Signup failed. Please try again.");
     } else {
       const res=await login(form.email,form.password);
       if(res?.success)nav("dash");
