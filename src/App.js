@@ -3605,7 +3605,7 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
           <div style={{width:28,height:28,borderRadius:6,background:"linear-gradient(135deg,#3b82f6,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>LearnThreatOps</div>
           <div>
             <span style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>LEARN</span>
-            <span style={{fontSize:14,fontWeight:700,color:"#60a5fa"}}>BLUETEAM</span>
+            <span style={{fontSize:14,fontWeight:700,color:"#60a5fa"}}>LEARNTHREATOPS</span>
             <span style={{fontSize:9,color:"var(--tx4)",marginLeft:8,fontFamily:"var(--mo)"}}>SOC Operations Center</span>
           </div>
         </div>
@@ -4759,7 +4759,7 @@ function Landing({nav=()=>{},appUser=null}) {
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:20,position:"relative",zIndex:1}}>
           <Logo size={44}/>
           <div style={{textAlign:"left"}}>
-            <div style={{fontSize:20,fontWeight:800,color:"#111318",letterSpacing:"0.01em",lineHeight:1}}>LEARN<span style={{color:"#1a56db"}}>BLUETEAM</span></div>
+            <div style={{fontSize:20,fontWeight:800,color:"#111318",letterSpacing:"0.01em",lineHeight:1}}>LEARN<span style={{color:"#1a56db"}}>THREATOPS</span></div>
             <div style={{fontSize:9,color:"#8892a4",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive · Security · Reimagined</div>
           </div>
         </div>
@@ -4982,156 +4982,44 @@ function Landing({nav=()=>{},appUser=null}) {
       </div>
 
       {/* ── FEATURED SCENARIOS ── */}
-      <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Live Simulations</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:6}}>Real Incidents. Real Investigations.</h2>
-          <p style={{fontSize:14,color:"#5a6272"}}>Free during Beta. No signup required to try.</p>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:12,maxWidth:760,margin:"0 auto"}}>
-          {[
-            {id:"phishing-c2",icon:"🎣",title:"Spear-Phishing to C2 Beacon",diff:"Beginner",time:"25 min",xp:120,tags:["Phishing","C2","EDR"],desc:"Finance analyst opened a macro-enabled document. EDR detected C2 beacon. LSASS dump in progress. Investigate and contain.",free:true,type:"TP"},
-            {id:"fp-powershell",icon:"🔍",title:"IT Admin PowerShell — False Positive?",diff:"Beginner",time:"20 min",xp:80,tags:["PowerShell","False Positive","Triage"],desc:"Encoded PowerShell at 02:30. Service account. Overnight timing. Real threat or authorized maintenance? You decide.",free:true,type:"FP"},
-            {id:"impossible-travel",icon:"🌍",title:"Impossible Travel — Account Takeover",diff:"Beginner",time:"30 min",xp:150,tags:["Identity","MFA Fatigue","Azure AD"],desc:"Login from Mumbai and Amsterdam 4 minutes apart. 47 MFA pushes. One approved. Attacker live in the account right now.",free:true,type:"TP"},
-          ].map(s=>(
-            <div key={s.id} style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:14,padding:"18px",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",cursor:s.soon?undefined:"pointer",opacity:s.soon?0.6:1}} onClick={()=>!s.soon&&nav("sim-"+s.id)}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{fontSize:24}}>{s.icon}</span>
-                  <div>
-                    <div style={{fontSize:15,fontWeight:700,color:"#111318",lineHeight:1.3}}>{s.title}</div>
-                    <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap"}}>
-                      <span style={{fontSize:11,color:s.diff==="Beginner"?"#16a34a":"#b45309",fontWeight:600,fontFamily:"var(--mo)"}}>{s.diff}</span>
-                      <span style={{fontSize:11,color:"#8892a4",fontFamily:"var(--mo)"}}>⏱ {s.time}</span>
-                      <span style={{fontSize:11,color:"#1a56db",fontWeight:600,fontFamily:"var(--mo)"}}>⚡ {s.xp} XP</span>
-                    </div>
-                  </div>
-                </div>
-                <div>{s.soon?<Pill color="gray" sm>SOON</Pill>:<Pill color="green" sm>FREE</Pill>}</div>
-              </div>
-              <div style={{fontSize:13,color:"#5a6272",lineHeight:1.65,marginBottom:10}}>{s.desc}</div>
-              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{s.tags.map(t=><Tag key={t} c={t}/>)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── WHAT YOU'LL LEARN ── */}
-      {/* ── WHAT YOU'LL BE ABLE TO DO ── */}
-      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Learning Outcomes</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:6}}>What You'll Be Able To Do</h2>
-          <p style={{fontSize:14,color:"#5a6272",maxWidth:440,margin:"0 auto"}}>Skills you develop through real investigations — not theory.</p>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10,maxWidth:900,margin:"0 auto"}}>
-          {[
-            {icon:"🎣",skill:"Investigate Phishing",desc:"Trace macro docs through process trees to C2 beacons",level:"Beginner"},
-            {icon:"🔍",skill:"Identify False Positives",desc:"Tell IT maintenance from real attacks — context matters",level:"Beginner"},
-            {icon:"🌍",skill:"Investigate Identity Attacks",desc:"Detect MFA fatigue, impossible travel, account takeovers",level:"Beginner"},
-            {icon:"🧠",skill:"Think Like an Analyst",desc:"Form hypotheses from evidence before jumping to conclusions",level:"Beginner"},
-            {icon:"📊",skill:"Use SIEM Effectively",desc:"Read correlated alerts, run searches, build timelines",level:"Beginner"},
-            {icon:"🖥","skill":"Investigate Endpoints",desc:"Read EDR process trees, network logs, and file events",level:"Beginner"},
-            {icon:"🔬",skill:"Validate Threat Intelligence",desc:"Look up IPs, hashes, domains — evidence before verdict",level:"Intermediate"},
-            {icon:"📧",skill:"Analyse Email Threats",desc:"Detect BEC, lookalike domains, header manipulation",level:"Intermediate"},
-            {icon:"☁️",skill:"Respond to Cloud Incidents",desc:"Investigate exposed S3 buckets, IAM abuse, key exposure",level:"Intermediate"},
-            {icon:"🔒",skill:"Contain Active Threats",desc:"Isolate endpoints, block IOCs, revoke sessions",level:"Intermediate"},
-            {icon:"📋",skill:"Write IR Reports",desc:"Document root cause, blast radius, and recommendations",level:"All levels"},
-            {icon:"⚡",skill:"Work Under SLA Pressure",desc:"Triage P1 incidents, document findings, close within SLA",level:"All levels"},
-          ].map(item=>(
-            <div key={item.skill} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:12,padding:"16px",display:"flex",flexDirection:"column",gap:6}}>
-              <div style={{fontSize:24}}>{item.icon}</div>
-              <div style={{fontSize:14,fontWeight:700,color:"#111318",lineHeight:1.3}}>{item.skill}</div>
-              <div style={{fontSize:12.5,color:"#5a6272",lineHeight:1.6,flex:1}}>{item.desc}</div>
-              <div style={{fontSize:10,fontWeight:600,color:item.level==="Beginner"?"#16a34a":item.level==="Intermediate"?"#d97706":"#6b7280",background:item.level==="Beginner"?"rgba(22,163,74,0.08)":item.level==="Intermediate"?"rgba(217,119,6,0.08)":"rgba(107,114,128,0.08)",padding:"2px 8px",borderRadius:4,alignSelf:"flex-start",fontFamily:"var(--mo)"}}>{item.level}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── WHY LEARNBLUETEAM ── */}
-      <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",padding:"48px 20px"}}>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnThreatOps</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Built for the analyst who defends, not attacks</h2>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,maxWidth:860,margin:"0 auto"}}>
-          {[
-            ["🖥","Real SOC Workstation","Full SIEM, EDR, and Threat Intel tools on every investigation. Not a quiz. Not a video."],
-            ["🎯","Step-by-Step Coaching","Your analyst coach guides every decision — what to look for, why it matters."],
-            ["📱","Zero Setup","Runs in your browser in seconds. Mobile-friendly. No VMs, no downloads."],
-            ["🏆","Blue Team Focused","100% defensive security. SOC, DFIR, Threat Hunting, Cloud Security."],
-            ["📊","Career Progression","XP, levels, badges. A clear path from beginner to senior analyst."],
-            ["📜","Verified Certificates","LearnThreatOps Certificate of Completion. Certificate feature coming soon — all completions are recorded."],
-          ].map(([ic,tl,ds])=>(
-            <div key={tl} style={{display:"flex",gap:13,alignItems:"flex-start",padding:"16px",background:"#fff",borderRadius:12,border:"1px solid #e1e4ed",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
-              <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{ic}</span>
-              <div>
-                <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:3}}>{tl}</div>
-                <div style={{fontSize:12.5,color:"#5a6272",lineHeight:1.6}}>{ds}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── TESTIMONIALS ── */}
-      {/* PRICING — BETA */}
-      <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Access</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>Free During Beta</h2>
-          <p style={{fontSize:14,color:"#5a6272",maxWidth:440,margin:"0 auto"}}>We are in open beta. Everything is free while we improve the platform based on your feedback.</p>
-        </div>
-        <div style={{maxWidth:420,margin:"0 auto"}}>
-          <div style={{background:"#fff",border:"2px solid #1a56db",borderRadius:16,padding:"28px",boxShadow:"0 0 0 4px rgba(26,86,219,0.07)",position:"relative"}}>
-            <div style={{position:"absolute",top:-14,left:"50%",transform:"translateX(-50%)",background:"#1a56db",color:"#fff",padding:"3px 18px",borderRadius:100,fontSize:11,fontWeight:700,letterSpacing:"0.1em",fontFamily:"var(--mo)",whiteSpace:"nowrap"}}>BETA ACCESS</div>
-            <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:48,fontWeight:800,color:"#111318",fontFamily:"var(--mo)",lineHeight:1}}>₹0</div>
-              <div style={{fontSize:13,color:"#6b7280",marginTop:4}}>No credit card · No commitment</div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:22}}>
-              {["All 10 SOC Investigations","Investigation Zero (Beginner intro)","Beginner Mode + Analyst Mode","Socratic Coach + Decision Engine","XP + Level progression","Future beta updates included"].map(f=>(
-                <div key={f} style={{display:"flex",gap:10,alignItems:"center"}}>
-                  <span style={{color:"#1a56db",fontWeight:700,fontSize:16,flexShrink:0}}>✓</span>
-                  <span style={{fontSize:13.5,color:"#111318",fontWeight:500}}>{f}</span>
-                </div>
-              ))}
-            </div>
-            <button onClick={()=>nav("signup")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
-              Start Free — No Signup Required
-            </button>
-            <div style={{textAlign:"center",marginTop:10,fontSize:12,color:"#9ca3af"}}>
-              Paid plans will be introduced after beta. Early users get discounted rates.
-            </div>
+      {/* ── SKILLS ── */}
+      <div style={{padding:"28px 20px",background:"var(--w)",borderBottom:"1px solid var(--bd)"}}>
+        <div style={{maxWidth:600,margin:"0 auto",textAlign:"center"}}>
+          <h2 style={{fontSize:"clamp(15px,3.5vw,21px)",fontWeight:800,color:"var(--tx)",marginBottom:8,lineHeight:1.4}}>
+            After completing the investigations you will be able to triage, investigate, and close real SOC incidents independently
+          </h2>
+          <div style={{fontSize:12.5,color:"var(--tx4)",lineHeight:1.9}}>
+            Phishing &nbsp;·&nbsp; False Positives &nbsp;·&nbsp; Account Takeover &nbsp;·&nbsp; Insider Threat &nbsp;·&nbsp; DNS Beaconing &nbsp;·&nbsp; BEC Fraud &nbsp;·&nbsp; Cloud Exposure
           </div>
-          <div style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:12,padding:"20px",marginTop:14}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:12}}>Coming After Beta:</div>
-            {[["🏆","SOC Analyst L1 Certificate","After completing all 10 investigations"],["💼","Pro Plan","Advanced scenarios + IR + Threat Hunting"],["🎯","Team Access","For bootcamps and training programs"]].map(([ic,t,d])=>(
-              <div key={t} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:10}}>
-                <span style={{fontSize:18,flexShrink:0}}>{ic}</span>
+        </div>
+      </div>
+      {/* ── WHY LEARNTHREATOPS ── */}
+      {/* ── DIFFERENTIATORS ── */}
+      <div style={{padding:"32px 20px",background:"#f7f8fa",borderBottom:"1px solid var(--bd)"}}>
+        <div style={{maxWidth:700,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"var(--ac)",
+              fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why LearnThreatOps</div>
+            <h2 style={{fontSize:"clamp(16px,3.5vw,22px)",fontWeight:800,color:"var(--tx)"}}>
+              Built specifically for blue team analysts
+            </h2>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {[
+              ["🛡️","100% Defensive Security","Every investigation is about detecting and stopping attacks — never launching them."],
+              ["⚠️","False Positive Training","40% of our scenarios are false alarms — because that is what real SOC work looks like."],
+              ["🧰","Four Real Tools Per Case","SIEM, EDR, Threat Intelligence, and Incident Desk — the same workflow professionals use daily."],
+              ["🆓","Completely Free in Beta","No credit card. No paywall. All 10 investigations, full access, free."],
+            ].map(([icon,title,desc])=>(
+              <div key={title} style={{display:"flex",gap:12,alignItems:"flex-start",
+                background:"var(--w)",borderRadius:10,padding:"13px 15px",border:"1px solid var(--bd)"}}>
+                <span style={{fontSize:22,flexShrink:0,marginTop:2}}>{icon}</span>
                 <div>
-                  <div style={{fontSize:13,fontWeight:600,color:"#374151"}}>{t}</div>
-                  <div style={{fontSize:11.5,color:"#9ca3af"}}>{d}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",marginBottom:3}}>{title}</div>
+                  <div style={{fontSize:12.5,color:"var(--tx3)",lineHeight:1.65}}>{desc}</div>
                 </div>
-                <span style={{marginLeft:"auto",fontSize:9,fontWeight:700,color:"#6b7280",background:"#f3f4f6",padding:"2px 7px",borderRadius:4,fontFamily:"var(--mo)",flexShrink:0}}>SOON</span>
               </div>
             ))}
-          </div>
-        </div>
-      </div>
-      {/* ── VS COMPETITION ── */}
-      <div style={{padding:"40px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
-        <div style={{maxWidth:860,margin:"0 auto"}}>
-          <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why Us</div>
-            <h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>What Makes Us Different</h2>
-          </div>
-          <div style={{overflowX:"auto"}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:500}}>
-              <thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["Platform A","#374151"],["Platform B","#374151"],["Platform C","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead>
-              <tbody>{[["100% Blue Team","YES","Red team","Partial","No"],["Real SIEM+EDR","YES","No","Basic","Video only"],["False Positive 40%","YES","No","No","No"],["Free no card","YES","Yes","Yes","No"],["India context","YES","No","No","No"]].map((row,i)=>(<tr key={i} style={{borderBottom:"1px solid #e1e4ed",background:i%2===0?"#fff":"#fafafa"}}>{row.map((cell,j)=>(<td key={j} style={{padding:"10px 14px",color:j===0?"#374151":j===1?"#16a34a":"#6b7280",fontWeight:j===1?700:400,background:j===1?"rgba(26,86,219,0.03)":"transparent"}}>{cell}</td>))}</tr>))}</tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -5146,18 +5034,13 @@ function Landing({nav=()=>{},appUser=null}) {
         </div>
       </div>
 
-      {/* Grievance Officer + Copyright Footer */}
-      <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",padding:"14px 20px",textAlign:"center"}}>
-        <div style={{fontSize:11,color:"#9ca3af",lineHeight:2,flexWrap:"wrap"}}>
-          <strong style={{color:"#6b7280"}}>Grievance Officer:</strong> Saif Shaikh &nbsp;·&nbsp;
-          <a href="mailto:support.learnthreatops@gmail.com" style={{color:"#1a56db",textDecoration:"none",fontSize:11}}>support.learnthreatops@gmail.com</a> &nbsp;·&nbsp;
-          +91 9284837848 &nbsp;·&nbsp; Shivajinagar, Pune, Maharashtra
-        </div>
-        <div style={{fontSize:10,color:"#c0c7d0",marginTop:4}}>
-          © 2026 LearnThreatOps · Educational Simulation Platform · All scenarios are fictional ·{" "}
-          <span onClick={()=>nav("privacy")} style={{cursor:"pointer",color:"#1a56db"}}>Privacy</span> &nbsp;·&nbsp;
-          <span onClick={()=>nav("terms")} style={{cursor:"pointer",color:"#1a56db"}}>Terms</span> &nbsp;·&nbsp;
-          <span onClick={()=>nav("data-policy")} style={{cursor:"pointer",color:"#1a56db"}}>Data Policy</span>
+            {/* Footer */}
+      <div style={{background:"#111318",borderTop:"1px solid #1f2937",padding:"14px 20px",textAlign:"center"}}>
+        <div style={{fontSize:11,color:"#4b5563",lineHeight:2}}>
+          {"© 2026 LearnThreatOps"} &nbsp;·&nbsp; {"All scenarios are fictional"} &nbsp;·&nbsp;
+          <span onClick={()=>nav("privacy")} style={{cursor:"pointer",color:"#3b82f6"}}>Privacy</span> &nbsp;·&nbsp;
+          <span onClick={()=>nav("terms")} style={{cursor:"pointer",color:"#3b82f6"}}>Terms</span> &nbsp;·&nbsp;
+          <a href="mailto:support.learnthreatops@gmail.com" style={{color:"#3b82f6",textDecoration:"none"}}>Contact</a>
         </div>
       </div>
 
