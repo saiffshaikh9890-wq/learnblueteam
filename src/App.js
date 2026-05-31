@@ -746,7 +746,7 @@ const INCIDENTS = {
       id:4,phase:"ERADICATION",xp:25,
       tool:"BlueTrace SIEM",toolIcon:"📊",toolAnalogy:"like a security camera control room",
       title:"Check the Blast Radius",
-      objective:"One host is contained. But is this isolated, or is the infection spreading? You need to search across all 847 endpoints before closing this case. One missed host becomes tomorrow's incident.",
+      objective:"One host is contained. But what if the attacker already spread to a second machine in those 14 minutes? If you close this case now without checking, you could wake up tomorrow with a second active breach — and no idea it started here. Search every endpoint, every mailbox. Find out before you close.",
       lookFor:["Other hosts connecting to 185.220.101.47 in the last 24 hours","Other recipients of email from corp-financegroup.com","Whether the same file hash appeared on any other endpoint","Lateral movement activity from WS-CORP-FIN-044 before containment"],
       seniorThinking:"I have been caught out before — closed a one-host incident, found a second host the next morning. Now I always run the blast radius search before writing my report. Takes 30 seconds. Saves hours.",
       instruction:"WS-CORP-FIN-044 is contained. Run the blast radius search in BlueTrace SIEM. Search all hosts for the C2 IP and malware hash. Check who else received the phishing email.",
@@ -2609,49 +2609,118 @@ const GLOSSARY = {};
 function GT({t,children}) { return <span>{children}</span>; }
 
 
-function ScoreModal({inc,steps,elapsed,hintCount,onBack}){
+function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0");
   const ss=String(elapsed%60).padStart(2,"0");
-  const totalXP=steps.reduce((a,s)=>a+s.xp,0);
-  const penalty=hintCount*15;
-  const timeBonus=Math.max(0,300-elapsed);
-  const final=Math.max(0,totalXP-penalty+timeBonus);
-  const pct=Math.round(final/(totalXP+300)*100);
-  const grade=pct>=96?"S":pct>=82?"A":pct>=67?"B":pct>=50?"C":"F";
-  const gc=grade==="S"?"#a855f7":grade==="A"?"#22c55e":grade==="B"?"#3b82f6":grade==="C"?"#f59e0b":"#ef4444";
+  const totalXp=steps.reduce((a,s)=>a+s.xp,0);
+  const hintPenalty=hintCount*15;
+  const finalXp=Math.max(0,totalXp-hintPenalty);
+  const pct=Math.round(finalXp/totalXp*100);
+  const grade=pct>=90?"S":pct>=75?"A":pct>=60?"B":"C";
+  const gc={S:"#a855f7",A:"#22c55e",B:"#3b82f6",C:"#f59e0b"}[grade];
+
+  // Emotional payoffs per incident
+  const IMPACT={
+    "INC-2026-0441":{
+      stopped:"a targeted Cobalt Strike attack on the Finance team",
+      prevented:"payroll system access and credential theft",
+      detail:"The attacker had an active C2 session for 14 minutes. You cut it off before they could move laterally to payroll servers.",
+      nextTitle:"IT Admin PowerShell — False Positive?",
+      nextId:"fp-powershell",
+      lesson:"Not every attack succeeds because of the phishing email. It succeeds because the EDR was in detect-only mode. You found that gap."
+    },
+  };
+  const impact=IMPACT[inc?.id]||{stopped:"a security incident",prevented:"further damage",detail:"Investigation complete.",nextTitle:null,nextId:null,lesson:null};
+
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",backdropFilter:"blur(8px)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-      <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:16,padding:36,maxWidth:480,width:"100%",boxShadow:"var(--sh3)",animation:"fadeUp 0.4s ease"}}>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:64,fontWeight:800,color:gc,fontFamily:"var(--mo)",lineHeight:1,marginBottom:8}}>{grade}</div>
-          <div style={{fontSize:18,fontWeight:700,color:"var(--tx)"}}>Incident Closed</div>
-          <div style={{fontSize:13,color:"var(--tx3)",marginTop:4}}>{inc.id} — {inc.title}</div>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+      <div style={{background:"#fff",borderRadius:18,padding:0,maxWidth:500,width:"100%",
+        overflow:"hidden",animation:"fadeUp 0.4s ease"}}>
+
+        {/* Grade banner */}
+        <div style={{background:grade==="S"?"linear-gradient(135deg,#7c3aed,#1a56db)":
+          grade==="A"?"linear-gradient(135deg,#16a34a,#0891b2)":
+          "linear-gradient(135deg,#1a56db,#7c3aed)",
+          padding:"28px 24px",textAlign:"center",position:"relative"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.7)",
+            letterSpacing:"0.2em",fontFamily:"monospace",textTransform:"uppercase",marginBottom:8}}>
+            Case Closed — {inc?.id}
+          </div>
+          <div style={{fontSize:72,fontWeight:900,color:"#fff",fontFamily:"monospace",
+            lineHeight:1,marginBottom:4,textShadow:"0 2px 20px rgba(0,0,0,0.3)"}}>{grade}</div>
+          <div style={{fontSize:16,fontWeight:700,color:"rgba(255,255,255,0.9)"}}>
+            You stopped {impact.stopped}
+          </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
-          {[["XP Earned",final,"var(--ac)"],["Time",mm+":"+ss,pct>=60?"var(--ok)":"var(--warn)"],["Hints Used",hintCount,hintCount===0?"var(--ok)":"var(--warn)"]].map(([l,v,c])=>(
-            <div key={l} style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:10,padding:"14px 8px",textAlign:"center"}}>
-              <div style={{fontSize:20,fontWeight:700,color:c,fontFamily:"var(--mo)",marginBottom:2}}>{v}</div>
-              <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase"}}>{l}</div>
+
+        <div style={{padding:"20px 24px"}}>
+          {/* What you prevented */}
+          <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:10,
+            padding:"12px 14px",marginBottom:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#166534",fontFamily:"monospace",
+              letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>🛡 Threat Prevented</div>
+            <div style={{fontSize:13,color:"#14532d",lineHeight:1.7}}>{impact.detail}</div>
+          </div>
+
+          {/* Stats */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+            {[["XP Earned",finalXp+"","var(--ac)"],
+              ["Response",mm+":"+ss,elapsed<900?"#16a34a":"#f59e0b"],
+              ["Hints",hintCount+"",hintCount===0?"#16a34a":"#f59e0b"]
+            ].map(([l,v,c])=>(
+              <div key={l} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",
+                borderRadius:9,padding:"10px",textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
+                <div style={{fontSize:9,color:"#9ca3af",textTransform:"uppercase",
+                  letterSpacing:"0.08em",marginTop:2}}>{l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Key lesson */}
+          {impact.lesson&&(
+            <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,
+              padding:"12px 14px",marginBottom:14}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#b45309",fontFamily:"monospace",
+                letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:5}}>👩‍💻 Key Lesson</div>
+              <div style={{fontSize:13,color:"#78350f",lineHeight:1.7,fontStyle:"italic"}}>
+                "{impact.lesson}"
+              </div>
             </div>
-          ))}
-        </div>
-        <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px 14px",marginBottom:20}}>
-          {[["Steps completed",steps.length+"/"+steps.length],["Base XP",totalXP],["Hint penalty","-"+penalty],["Time bonus","+"+timeBonus]].map(([l,v])=>(
-            <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:12,color:"var(--tx3)",fontFamily:"var(--mo)"}}>
-              <span>{l}</span><span style={{color:"var(--tx)",fontWeight:600}}>{v}</span>
+          )}
+
+          {/* Next investigation */}
+          {impact.nextId&&(
+            <div onClick={()=>{onBack();setTimeout(()=>{},100);}}
+              style={{background:"linear-gradient(135deg,#eff6ff,#f0fdf4)",
+                border:"1px solid #bfdbfe",borderRadius:12,padding:"14px",
+                marginBottom:12,cursor:"pointer",transition:"all 0.15s"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#1a56db",fontFamily:"monospace",
+                letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Next Investigation →</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:8}}>
+                {impact.nextTitle}
+              </div>
+              <button style={{width:"100%",background:"#1a56db",color:"#fff",
+                padding:"12px",borderRadius:9,fontSize:13,fontWeight:700,
+                border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
+                Start Next Investigation →
+              </button>
             </div>
-          ))}
+          )}
+
+          <button onClick={onBack}
+            style={{width:"100%",background:"#f7f8fa",color:"#6b7280",
+              padding:"11px",borderRadius:9,border:"1px solid #e1e4ed",
+              fontSize:13,cursor:"pointer"}}>
+            Return to Dashboard
+          </button>
         </div>
-        <div style={{background:"var(--okl)",border:"1px solid var(--okb)",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12.5,color:"var(--ok)",lineHeight:1.7,fontFamily:"var(--mo)"}}>
-          P1 SLA: 60 min | Your time: {mm}:{ss} {elapsed<3600?"✓ WITHIN SLA":"✗ SLA BREACHED"}
-        </div>
-        <button onClick={onBack} style={{width:"100%",background:"var(--ac)",color:"#fff",padding:"13px",borderRadius:9,fontSize:14,fontWeight:600,border:"none",cursor:"pointer"}}>
-          Back to SOC Dashboard
-        </button>
       </div>
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COACH POPUP — the guided instruction overlay per step
@@ -3878,13 +3947,13 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
             <div style={{background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:8,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#93c5fd",lineHeight:1.6}}>
               📋 Read the ticket carefully. Understand what happened and what tools detected it. Then start your investigation.
             </div>
-            <button onClick={()=>setStatus("mode_select")} style={{width:"100%",background:"var(--err)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(239,68,68,0.4)"}}>
+            <button onClick={()=>selectMode("beginner")} style={{width:"100%",background:"var(--err)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(239,68,68,0.4)"}}>
               Ticket Acknowledged — Start Investigation →
             </button>
           </div>
         </div>
       )}
-      {status==="mode_select"&&<ModeSelector inc={inc} onSelect={selectMode}/>}
+      {false&&<ModeSelector inc={inc} onSelect={selectMode}/>}
       {status==="decision"&&step?.decision&&<DecisionQuestion step={step} onDecide={handleDecision}/>}
       {status==="decision"&&!step?.decision&&(handleDecision(true),null)}
       {status==="coach"&&<CoachPopup step={step} onClose={handleCoachClose} onHint={()=>setHintCount(h=>h+1)} hintUsed={false} stepsDone={doneSteps.length} totalSteps={inc.steps.length} mode={mode}/>}
@@ -4364,8 +4433,8 @@ function Landing({nav=()=>{},appUser=null}) {
           <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
         <p style={{fontSize:"clamp(14px,3vw,17px)",color:"#5a6272",lineHeight:1.75,maxWidth:520,margin:"0 auto 28px",position:"relative",zIndex:1}}>
-          Investigate phishing, malware, ransomware, and cloud attacks using realistic SIEM, EDR, Threat Intelligence, and Incident Response workflows.<br/>
-          <strong style={{color:"#111318"}}>No VMs. No setup. Just start investigating.</strong>
+          Step inside a real SOC. Investigate live security incidents using the same tools, alerts, and decisions that professional analysts use every day.<br/>
+          <strong style={{color:"#111318"}}>No experience needed. No software to install. Start your first investigation in 30 seconds.</strong>
         </p>
         {/* CTAs */}
         <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",position:"relative",zIndex:1,width:"100%",maxWidth:400}}>
@@ -4373,7 +4442,7 @@ function Landing({nav=()=>{},appUser=null}) {
             ?<button onClick={()=>nav("dash")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Go to Dashboard</button>
             :<button onClick={()=>nav("signup")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Start Free Investigation</button>
           }
-          <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"#fff",color:"#2d3241",fontSize:14,fontWeight:500,padding:"13px 20px",borderRadius:10,border:"1px solid #e1e4ed",cursor:"pointer",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",minWidth:160}}>Watch Demo →</button>
+          <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"#fff",color:"#1a56db",fontSize:14,fontWeight:600,padding:"13px 20px",borderRadius:10,border:"1px solid #bfdbfe",cursor:"pointer",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",minWidth:160}}>Try First Scenario →</button>
         </div>
         {/* Live alert ticker */}
         <div style={{marginTop:24,display:"flex",alignItems:"center",gap:9,padding:"10px 14px",background:"#fff",borderRadius:10,border:"1px solid #e1e4ed",maxWidth:480,width:"100%",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",position:"relative",zIndex:1}}>
@@ -4777,7 +4846,11 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
         {allSims.map(s=>{
           const d=prog.done[s.id];
           return (
-            <div key={s.id} onClick={()=>nav("sim-"+s.id)} style={{background:"var(--w)",border:"1px solid var(--bd)",borderRadius:14,padding:"18px",cursor:"pointer",boxShadow:"var(--sh)",position:"relative",transition:"all 0.13s"}}>
+            <div key={s.id} onClick={()=>nav("sim-"+s.id)}
+              style={{background:"var(--w)",border:"1px solid "+(s.id==="phishing-c2"&&!Object.keys(prog.done).length?"#1a56db":"var(--bd)"),borderRadius:14,padding:"18px",cursor:"pointer",boxShadow:s.id==="phishing-c2"&&!Object.keys(prog.done).length?"0 0 0 3px rgba(26,86,219,0.15), var(--sh)":"var(--sh)",position:"relative",transition:"all 0.15s"}}>
+              {s.id==="phishing-c2"&&!Object.keys(prog.done).length&&(
+                <div style={{position:"absolute",top:-10,left:16,background:"#1a56db",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 10px",borderRadius:20,fontFamily:"var(--mo)",letterSpacing:"0.08em",textTransform:"uppercase"}}>Start Here</div>
+              )}
               <div style={{position:"absolute",top:16,right:16}}>
                 {d?<Pill color="green" sm>Done · {d.grade}</Pill>:<Pill color="blue" sm>Play</Pill>}
               </div>
