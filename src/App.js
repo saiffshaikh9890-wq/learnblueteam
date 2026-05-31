@@ -2739,127 +2739,62 @@ function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
 
 function CoachPopup({step,onClose,onHint,hintUsed,stepsDone,totalSteps,mode}){
   const pc=phaseColor(step.phase);
-  const [showHint,setShowHint]=useState(hintUsed);
-  const isBeginner = mode==="beginner";
-
+  const [showHint,setShowHint]=useState(false);
   return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 80px"}}>
-      <div style={{background:"#fff",border:"1px solid "+pc+"40",borderRadius:16,padding:22,maxWidth:540,width:"100%",margin:"0 16px",boxShadow:"0 0 40px "+pc+"20",animation:"fadeUp 0.3s ease"}}>
-
-        {/* Step header */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-          <div style={{width:36,height:36,borderRadius:"50%",background:pc+"15",border:"2px solid "+pc+"50",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{step.toolIcon}</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:9.5,fontWeight:700,color:pc,letterSpacing:"0.12em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>{step.phase} — Step {step.id+1} of {totalSteps}</div>
-            <div style={{fontSize:15,fontWeight:700,color:"#111318",lineHeight:1.2}}>{step.title}</div>
-          </div>
-          <div style={{background:pc+"12",border:"1px solid "+pc+"30",borderRadius:7,padding:"4px 10px",textAlign:"center",flexShrink:0}}>
-            <div style={{fontSize:14,fontWeight:800,color:pc,fontFamily:"var(--mo)"}}>+{step.xp}</div>
-            <div style={{fontSize:8,color:pc,fontFamily:"var(--mo)",letterSpacing:"0.08em"}}>XP</div>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div style={{display:"flex",gap:3,marginBottom:14}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:500,
+      display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:"20px 20px 32px",
+        maxWidth:520,width:"100%",animation:"fadeUp 0.3s ease"}}>
+        <div style={{display:"flex",gap:4,marginBottom:16,justifyContent:"center"}}>
           {Array.from({length:totalSteps}).map((_,i)=>(
-            <div key={i} style={{flex:1,height:3,borderRadius:2,background:i<stepsDone?"#1a56db":i===step.id?pc+"80":"#e1e4ed",transition:"background 0.3s"}}/>
+            <div key={i} style={{width:i===step.id?20:6,height:6,borderRadius:3,
+              background:i<stepsDone?"#22c55e":i===step.id?pc:"#e1e4ed",transition:"all 0.3s"}}/>
           ))}
         </div>
-
-        {/* Tool badge */}
-        <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:6,padding:"4px 10px",marginBottom:12}}>
-          <span style={{fontSize:10,color:"#6b7280",fontFamily:"var(--mo)"}}>🛠 Tool</span>
-          <span style={{fontSize:10,fontWeight:700,color:"#111318",fontFamily:"var(--mo)"}}>{step.tool}</span>
-          {isBeginner&&step.toolAnalogy&&<span style={{fontSize:9,color:"#8892a4",fontFamily:"var(--mo)"}}>— {step.toolAnalogy}</span>}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+          <div style={{fontSize:22,flexShrink:0}}>{step.toolIcon}</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:9,fontWeight:700,color:pc,letterSpacing:"0.15em",
+              fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>{step.phase}</div>
+            <div style={{fontSize:17,fontWeight:800,color:"#111318",lineHeight:1.2}}>{step.title}</div>
+          </div>
+          <div style={{background:pc+"15",borderRadius:8,padding:"6px 10px",textAlign:"center",flexShrink:0}}>
+            <div style={{fontSize:16,fontWeight:800,color:pc,fontFamily:"var(--mo)"}}>+{step.xp}</div>
+            <div style={{fontSize:8,color:pc,fontFamily:"var(--mo)"}}>XP</div>
+          </div>
         </div>
-
-        {/* Objective — Socratic, asks questions not directions */}
-        <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-          <div style={{fontSize:9,fontWeight:700,color:"#1d4ed8",letterSpacing:"0.12em",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Current Objective</div>
-          <div style={{fontSize:13.5,color:"#1e3a5f",lineHeight:1.7}}>{step.objective||step.instruction}</div>
+        <div style={{background:"#f7f8fa",borderRadius:10,padding:"13px 15px",
+          marginBottom:12,borderLeft:"3px solid "+pc}}>
+          <div style={{fontSize:14,color:"#111318",lineHeight:1.75}}>{step.objective}</div>
         </div>
-
-        {/* What to look for — beginner only */}
-        {isBeginner&&step.lookFor&&(
-          <div style={{background:"#fff",border:"1px solid #e1e4ed",borderRadius:10,padding:"11px 14px",marginBottom:12}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:"0.12em",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>What to look for</div>
-            <div style={{display:"flex",flexDirection:"column",gap:4}}>
-              {step.lookFor.map((item,i)=>(
-                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                  <span style={{color:"#1a56db",fontWeight:700,flexShrink:0,marginTop:1}}>→</span>
-                  <span style={{fontSize:12.5,color:"#2d3241",lineHeight:1.5}}>{item}</span>
-                </div>
-              ))}
+        {mode==="beginner"&&step.mentor?.message&&(
+          <div style={{display:"flex",gap:10,marginBottom:12,background:"#fffbeb",
+            borderRadius:9,padding:"10px 12px",border:"1px solid #fde68a"}}>
+            <span style={{fontSize:20,flexShrink:0}}>👩‍💻</span>
+            <div style={{fontSize:12,color:"#78350f",lineHeight:1.7,fontStyle:"italic"}}>
+              "{step.mentor.message}"
             </div>
           </div>
         )}
-
-        {/* Hint — senior analyst thinking, not answer */}
-        {!showHint?(
-          <button onClick={()=>{setShowHint(true);onHint();}} style={{background:"#fffbeb",border:"1px solid #fde68a",color:"#92400e",padding:"9px 14px",borderRadius:8,fontSize:12.5,cursor:"pointer",marginBottom:12,width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-            <span>🧠</span>
-            <span>How would a senior analyst approach this? <span style={{color:"#b45309",fontSize:11}}>(−{Math.min(step.xp,15)} XP)</span></span>
+        {step.hint&&!showHint&&(
+          <button onClick={()=>{setShowHint(true);onHint();}}
+            style={{width:"100%",background:"none",border:"1px dashed #d1d5db",
+              borderRadius:8,padding:"8px",fontSize:12,color:"#9ca3af",
+              cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>
+            💡 Show hint (costs 5 XP)
           </button>
-        ):(
-          <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:9,padding:"11px 13px",marginBottom:12}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#b45309",letterSpacing:"0.1em",fontFamily:"var(--mo)",marginBottom:5,textTransform:"uppercase"}}>Senior Analyst Thinking</div>
-            <div style={{fontSize:13,color:"#92400e",lineHeight:1.7}}>{step.seniorThinking||step.analyst_note}</div>
+        )}
+        {step.hint&&showHint&&(
+          <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:8,
+            padding:"10px 12px",fontSize:12,color:"#166534",lineHeight:1.7,marginBottom:12}}>
+            💡 {step.hint}
           </div>
         )}
-
-        <button onClick={onClose} style={{width:"100%",background:pc,color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px "+pc+"40"}}>
+        <button onClick={onClose}
+          style={{width:"100%",background:pc,color:"#fff",padding:"14px",
+            borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>
           Open {step.tool} →
         </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MODE SELECTOR — shown before scenario starts
-// ─────────────────────────────────────────────────────────────────────────────
-
-function ModeSelector({inc,onSelect}) {
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(17,19,24,0.6)",backdropFilter:"blur(6px)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-      <div style={{background:"#fff",borderRadius:16,padding:28,maxWidth:480,width:"100%",boxShadow:"0 8px 32px rgba(17,19,24,0.15)",animation:"fadeUp 0.3s ease"}}>
-        <div style={{textAlign:"center",marginBottom:20}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#1a56db",letterSpacing:"0.15em",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Choose Your Mode</div>
-          <h2 style={{fontSize:18,fontWeight:800,color:"#111318",marginBottom:4}}>{inc.title}</h2>
-          <div style={{fontSize:13,color:"#6b7280"}}>How do you want to investigate?</div>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:0}}>
-          <button onClick={()=>onSelect("beginner")} style={{background:"#f0fdf4",border:"2px solid #86efac",borderRadius:12,padding:"18px",cursor:"pointer",textAlign:"left",transition:"all 0.13s"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-              <span style={{fontSize:22}}>🎓</span>
-              <div>
-                <div style={{fontSize:15,fontWeight:700,color:"#166534"}}>Beginner Mode</div>
-                <div style={{fontSize:11,color:"#16a34a",fontFamily:"var(--mo)"}}>Recommended for new analysts</div>
-              </div>
-            </div>
-            <div style={{fontSize:13,color:"#2d3241",lineHeight:1.6}}>
-              ✓ Step-by-step analyst coaching<br/>
-              ✓ Plain English explanations<br/>
-              ✓ Tool analogies and context<br/>
-              ✓ Hints available
-            </div>
-          </button>
-          <button onClick={()=>onSelect("analyst")} style={{background:"#f7f8fa",border:"2px solid #e1e4ed",borderRadius:12,padding:"18px",cursor:"pointer",textAlign:"left",transition:"all 0.13s"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-              <span style={{fontSize:22}}>⚡</span>
-              <div>
-                <div style={{fontSize:15,fontWeight:700,color:"#111318"}}>Analyst Mode</div>
-                <div style={{fontSize:11,color:"#6b7280",fontFamily:"var(--mo)"}}>For experienced analysts</div>
-              </div>
-            </div>
-            <div style={{fontSize:13,color:"#5a6272",lineHeight:1.6}}>
-              — No guided coaching<br/>
-              — No hints<br/>
-              — Full scoring based on speed and accuracy<br/>
-              — Realistic investigation pressure
-            </div>
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -3933,35 +3868,70 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
       {showScore&&<ScoreModal inc={inc} steps={inc.steps} elapsed={elapsed} hintCount={hintCount} onBack={onBack}/>}
       {/* Ticket Review Overlay — first thing analyst sees */}
       {status==="ticket_review"&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{background:"var(--bg2)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:16,padding:28,maxWidth:540,width:"100%",boxShadow:"var(--sh3)",animation:"fadeUp 0.3s ease"}}>
-            <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:16}}>
-              <div style={{width:36,height:36,borderRadius:8,background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎫</div>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:"#f87171",letterSpacing:"0.1em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>New Ticket Assigned — {inc.desk.priority} Priority</div>
-                <div style={{fontSize:16,fontWeight:700,color:"var(--tx)"}}>{inc.id}</div>
-              </div>
-              <SevBadge s={inc.severity}/>
+        <div style={{position:"fixed",inset:0,zIndex:500,background:"#0a0d14",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{background:"#111318",borderBottom:"1px solid #1f2937",padding:"0 16px",height:44,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite"}}/>
+              <span style={{fontSize:11,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>INCIDENT QUEUE</span>
             </div>
-            <div style={{fontSize:14,fontWeight:700,color:"var(--tx)",marginBottom:10,lineHeight:1.35}}>{inc.title}</div>
-            <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:8,padding:"11px 13px",marginBottom:12,fontSize:12.5,color:"var(--tx2)",lineHeight:1.75}}>{inc.summary}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-              {[["Host",inc.host],["User",inc.user],["SLA",inc.desk.sla_minutes+" minutes"],["Priority",inc.desk.priority]].map(([k,v])=>(
-                <div key={k} style={{background:"var(--bg3)",borderRadius:6,padding:"8px 10px"}}>
-                  <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:2,textTransform:"uppercase",letterSpacing:"0.08em"}}>{k}</div>
-                  <div style={{fontSize:12,color:"var(--tx2)",fontFamily:"var(--mo)",fontWeight:600}}>{v}</div>
+            <div style={{fontSize:10,color:"#4b5563",fontFamily:"var(--mo)"}}>
+              {String(Math.floor(elapsed/60)).padStart(2,"0")}:{String(elapsed%60).padStart(2,"0")} elapsed
+            </div>
+          </div>
+          <div style={{flex:1,overflow:"auto",padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+            <div style={{maxWidth:500,width:"100%"}}>
+              <div style={{background:"#111318",border:"1px solid rgba(220,38,38,0.4)",borderRadius:14,overflow:"hidden",marginBottom:16,boxShadow:"0 0 40px rgba(220,38,38,0.06)"}}>
+                <div style={{background:"rgba(220,38,38,0.12)",borderBottom:"1px solid rgba(220,38,38,0.25)",padding:"12px 16px",display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:7,height:7,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite",flexShrink:0}}/>
+                  <span style={{fontSize:10,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:"0.1em",flex:1}}>P1 CRITICAL · {inc.id}</span>
                 </div>
-              ))}
+                <div style={{padding:"16px 18px"}}>
+                  <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:14}}>{inc.title}</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
+                    {[
+                      {time:"08:17",icon:"📧",text:"Analyst opened an invoice email attachment from an unknown sender.",c:"#fbbf24"},
+                      {time:"08:17",icon:"⚡",text:"SIEM fired 4 correlated alerts simultaneously. Risk score: 97/100.",c:"#f87171"},
+                      {time:"08:18",icon:"🖥",text:"EDR detected an unusual process chain starting from Word.",c:"#f87171"},
+                      {time:"08:23",icon:"🚨",text:"Active outbound connection to an IP in Russia. Live right now.",c:"#dc2626"},
+                    ].map((ev,i)=>(
+                      <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                        <div style={{flexShrink:0,width:44,textAlign:"right"}}>
+                          <div style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)"}}>{ev.time}</div>
+                          <div style={{fontSize:16,marginTop:2}}>{ev.icon}</div>
+                        </div>
+                        <div style={{flex:1,borderLeft:"3px solid "+ev.c,background:"rgba(255,255,255,0.03)",borderRadius:"0 6px 6px 0",padding:"8px 10px"}}>
+                          <div style={{fontSize:12.5,color:"#e8ecf4",lineHeight:1.6}}>{ev.text}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{background:"rgba(26,86,219,0.12)",border:"1px solid rgba(26,86,219,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#60a5fa",fontFamily:"var(--mo)",letterSpacing:"0.1em",marginBottom:5,textTransform:"uppercase"}}>Your job</div>
+                    <div style={{fontSize:14,color:"#e8ecf4",lineHeight:1.7,fontWeight:500}}>
+                      Is this a real attack or a false alarm? The attacker may be connected right now.
+                      Investigate using the tools below. Make the call.
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+                    {[{icon:"📊",n:"SIEM",d:"What alerts fired"},{icon:"🖥",n:"EDR",d:"What ran on the machine"},{icon:"🔍",n:"Threat Intel",d:"Who is behind the IP"},{icon:"🎫",n:"Desk",d:"Ticket and SLA"}].map(t=>(
+                      <div key={t.n} style={{background:"rgba(255,255,255,0.04)",border:"1px solid #1f2937",borderRadius:8,padding:"8px 10px",display:"flex",gap:8,alignItems:"center"}}>
+                        <span style={{fontSize:15,flexShrink:0}}>{t.icon}</span>
+                        <div><div style={{fontSize:11,fontWeight:700,color:"#f9fafb",fontFamily:"var(--mo)"}}>{t.n}</div><div style={{fontSize:9.5,color:"#6b7280"}}>{t.d}</div></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button onClick={()=>selectMode("beginner")} style={{width:"100%",background:"#dc2626",color:"#fff",padding:"15px",borderRadius:12,fontSize:15,fontWeight:800,border:"none",cursor:"pointer",boxShadow:"0 4px 20px rgba(220,38,38,0.35)"}}>
+                Start Investigating →
+              </button>
+              <div style={{textAlign:"center",marginTop:8,fontSize:11,color:"#374151"}}>
+                Training simulation · all data is fictional
+              </div>
             </div>
-            <div style={{background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:8,padding:"10px 13px",marginBottom:16,fontSize:12,color:"#93c5fd",lineHeight:1.6}}>
-              📋 Read the ticket carefully. Understand what happened and what tools detected it. Then start your investigation.
-            </div>
-            <button onClick={()=>selectMode("beginner")} style={{width:"100%",background:"var(--err)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(239,68,68,0.4)"}}>
-              Ticket Acknowledged — Start Investigation →
-            </button>
           </div>
         </div>
-      )}
+      )}}
       {false&&<ModeSelector inc={inc} onSelect={selectMode}/>}
       {status==="decision"&&step?.decision&&<DecisionQuestion step={step} onDecide={handleDecision}/>}
       {status==="decision"&&!step?.decision&&(handleDecision(true),null)}
