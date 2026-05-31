@@ -4613,7 +4613,7 @@ function ContactPage({nav}) {
       <h1 style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:700,color:"var(--tx)",marginBottom:6}}>Get in Touch</h1>
       <p style={{fontSize:14,color:"var(--tx3)",lineHeight:1.7,marginBottom:28}}>Questions, feedback, or support? We reply within 24 hours.</p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,marginBottom:28}}>
-        {[["📧","Email","support.learnthreatops@gmail.com"],["🌐","Website","learnthreatops.com"],["📍","Based in","Mumbai, India"]].map(([ic,l,v])=>(
+        {[["📧","Email","support.learnthreatops@gmail.com"],["🌐","Website","learnthreatops.cloud"],["📍","Based in","Mumbai, India"]].map(([ic,l,v])=>(
           <div key={l} style={{background:"var(--w)",border:"1px solid var(--bd)",borderRadius:10,padding:"14px",boxShadow:"var(--sh)"}}>
             <div style={{fontSize:20,marginBottom:7}}>{ic}</div>
             <div style={{fontSize:10,fontWeight:700,color:"var(--tx4)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3,fontFamily:"var(--mo)"}}>{l}</div>
@@ -4782,7 +4782,7 @@ const POLICIES = {
     ["Contact Details","LearnThreatOps | Email: support.learnthreatops@gmail.com | Phone: +91 9284837848 | Address: Shivajinagar, Pune, Maharashtra, India"],
   ]},
   terms:{title:"Terms of Service",sections:[
-    ["Acceptance","By using LearnThreatOps (learnthreatops.com) you agree to these Terms. LearnThreatOps is currently operated as an individual project in beta validation phase. If you disagree with these Terms, please do not use the platform."],
+    ["Acceptance","By using LearnThreatOps (learnthreatops.cloud) you agree to these Terms. LearnThreatOps is currently operated as an individual project in beta validation phase. If you disagree with these Terms, please do not use the platform."],
     ["Platform Use","LearnThreatOps provides simulated defensive security exercises for education only. You may not use knowledge gained here to attack systems you do not own or have explicit permission to test."],
     ["Account Responsibility","You are responsible for all activity under your account. Do not share credentials. Notify us immediately of any unauthorised use."],
     ["Acceptable Use","Do not reverse-engineer platform content, scrape data, impersonate others, post harmful content, or circumvent security measures."],
@@ -4832,7 +4832,7 @@ function PolicyPage({policyKey,nav}) {
     <div style={{maxWidth:720,margin:"0 auto",padding:"28px 20px 60px"}}>
       <button onClick={()=>nav("landing")} style={{background:"var(--w)",border:"1px solid var(--bd)",color:"var(--tx3)",padding:"6px 12px",borderRadius:6,fontSize:12,marginBottom:22,cursor:"pointer",boxShadow:"var(--sh)"}}>Home</button>
       <h1 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:700,color:"var(--tx)",marginBottom:5,lineHeight:1.2}}>{p.title}</h1>
-      <div style={{fontSize:12,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:28}}>Updated May 2026 · learnthreatops.com</div>
+      <div style={{fontSize:12,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:28}}>Updated May 2026 · learnthreatops.cloud</div>
       <div style={{display:"flex",flexDirection:"column",gap:22}}>
         {p.sections.map(([title,body],i)=>(
           <div key={i}>
