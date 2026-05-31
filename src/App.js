@@ -3797,6 +3797,361 @@ function IncidentBriefing({inc, onStart}) {
   );
 }
 
+
+// ════════════════════════════════════════════════════════════════
+// INCIDENT ANIMATIONS — Pure CSS/SVG 3D, no libraries
+// Each animation matches the incident type
+// ════════════════════════════════════════════════════════════════
+
+function IncidentAnimation({incId}) {
+  // Map incident to animation type
+  const type = {
+    "INC-2026-0441": "phishing",   // Spear phishing → C2
+    "INC-2026-0502": "powershell", // PowerShell exec
+    "INC-2026-0521": "travel",     // Impossible travel
+    "INC-2026-0544": "portscan",   // Port scan
+    "INC-2026-0561": "usb",        // USB insider
+    "INC-2026-0578": "dns",        // DNS beaconing
+    "INC-2026-0591": "pentest",    // Pentest FP
+    "INC-2026-0612": "bec",        // BEC fraud
+    "INC-2026-0634": "cloud",      // S3 exposure
+    "INC-2026-0651": "bruteforce", // Auth storm
+  }[incId] || "phishing";
+
+  const animations = `
+    @keyframes float{0%,100%{transform:translateY(0) rotateX(0deg)}50%{transform:translateY(-8px) rotateX(4deg)}}
+    @keyframes float2{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-3px)}40%,80%{transform:translateX(3px)}}
+    @keyframes glow{0%,100%{filter:drop-shadow(0 0 6px rgba(220,38,38,0.6))}50%{filter:drop-shadow(0 0 16px rgba(220,38,38,1))}}
+    @keyframes beam{0%{opacity:0;transform:scaleY(0)}30%{opacity:1;transform:scaleY(1)}70%{opacity:1}100%{opacity:0}}
+    @keyframes ping{0%{transform:scale(1);opacity:1}100%{transform:scale(2.5);opacity:0}}
+    @keyframes fly{0%{transform:translateX(-60px) translateY(20px) rotate(-10deg);opacity:0}60%{opacity:1}100%{transform:translateX(20px) translateY(-10px) rotate(5deg);opacity:0.8}}
+    @keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}
+    @keyframes blink2{0%,100%{opacity:1}50%{opacity:0.2}}
+    @keyframes orbit{0%{transform:rotate(0deg) translateX(50px) rotate(0deg)}100%{transform:rotate(360deg) translateX(50px) rotate(-360deg)}}
+    @keyframes zap{0%,100%{opacity:0}10%,90%{opacity:1}50%{opacity:0.3}}
+    @keyframes stream{0%{transform:translateY(-20px);opacity:0}50%{opacity:1}100%{transform:translateY(80px);opacity:0}}
+    @keyframes usb_insert{0%{transform:translateX(-40px);opacity:0}50%{transform:translateX(0px);opacity:1}100%{transform:translateX(0px);opacity:1}}
+    @keyframes data_leak{0%{transform:translateY(0);opacity:1}100%{transform:translateY(30px);opacity:0}}
+    @keyframes globe_spin{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
+  `;
+
+  // PHISHING ANIMATION — Email flies in, opens, skull appears
+  if (type === "phishing") return (
+    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden"}}>
+      <style>{animations}</style>
+      {/* Dark background */}
+      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 80%,rgba(220,38,38,0.12) 0%,transparent 70%)"}}/>
+
+      {/* Laptop base */}
+      <div style={{position:"absolute",bottom:10,left:"50%",transform:"translateX(-50%)",
+        width:140,height:8,background:"#1e2533",borderRadius:"0 0 8px 8px",
+        boxShadow:"0 4px 20px rgba(0,0,0,0.5)"}}/>
+
+      {/* Laptop screen */}
+      <div style={{position:"absolute",bottom:18,left:"50%",transform:"translateX(-50%)",
+        width:120,height:75,background:"#0f1117",border:"2px solid #1e2533",
+        borderRadius:"4px 4px 0 0",overflow:"hidden"}}>
+        {/* Screen glow */}
+        <div style={{position:"absolute",inset:0,background:"rgba(220,38,38,0.04)"}}/>
+        {/* Fake desktop icons */}
+        <div style={{position:"absolute",top:6,left:6,display:"flex",gap:3}}>
+          {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
+            <div key={i} style={{width:6,height:6,borderRadius:"50%",background:c,opacity:0.7}}/>
+          ))}
+        </div>
+        {/* Email notification pop */}
+        <div style={{position:"absolute",top:16,left:"50%",transform:"translateX(-50%)",
+          animation:"float 3s ease-in-out infinite",
+          background:"#111318",border:"1px solid rgba(220,38,38,0.5)",
+          borderRadius:4,padding:"4px 7px",width:90}}>
+          <div style={{fontSize:7,color:"#f87171",fontFamily:"monospace",fontWeight:700,marginBottom:2}}>
+            📧 NEW MESSAGE
+          </div>
+          <div style={{fontSize:6,color:"#6b7280",fontFamily:"monospace"}}>invoice_final.docm</div>
+          <div style={{fontSize:6,color:"#ef4444",fontFamily:"monospace",marginTop:2,
+            animation:"blink2 1s infinite"}}>⚠ MACRO ENABLED</div>
+        </div>
+      </div>
+
+      {/* Flying email envelope */}
+      <div style={{position:"absolute",top:20,right:"15%",
+        animation:"fly 4s ease-in-out infinite"}}>
+        <svg width="36" height="28" viewBox="0 0 36 28" style={{filter:"drop-shadow(0 0 8px rgba(220,38,38,0.7))"}}>
+          <rect x="1" y="1" width="34" height="26" rx="3" fill="#1e2533" stroke="#dc2626" strokeWidth="1.5"/>
+          <polyline points="1,1 18,16 35,1" fill="none" stroke="#dc2626" strokeWidth="1.5"/>
+          <text x="18" y="23" textAnchor="middle" fill="#ef4444" fontSize="10" fontFamily="monospace">☠</text>
+        </svg>
+      </div>
+
+      {/* Beacon signal — pulsing circles */}
+      <div style={{position:"absolute",top:30,right:"12%"}}>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{position:"absolute",width:40,height:40,borderRadius:"50%",
+            border:"1px solid rgba(220,38,38,0.5)",top:-20,left:-20,
+            animation:`ping 2s ${i*0.7}s ease-out infinite`}}/>
+        ))}
+      </div>
+
+      {/* C2 connection beam */}
+      <div style={{position:"absolute",bottom:40,left:"55%",
+        width:2,height:40,background:"linear-gradient(to top,transparent,#dc2626)",
+        animation:"beam 3s 1s ease-in-out infinite",transformOrigin:"bottom"}}/>
+
+      {/* Russia flag / server icon */}
+      <div style={{position:"absolute",top:15,right:"8%",
+        fontSize:20,animation:"glow 2s ease-in-out infinite"}}>
+        🖥
+      </div>
+      <div style={{position:"absolute",top:35,right:"8%",
+        fontSize:9,color:"#ef4444",fontFamily:"monospace",fontWeight:700,
+        animation:"blink2 1s 0.5s infinite"}}>RU</div>
+    </div>
+  );
+
+  // POWERSHELL ANIMATION — Terminal with scary commands typing
+  if (type === "powershell") return (
+    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden"}}>
+      <style>{animations}</style>
+      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 50%,rgba(139,92,246,0.1) 0%,transparent 70%)"}}/>
+      <div style={{position:"absolute",top:20,left:"50%",transform:"translateX(-50%)",
+        width:260,height:110,background:"#0a0e1a",border:"1px solid #8b5cf6",
+        borderRadius:8,padding:10,fontFamily:"monospace",
+        boxShadow:"0 0 30px rgba(139,92,246,0.3)",animation:"float2 4s ease-in-out infinite"}}>
+        <div style={{display:"flex",gap:4,marginBottom:8}}>
+          {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
+            <div key={i} style={{width:8,height:8,borderRadius:"50%",background:c}}/>
+          ))}
+          <span style={{fontSize:8,color:"#6b7280",marginLeft:4}}>PowerShell</span>
+        </div>
+        {[
+          {text:"PS C:\> whoami", color:"#22c55e", delay:0},
+          {text:"CORP\admin", color:"#e8ecf4", delay:0.5},
+          {text:"PS C:\> Invoke-Expression...", color:"#22c55e", delay:1},
+          {text:"[Downloading payload]", color:"#f87171", delay:1.5},
+          {text:"PS C:\> net user /domain", color:"#22c55e", delay:2},
+          {text:"Enumerating 847 accounts...", color:"#fbbf24", delay:2.5},
+        ].map((line,i)=>(
+          <div key={i} style={{fontSize:8.5,color:line.color,marginBottom:2,lineHeight:1.4,
+            animation:`blink2 ${4}s ${line.delay}s step-end infinite`,
+            opacity: i < 4 ? 1 : 0.6}}>
+            {line.text}
+          </div>
+        ))}
+        <div style={{display:"inline-block",width:6,height:12,background:"#22c55e",
+          animation:"blink2 0.8s step-end infinite",verticalAlign:"middle"}}/>
+      </div>
+      {/* Scanline effect */}
+      <div style={{position:"absolute",top:20,left:"50%",transform:"translateX(-50%)",
+        width:260,height:110,borderRadius:8,overflow:"hidden",pointerEvents:"none"}}>
+        <div style={{position:"absolute",width:"100%",height:2,background:"rgba(139,92,246,0.15)",
+          animation:"scanline 3s linear infinite"}}/>
+      </div>
+    </div>
+  );
+
+  // IMPOSSIBLE TRAVEL ANIMATION — Globe with two location pins
+  if (type === "travel") return (
+    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
+      display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{animations}</style>
+      <div style={{position:"relative",width:120,height:120}}>
+        {/* Globe */}
+        <div style={{width:100,height:100,borderRadius:"50%",margin:"10px auto",
+          background:"radial-gradient(circle at 35% 35%,#1e3a5f,#0a0d14)",
+          border:"1px solid #1e40af",position:"relative",overflow:"hidden",
+          boxShadow:"0 0 30px rgba(59,130,246,0.3)",animation:"float2 4s ease-in-out infinite"}}>
+          {/* Grid lines */}
+          {[20,40,60,80].map(x=>(
+            <div key={x} style={{position:"absolute",left:`${x}%`,top:0,bottom:0,
+              width:1,background:"rgba(59,130,246,0.2)"}}/>
+          ))}
+          {[25,50,75].map(y=>(
+            <div key={y} style={{position:"absolute",top:`${y}%`,left:0,right:0,
+              height:1,background:"rgba(59,130,246,0.2)"}}/>
+          ))}
+          {/* Continents (simplified) */}
+          <div style={{position:"absolute",top:"20%",left:"10%",width:"35%",height:"30%",
+            background:"rgba(34,197,94,0.3)",borderRadius:"40% 60% 50% 40%"}}/>
+          <div style={{position:"absolute",top:"30%",left:"55%",width:"30%",height:"35%",
+            background:"rgba(34,197,94,0.3)",borderRadius:"30% 50% 40% 60%"}}/>
+        </div>
+        {/* Pin 1 - Mumbai */}
+        <div style={{position:"absolute",top:15,left:10,animation:"float2 3s ease-in-out infinite"}}>
+          <div style={{fontSize:16}}>📍</div>
+          <div style={{fontSize:7,color:"#22c55e",fontFamily:"monospace",fontWeight:700,
+            whiteSpace:"nowrap"}}>Mumbai 09:00</div>
+        </div>
+        {/* Pin 2 - London */}
+        <div style={{position:"absolute",top:10,right:5,
+          animation:"float2 3s 1.5s ease-in-out infinite"}}>
+          <div style={{fontSize:16}}>📍</div>
+          <div style={{fontSize:7,color:"#ef4444",fontFamily:"monospace",fontWeight:700,
+            whiteSpace:"nowrap"}}>London 09:05</div>
+        </div>
+        {/* Distance line */}
+        <div style={{position:"absolute",top:28,left:30,width:55,height:1,
+          background:"linear-gradient(to right,#22c55e,#ef4444)",
+          transform:"rotate(-5deg)",animation:"zap 2s ease-in-out infinite"}}/>
+        {/* Warning */}
+        <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",
+          fontSize:10,color:"#ef4444",fontFamily:"monospace",fontWeight:700,
+          whiteSpace:"nowrap",animation:"blink2 1s infinite"}}>⚠ 5 MIN APART</div>
+      </div>
+    </div>
+  );
+
+  // USB ANIMATION — USB plugging in, data streaming out
+  if (type === "usb") return (
+    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
+      display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{animations}</style>
+      <div style={{position:"relative"}}>
+        {/* Computer */}
+        <div style={{width:90,height:60,background:"#1e2533",border:"1px solid #374151",
+          borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",
+          position:"relative",boxShadow:"0 4px 20px rgba(0,0,0,0.4)",
+          animation:"float2 4s ease-in-out infinite"}}>
+          <div style={{fontSize:22}}>🖥</div>
+          {/* USB port */}
+          <div style={{position:"absolute",right:-8,top:"50%",transform:"translateY(-50%)",
+            width:8,height:12,background:"#374151",borderRadius:"0 2px 2px 0",
+            border:"1px solid #4b5563"}}/>
+        </div>
+        {/* USB drive */}
+        <div style={{position:"absolute",right:-45,top:"50%",transform:"translateY(-50%)",
+          animation:"usb_insert 2s 0.5s ease-out forwards"}}>
+          <svg width="40" height="20" viewBox="0 0 40 20"
+            style={{filter:"drop-shadow(0 0 8px rgba(251,191,36,0.8))"}}>
+            <rect x="8" y="4" width="28" height="12" rx="2" fill="#fbbf24"/>
+            <rect x="0" y="6" width="10" height="8" rx="1" fill="#92400e"/>
+            <rect x="14" y="7" width="4" height="6" rx="1" fill="#451a03" opacity="0.5"/>
+            <rect x="20" y="7" width="4" height="6" rx="1" fill="#451a03" opacity="0.5"/>
+          </svg>
+          <div style={{fontSize:8,color:"#fbbf24",fontFamily:"monospace",fontWeight:700,
+            marginTop:2,textAlign:"center"}}>INSIDER</div>
+        </div>
+        {/* Data streaming out */}
+        {[0,1,2,3,4].map(i=>(
+          <div key={i} style={{position:"absolute",left:95,top:20+i*8,
+            fontSize:8,color:"#ef4444",fontFamily:"monospace",
+            animation:`data_leak 1.5s ${i*0.3}s ease-in infinite`}}>
+            {"0x"+Math.floor(Math.random()*256).toString(16).toUpperCase().padStart(2,'0')}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // DNS BEACONING ANIMATION — Packets flying to external server
+  if (type === "dns") return (
+    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden"}}>
+      <style>{animations}</style>
+      <div style={{position:"absolute",inset:0,
+        background:"radial-gradient(ellipse at 50% 50%,rgba(16,185,129,0.08) 0%,transparent 70%)"}}/>
+      {/* Internal server */}
+      <div style={{position:"absolute",left:20,top:"50%",transform:"translateY(-50%)",
+        textAlign:"center",animation:"float2 3s ease-in-out infinite"}}>
+        <div style={{fontSize:28}}>🖥</div>
+        <div style={{fontSize:8,color:"#6b7280",fontFamily:"monospace"}}>CORP</div>
+      </div>
+      {/* DNS packets streaming */}
+      {[0,1,2,3,4,5].map(i=>(
+        <div key={i} style={{position:"absolute",
+          left:60,top:`${25+i*18}%`,
+          animation:`stream 2s ${i*0.35}s linear infinite`}}>
+          <div style={{fontSize:8,color:"#10b981",fontFamily:"monospace",
+            background:"rgba(16,185,129,0.1)",padding:"1px 4px",borderRadius:2,
+            whiteSpace:"nowrap"}}>
+            {["a1b2.evil.com","c3d4.evil.com","e5f6.evil.com","g7h8.evil.com",
+              "i9j0.evil.com","k1l2.evil.com"][i]}
+          </div>
+        </div>
+      ))}
+      {/* Arrow */}
+      <div style={{position:"absolute",left:60,top:"50%",right:80,height:1,
+        background:"linear-gradient(to right,rgba(16,185,129,0.3),rgba(16,185,129,0.8))",
+        transform:"translateY(-50%)"}}/>
+      {/* C2 server */}
+      <div style={{position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",
+        textAlign:"center",animation:"glow 2s ease-in-out infinite"}}>
+        <div style={{fontSize:28}}>☠️</div>
+        <div style={{fontSize:8,color:"#ef4444",fontFamily:"monospace",fontWeight:700}}>C2</div>
+        {[0,1].map(i=>(
+          <div key={i} style={{position:"absolute",width:30,height:30,
+            borderRadius:"50%",border:"1px solid rgba(220,38,38,0.4)",
+            top:-5,left:-5,animation:`ping 2s ${i}s ease-out infinite`}}/>
+        ))}
+      </div>
+    </div>
+  );
+
+  // PORT SCAN / BEC / BRUTEFORCE — Radar sweep animation
+  if (["portscan","bruteforce"].includes(type)) return (
+    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
+      display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{animations}</style>
+      {/* Radar */}
+      <div style={{position:"relative",width:110,height:110}}>
+        <div style={{width:110,height:110,borderRadius:"50%",
+          border:"1px solid rgba(59,130,246,0.3)",
+          background:"radial-gradient(circle,rgba(59,130,246,0.05) 0%,transparent 70%)",
+          position:"relative",overflow:"hidden"}}>
+          {/* Rings */}
+          {[35,55,75].map(r=>(
+            <div key={r} style={{position:"absolute",borderRadius:"50%",
+              border:"1px solid rgba(59,130,246,0.2)",
+              width:r,height:r,top:"50%",left:"50%",
+              transform:"translate(-50%,-50%)"}}/>
+          ))}
+          {/* Sweep */}
+          <div style={{position:"absolute",top:"50%",left:"50%",
+            width:"50%",height:1,transformOrigin:"left center",
+            background:"linear-gradient(to right,transparent,rgba(59,130,246,0.8))",
+            animation:"orbit 2s linear infinite",
+            boxShadow:"0 0 6px rgba(59,130,246,0.6)"}}/>
+          {/* Blips */}
+          {[[30,40],[60,25],[45,65],[75,55],[20,70]].map(([x,y],i)=>(
+            <div key={i} style={{position:"absolute",
+              left:`${x}%`,top:`${y}%`,
+              width:4,height:4,borderRadius:"50%",
+              background:i<3?"#ef4444":"#22c55e",
+              animation:`ping 1.5s ${i*0.4}s ease-out infinite`}}/>
+          ))}
+        </div>
+        <div style={{textAlign:"center",marginTop:6,fontSize:9,color:"#3b82f6",
+          fontFamily:"monospace",fontWeight:700,
+          animation:"blink2 1s infinite"}}>
+          {type==="portscan"?"SCANNING 847 HOSTS":"847 FAILED ATTEMPTS"}
+        </div>
+      </div>
+    </div>
+  );
+
+  // DEFAULT / BEC / CLOUD — Shield breach animation
+  return (
+    <div style={{position:"relative",width:"100%",height:160,overflow:"hidden",
+      display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{animations}</style>
+      <div style={{position:"relative",animation:"float2 3s ease-in-out infinite"}}>
+        <div style={{fontSize:70,filter:"drop-shadow(0 0 20px rgba(220,38,38,0.5))",
+          animation:"shake 3s 1s ease-in-out infinite"}}>
+          {type==="cloud"?"☁️":"📧"}
+        </div>
+        <div style={{position:"absolute",top:-5,right:-5,fontSize:24}}>⚠️</div>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{position:"absolute",top:"50%",left:"50%",
+            width:60,height:60,borderRadius:"50%",
+            border:"2px solid rgba(220,38,38,0.4)",
+            transform:"translate(-50%,-50%)",
+            animation:`ping 2s ${i*0.7}s ease-out infinite`}}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp}){
   const inc=INCIDENTS[incId];
   const [activeTool,setActiveTool]=useState("siem");
@@ -3886,7 +4241,8 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
                   <span style={{fontSize:10,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:"0.1em",flex:1}}>P1 CRITICAL · {inc.id}</span>
                 </div>
                 <div style={{padding:"16px 18px"}}>
-                  <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:14}}>{inc.title}</div>
+                  <IncidentAnimation incId={inc.id}/>
+                  <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:14,marginTop:8}}>{inc.title}</div>
                   <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
                     {[
                       {time:"08:17",icon:"📧",text:"Analyst opened an invoice email attachment from an unknown sender.",c:"#fbbf24"},
