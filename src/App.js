@@ -4444,12 +4444,17 @@ function Landing({nav=()=>{},appUser=null}) {
           }
           <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"#fff",color:"#1a56db",fontSize:14,fontWeight:600,padding:"13px 20px",borderRadius:10,border:"1px solid #bfdbfe",cursor:"pointer",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",minWidth:160}}>Try First Scenario →</button>
         </div>
-        {/* Live alert ticker */}
-        <div style={{marginTop:24,display:"flex",alignItems:"center",gap:9,padding:"10px 14px",background:"#fff",borderRadius:10,border:"1px solid #e1e4ed",maxWidth:480,width:"100%",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",position:"relative",zIndex:1}}>
-          <div style={{width:7,height:7,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite",flexShrink:0}}/>
-          <Pill color="red" sm>CRITICAL</Pill>
-          <span style={{fontSize:12,color:"#5a6272",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>C2 beacon detected — WS-CORP-FIN-044 → 185.220.101.47:443</span>
-          <span style={{fontSize:10,color:"#8892a4",flexShrink:0,fontFamily:"var(--mo)"}}>08:17</span>
+        {/* Live challenge */}
+        <div style={{marginTop:24,maxWidth:480,width:"100%",position:"relative",zIndex:1}}>
+          <div style={{background:"#0f1117",borderRadius:12,padding:"16px",border:"1px solid rgba(220,38,38,0.35)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <div style={{width:7,height:7,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite",flexShrink:0}}/>
+              <span style={{fontSize:9,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)"}}>LIVE INCIDENT · INC-2026-0441 · P1 CRITICAL</span>
+            </div>
+            <div style={{fontSize:12.5,color:"#e8ecf4",lineHeight:1.75,marginBottom:10}}>Finance analyst opened an invoice at 08:17. SIEM fired 4 rules. EDR shows WINWORD.EXE spawning cmd.exe. Active beacon to Russia.</div>
+            <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>Is this a real attack or a false positive?</div>
+            <button onClick={()=>nav("sim-phishing-c2")} style={{width:"100%",background:"#dc2626",color:"#fff",padding:"11px",borderRadius:8,fontSize:13,fontWeight:700,border:"none",cursor:"pointer"}}>Investigate This Incident</button>
+          </div>
         </div>
         {/* Disclaimer */}
         <div style={{marginTop:14,fontSize:10,color:"#8892a4",position:"relative",zIndex:1,maxWidth:480}}>
@@ -4814,8 +4819,30 @@ function FeedbackButton({submitFeedback}) {
 // ── dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvlPct=()=>0,invZeroDone=false,logout=()=>{}}) {
   const allSims=Object.values(SCENARIOS);
+  const FREE_SIMS=["phishing-c2","fp-powershell","impossible-travel"];
+  const [showUpgrade,setShowUpgrade]=useState(false);
   return (
     <div style={{padding:"20px"}}>
+      {showUpgrade&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowUpgrade(false)}>
+          <div style={{background:"#fff",borderRadius:16,maxWidth:420,width:"100%",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+            <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",padding:"22px",textAlign:"center"}}>
+              <div style={{fontSize:28,marginBottom:6}}>{"🔒"}</div>
+              <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:4}}>Pro Investigations</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>Unlock 7 more real-world SOC incidents</div>
+            </div>
+            <div style={{padding:"20px 24px"}}>
+              {["Malicious USB — Insider Threat","DNS Beaconing C2","Business Email Compromise","AWS S3 Exposure","Auth Failure Storm","Pentest FP","More added monthly"].map((item,i)=>(<div key={i} style={{display:"flex",gap:8,marginBottom:6}}><span style={{color:"#1a56db",fontWeight:700}}>{"✓"}</span><span style={{fontSize:13,color:"#374151"}}>{item}</span></div>))}
+              <div style={{background:"#eff6ff",borderRadius:10,padding:"12px",margin:"14px 0",textAlign:"center",border:"1px solid #bfdbfe"}}>
+                <div style={{fontSize:26,fontWeight:800,color:"#1a56db",fontFamily:"var(--mo)"}}>{"₹499/month"}</div>
+                <div style={{fontSize:12,color:"#6b7280"}}>30-day money-back guarantee</div>
+              </div>
+              <button onClick={()=>window.open("mailto:support.learnthreatops@gmail.com?subject=Pro Access","_blank")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginBottom:8}}>Get Pro Access</button>
+              <button onClick={()=>setShowUpgrade(false)} style={{width:"100%",background:"#f7f8fa",color:"#6b7280",padding:"10px",borderRadius:9,border:"1px solid #e1e4ed",fontSize:13,cursor:"pointer"}}>Continue free</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{marginBottom:24}}>
         <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"var(--ac)",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:4}}>Welcome back</div>
         <div style={{fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:2}}>{appUser?.name||"Analyst"}</div>
@@ -4846,13 +4873,13 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
         {allSims.map(s=>{
           const d=prog.done[s.id];
           return (
-            <div key={s.id} onClick={()=>nav("sim-"+s.id)}
+            <div key={s.id} onClick={()=>{if(!FREE_SIMS.includes(s.id)&&!prog?.pro){setShowUpgrade(true);}else nav("sim-"+s.id);}}
               style={{background:"var(--w)",border:"1px solid "+(s.id==="phishing-c2"&&!Object.keys(prog.done).length?"#1a56db":"var(--bd)"),borderRadius:14,padding:"18px",cursor:"pointer",boxShadow:s.id==="phishing-c2"&&!Object.keys(prog.done).length?"0 0 0 3px rgba(26,86,219,0.15), var(--sh)":"var(--sh)",position:"relative",transition:"all 0.15s"}}>
               {s.id==="phishing-c2"&&!Object.keys(prog.done).length&&(
                 <div style={{position:"absolute",top:-10,left:16,background:"#1a56db",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 10px",borderRadius:20,fontFamily:"var(--mo)",letterSpacing:"0.08em",textTransform:"uppercase"}}>Start Here</div>
               )}
               <div style={{position:"absolute",top:16,right:16}}>
-                {d?<Pill color="green" sm>Done · {d.grade}</Pill>:<Pill color="blue" sm>Play</Pill>}
+                {d?<Pill color="green" sm>Done · {d.grade}</Pill>:FREE_SIMS.includes(s.id)||prog?.pro?<Pill color="blue" sm>Play</Pill>:<Pill color="gray" sm>Pro</Pill>}
               </div>
               <div style={{marginBottom:8}}><Pill color={s.difficulty==="Easy"?"green":"amber"} sm>{s.difficulty}</Pill></div>
               <div style={{fontSize:16,fontWeight:700,color:"var(--tx)",marginBottom:4,paddingRight:70,lineHeight:1.3}}>{s.title}</div>
@@ -4987,4 +5014,8 @@ export default function App() {
       <FeedbackButton submitFeedback={submitFeedback}/>
     </div>
   );
-}
+}      {/* ── VS COMPETITION ── */}
+      <div style={{padding:"40px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}><div style={{maxWidth:860,margin:"0 auto"}}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why Us</div><h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>Built Different</h2></div><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:500}}><thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["TryHackMe","#374151"],["LetsDefend","#374151"],["Cybrary","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead><tbody>{[["100% Blue Team","YES","Red team focus","Partial","No"],["Real SIEM+EDR","YES","No real tools","Basic only","Video only"],["False Positive 40%","YES","No","No","No"],["Free no card","YES","Yes","Yes","No"],["India context","YES","No","No","No"]].map((row,i)=>(<tr key={i} style={{borderBottom:"1px solid #e1e4ed",background:i%2===0?"#fff":"#fafafa"}}>{row.map((cell,j)=>(<td key={j} style={{padding:"10px 14px",color:j===0?"#374151":j===1?"#16a34a":"#6b7280",fontWeight:j===1?700:400,background:j===1?"rgba(26,86,219,0.03)":"transparent"}}>{cell}</td>))}</tr>))}</tbody></table></div></div></div>
+      {/* ── CAREER ── */}
+      <div style={{padding:"48px 20px",background:"#111318"}}><div style={{maxWidth:760,margin:"0 auto",textAlign:"center"}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#3b82f6",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>For Your Career</div><h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#f9fafb",marginBottom:8}}>The Skill Gap Costing You the Job</h2><p style={{fontSize:14,color:"#6b7280",lineHeight:1.8,maxWidth:500,margin:"0 auto 28px"}}>Every cybersecurity job asks for hands-on experience. Every fresher has certificates and zero real experience. LearnThreatOps closes that gap.</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:28}}>{[{s:"4.7M",l:"unfilled cyber jobs",c:"#3b82f6"},{s:"60%",l:"of SOC work is alert triage",c:"#22c55e"},{s:"0",l:"platforms teaching real blue team",c:"#ef4444"}].map(x=>(<div key={x.s} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"18px",textAlign:"center"}}><div style={{fontSize:30,fontWeight:800,color:x.c,fontFamily:"var(--mo)",marginBottom:4}}>{x.s}</div><div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{x.l}</div></div>))}</div><button onClick={()=>nav("signup")} style={{background:"#1a56db",color:"#fff",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>Start Building Real Experience</button></div></div>
+
