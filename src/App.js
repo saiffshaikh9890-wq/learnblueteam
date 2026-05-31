@@ -2884,6 +2884,8 @@ function DecisionQuestion({step,onDecide}) {
     if(chosen!==null) return;
     setChosen(i);
     setRevealed(true);
+    // Show explanation for 2.5 seconds then advance
+    setTimeout(() => onDecide(d.options[i]?.correct === true), 2500);
   };
 
   const proceed = () => onDecide(d.options[chosen]?.correct);
@@ -4240,8 +4242,9 @@ function Logo({size=32}) {
   return (
     <svg width={s} height={s} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Dark L */}
-      <path d="M18 14 L18 72 L58 72 L58 86 L8 86 L8 14 Z" fill="#2d3748"/>
-      {/* Blue B */}
+      <path d="M10 10 L10 90 L50 90 L50 76 L24 76 L24 10 Z" fill="#1e2533"/>
+      {/* Blue T */}
+      <defs><linearGradient id="ltg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#1a56db"/></linearGradient></defs>
       <path d="M38 14 L38 86 L65 86 C80 86 92 76 92 62 C92 54 88 48 82 44 C86 40 89 35 89 28 C89 20 82 14 70 14 Z M50 26 L66 26 C71 26 75 30 75 35 C75 40 71 44 66 44 L50 44 Z M50 56 L68 56 C74 56 79 60 79 66 C79 72 74 76 68 76 L50 76 Z" fill="#2563eb"/>
       {/* Terminal prompt > _ inside B */}
       <text x="49" y="55" fontSize="14" fontFamily="monospace" fill="white" fontWeight="bold">{">"}_</text>
@@ -4724,7 +4727,7 @@ function Landing({nav=()=>{},appUser=null}) {
       <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",padding:"48px 20px"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnThreatOps</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Different from everything else</h2>
+          <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Built for the analyst who defends, not attacks</h2>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,maxWidth:860,margin:"0 auto"}}>
           {[
@@ -4796,11 +4799,11 @@ function Landing({nav=()=>{},appUser=null}) {
         <div style={{maxWidth:860,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why Us</div>
-            <h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>Built Different From Everything Else</h2>
+            <h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>What Makes Us Different</h2>
           </div>
           <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:500}}>
-              <thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["TryHackMe","#374151"],["LetsDefend","#374151"],["Cybrary","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead>
+              <thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["Platform A","#374151"],["Platform B","#374151"],["Platform C","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead>
               <tbody>{[["100% Blue Team","YES","Red team","Partial","No"],["Real SIEM+EDR","YES","No","Basic","Video only"],["False Positive 40%","YES","No","No","No"],["Free no card","YES","Yes","Yes","No"],["India context","YES","No","No","No"]].map((row,i)=>(<tr key={i} style={{borderBottom:"1px solid #e1e4ed",background:i%2===0?"#fff":"#fafafa"}}>{row.map((cell,j)=>(<td key={j} style={{padding:"10px 14px",color:j===0?"#374151":j===1?"#16a34a":"#6b7280",fontWeight:j===1?700:400,background:j===1?"rgba(26,86,219,0.03)":"transparent"}}>{cell}</td>))}</tr>))}</tbody>
             </table>
           </div>
@@ -5081,7 +5084,7 @@ export default function App() {
         <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:54,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"var(--sh)"}}>
           <div onClick={()=>nav("landing")} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
             <Logo size={28}/>
-            <div><span style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,color:"var(--ac)"}}>BLUETEAM</span></div>
+            <div><span style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,color:"var(--ac)"}}>THREATOPS</span></div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             {user?(
@@ -5109,7 +5112,7 @@ export default function App() {
     </div>
   );
 }      {/* ── VS COMPETITION ── */}
-      <div style={{padding:"40px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}><div style={{maxWidth:860,margin:"0 auto"}}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why Us</div><h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>Built Different</h2></div><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:500}}><thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["TryHackMe","#374151"],["LetsDefend","#374151"],["Cybrary","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead><tbody>{[["100% Blue Team","YES","Red team focus","Partial","No"],["Real SIEM+EDR","YES","No real tools","Basic only","Video only"],["False Positive 40%","YES","No","No","No"],["Free no card","YES","Yes","Yes","No"],["India context","YES","No","No","No"]].map((row,i)=>(<tr key={i} style={{borderBottom:"1px solid #e1e4ed",background:i%2===0?"#fff":"#fafafa"}}>{row.map((cell,j)=>(<td key={j} style={{padding:"10px 14px",color:j===0?"#374151":j===1?"#16a34a":"#6b7280",fontWeight:j===1?700:400,background:j===1?"rgba(26,86,219,0.03)":"transparent"}}>{cell}</td>))}</tr>))}</tbody></table></div></div></div>
+      <div style={{padding:"40px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}><div style={{maxWidth:860,margin:"0 auto"}}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why Us</div><h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>Built Different</h2></div><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:500}}><thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["Platform A","#374151"],["Platform B","#374151"],["Platform C","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead><tbody>{[["100% Blue Team","YES","Red team focus","Partial","No"],["Real SIEM+EDR","YES","No real tools","Basic only","Video only"],["False Positive 40%","YES","No","No","No"],["Free no card","YES","Yes","Yes","No"],["India context","YES","No","No","No"]].map((row,i)=>(<tr key={i} style={{borderBottom:"1px solid #e1e4ed",background:i%2===0?"#fff":"#fafafa"}}>{row.map((cell,j)=>(<td key={j} style={{padding:"10px 14px",color:j===0?"#374151":j===1?"#16a34a":"#6b7280",fontWeight:j===1?700:400,background:j===1?"rgba(26,86,219,0.03)":"transparent"}}>{cell}</td>))}</tr>))}</tbody></table></div></div></div>
       {/* ── CAREER ── */}
       <div style={{padding:"48px 20px",background:"#111318"}}><div style={{maxWidth:760,margin:"0 auto",textAlign:"center"}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#3b82f6",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>For Your Career</div><h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#f9fafb",marginBottom:8}}>The Skill Gap Costing You the Job</h2><p style={{fontSize:14,color:"#6b7280",lineHeight:1.8,maxWidth:500,margin:"0 auto 28px"}}>Every cybersecurity job asks for hands-on experience. Every fresher has certificates and zero real experience. LearnThreatOps closes that gap.</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:28}}>{[{s:"4.7M",l:"unfilled cyber jobs",c:"#3b82f6"},{s:"60%",l:"of SOC work is alert triage",c:"#22c55e"},{s:"0",l:"platforms teaching real blue team",c:"#ef4444"}].map(x=>(<div key={x.s} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"18px",textAlign:"center"}}><div style={{fontSize:30,fontWeight:800,color:x.c,fontFamily:"var(--mo)",marginBottom:4}}>{x.s}</div><div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{x.l}</div></div>))}</div><button onClick={()=>nav("signup")} style={{background:"#1a56db",color:"#fff",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>Start Building Real Experience</button></div></div>
 
