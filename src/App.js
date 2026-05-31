@@ -2715,6 +2715,10 @@ function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
               fontSize:13,cursor:"pointer"}}>
             Return to Dashboard
           </button>
+          <div style={{display:"flex",gap:8,marginTop:8}}>
+            <button onClick={()=>navigator.clipboard?.writeText("I just investigated a real SOC incident on LearnThreatOps! Free: learnblueteam-production.up.railway.app #CyberSecurity #SOCAnalyst").then(()=>alert("Copied!"))} style={{flex:1,background:"#0077b5",color:"#fff",padding:"9px",borderRadius:7,fontSize:12,fontWeight:600,border:"none",cursor:"pointer"}}>Copy for LinkedIn</button>
+            <button onClick={()=>window.open("https://wa.me/?text="+encodeURIComponent("I investigated a real SOC incident on LearnThreatOps! Free: learnblueteam-production.up.railway.app"),"_blank")} style={{flex:1,background:"#25d366",color:"#fff",padding:"9px",borderRadius:7,fontSize:12,fontWeight:600,border:"none",cursor:"pointer"}}>WhatsApp</button>
+          </div>
         </div>
       </div>
     </div>
@@ -4428,7 +4432,7 @@ function Landing({nav=()=>{},appUser=null}) {
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
-          Become a<br/>
+          Become an<br/>
           <span style={{color:"#1a56db"}}>{typed}</span>
           <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
@@ -4778,6 +4782,32 @@ function Landing({nav=()=>{},appUser=null}) {
           </div>
         </div>
       </div>
+      {/* ── VS COMPETITION ── */}
+      <div style={{padding:"40px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
+        <div style={{maxWidth:860,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why Us</div>
+            <h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>Built Different From Everything Else</h2>
+          </div>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:500}}>
+              <thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["TryHackMe","#374151"],["LetsDefend","#374151"],["Cybrary","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead>
+              <tbody>{[["100% Blue Team","YES","Red team","Partial","No"],["Real SIEM+EDR","YES","No","Basic","Video only"],["False Positive 40%","YES","No","No","No"],["Free no card","YES","Yes","Yes","No"],["India context","YES","No","No","No"]].map((row,i)=>(<tr key={i} style={{borderBottom:"1px solid #e1e4ed",background:i%2===0?"#fff":"#fafafa"}}>{row.map((cell,j)=>(<td key={j} style={{padding:"10px 14px",color:j===0?"#374151":j===1?"#16a34a":"#6b7280",fontWeight:j===1?700:400,background:j===1?"rgba(26,86,219,0.03)":"transparent"}}>{cell}</td>))}</tr>))}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {/* ── CAREER ── */}
+      <div style={{padding:"48px 20px",background:"#111318"}}>
+        <div style={{maxWidth:760,margin:"0 auto",textAlign:"center"}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#3b82f6",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>For Your Career</div>
+          <h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#f9fafb",marginBottom:8}}>The Skill Gap Costing You the Job</h2>
+          <p style={{fontSize:14,color:"#6b7280",lineHeight:1.8,maxWidth:500,margin:"0 auto 28px"}}>Every cybersecurity job asks for hands-on experience. Every fresher has certificates and zero real experience. LearnThreatOps closes that gap.</p>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:28}}>{[{s:"4.7M",l:"unfilled cyber jobs",c:"#3b82f6"},{s:"60%",l:"of SOC work is alert triage",c:"#22c55e"},{s:"0",l:"platforms teaching real blue team",c:"#ef4444"}].map(x=>(<div key={x.s} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"18px",textAlign:"center"}}><div style={{fontSize:30,fontWeight:800,color:x.c,fontFamily:"var(--mo)",marginBottom:4}}>{x.s}</div><div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{x.l}</div></div>))}</div>
+          <button onClick={()=>nav("signup")} style={{background:"#1a56db",color:"#fff",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>Start Building Real Experience</button>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -4823,6 +4853,7 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
   const [showUpgrade,setShowUpgrade]=useState(false);
   return (
     <div style={{padding:"20px"}}>
+      <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",borderRadius:12,padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}><span style={{fontSize:18}}>{"🎉"}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Beta — All 10 Investigations Free</div><div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>No credit card. No catch. Full access during beta.</div></div></div>
       {/* Beta free banner */}
       <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",borderRadius:12,padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
         <span style={{fontSize:18}}>🎉</span>
