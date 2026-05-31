@@ -425,7 +425,7 @@ function FeedbackModal({ incId, onClose, onSubmit }) {
 
             {/* Recommend */}
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:8}}>Would you recommend LBT to others?</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#374151",marginBottom:8}}>Would you recommend LearnThreatOps to others?</div>
               <div style={{display:"flex",gap:6}}>
                 {["Yes","Maybe","No"].map(r => (
                   <button key={r} onClick={() => setRecommend(r)} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(recommend===r?"#1a56db":"#e1e4ed"),background:recommend===r?"rgba(26,86,219,0.08)":"#f7f8fa",color:recommend===r?"#1a56db":"#374151",fontSize:13,fontWeight:recommend===r?600:400,cursor:"pointer"}}>{r}</button>
@@ -492,7 +492,7 @@ const SCENARIOS = {
   "usb-insider":{id:"usb-insider",incId:"INC-2026-0561",title:"Malicious USB — Insider Threat",difficulty:"Intermediate",duration:30,xpReward:160,category:"SOC L1",tags:["USB","Insider","DLP","Data Exfiltration"],brief:"Departing employee copied 4.7GB of HR compensation data to USB on their penultimate day. robocopy. CONFIDENTIAL files. Investigate.",type:"TP",concept:"Insider threat investigation"},
   "dns-beacon":{id:"dns-beacon",incId:"INC-2026-0578",title:"DNS Beaconing — C2 Over DNS",difficulty:"Intermediate",duration:30,xpReward:170,category:"SOC L1",tags:["DNS","C2","IcedID","Threat Hunting"],brief:"2,847 DNS queries in 4 hours to randomised subdomains. No TCP connections. UpdateService.exe in AppData. Investigate the silent beacon.",type:"TP",concept:"DNS C2 detection"},
   "fp-pentest":{id:"fp-pentest",incId:"INC-2026-0591",title:"Security Team Pentest — False Positive?",difficulty:"Intermediate",duration:20,xpReward:90,category:"SOC L1",tags:["Nmap","PentestKit","False Positive","Pentest"],brief:"Nmap and PentestKit detected on an internal workstation. Scanning the entire internal subnet. No Change Ticket. Attack or authorized test?",type:"FP",concept:"Authorized security activity recognition"},
-  "bec-fraud":{id:"bec-fraud",incId:"INC-2026-0612",title:"Business Email Compromise — CFO Fraud",difficulty:"Intermediate",duration:25,xpReward:180,category:"SOC L1",tags:["BEC","Wire Transfer","Email Fraud","Social Engineering"],brief:"Email from 'CFO Rajesh Mehta' requesting ₹47L wire transfer. From rajesh.mehta@corp.com — not corp.internal. Payment not yet processed.",type:"TP",concept:"BEC investigation"},
+  "bec-fraud":{id:"bec-fraud",incId:"INC-2026-0612",title:"Business Email Compromise — CFO Fraud",difficulty:"Intermediate",duration:25,xpReward:180,category:"SOC L1",tags:["BEC","Wire Transfer","Email Fraud","Social Engineering"],brief:"Email from 'CFO Rajesh Mehta' requesting ₹47L wire transfer. From rajesh.mehta@corp-example.com — not corp.internal. Payment not yet processed.",type:"TP",concept:"BEC investigation"},
   "s3-exposure":{id:"s3-exposure",incId:"INC-2026-0634",title:"Public AWS S3 Bucket — Data Exposed",difficulty:"Advanced",duration:35,xpReward:200,category:"SOC L1",tags:["AWS","S3","Cloud","PII","Misconfiguration"],brief:"127,000 customer records in a public S3 bucket for 3 days. Security researcher reported it. CloudTrail shows 2,847 external access requests.",type:"TP",concept:"Cloud security incident response"},
   "fp-auth-storm":{id:"fp-auth-storm",incId:"INC-2026-0651",title:"Auth Failure Storm — Brute Force or System Change?",difficulty:"Advanced",duration:25,xpReward:110,category:"SOC L1",tags:["Authentication","Brute Force","False Positive","AD"],brief:"3,847 auth failures across 1,247 accounts in 10 minutes. All internal IPs. Zero successful logins. Brute force — or something operational?",type:"FP",concept:"Operational noise vs real attacks"},
 };
@@ -552,7 +552,7 @@ const INCIDENTS = {
 
   // ── SENTINEL EDR ───────────────────────────────────────────────────────────
   edr:{
-    tool:"SentinelEDR",
+    tool:"LearnThreatOpsEDR",
     sensor_id:"7a8b9c0d1e2f",
     sensor_version:"7.14.17706",
     prevention_policy:"CORP-DETECT-ONLY",
@@ -572,14 +572,14 @@ const INCIDENTS = {
       {time:"08:17:55",proto:"DNS",  src:"10.10.44.112:54321",dst:"10.10.1.5:53",      proc:"svchost.exe",  bytes:"62",             state:"CLOSED",      bad:false},
     ],
     timeline:[
-      {time:"08:16:50",sev:"info",src:"SentinelEDR",event:"OUTLOOK.EXE launched — user: analyst.user — PID:3201"},
-      {time:"08:17:01",sev:"med", src:"SentinelEDR",event:"WINWORD.EXE opened macro-enabled doc: INV_Q4_2026_FINAL.docm — VBA AutoOpen() triggered"},
-      {time:"08:17:09",sev:"high",src:"SentinelEDR",event:"cmd.exe (PID:4398) spawned from WINWORD.EXE — score:91 — unusual parent-child"},
-      {time:"08:17:14",sev:"high",src:"SentinelEDR",event:"powershell.exe (PID:4501) — -Enc flag — AMSI bypass in process memory — score:97"},
-      {time:"08:17:33",sev:"crit",src:"SentinelEDR",event:"svchost32.exe dropped to AppData\\Temp — SHA256: a3f19c2d — VT: 48/72 — beacon started"},
-      {time:"08:18:12",sev:"crit",src:"SentinelEDR",event:"LSASS memory access — GrantedAccess=0x1fffff — full credential access — Cobalt Strike-type pattern [fictional simulation]"},
-      {time:"08:18:44",sev:"high",src:"SentinelEDR",event:"Registry Run key written — HKCU\\Run\\WindowsUpdate — persistence established"},
-      {time:"08:19:01",sev:"high",src:"SentinelEDR",event:"SMB lateral attempt: 10.10.44.112 → 10.10.44.60:445 — blocked by FW ACL"},
+      {time:"08:16:50",sev:"info",src:"LearnThreatOpsEDR",event:"OUTLOOK.EXE launched — user: analyst.user — PID:3201"},
+      {time:"08:17:01",sev:"med", src:"LearnThreatOpsEDR",event:"WINWORD.EXE opened macro-enabled doc: INV_Q4_2026_FINAL.docm — VBA AutoOpen() triggered"},
+      {time:"08:17:09",sev:"high",src:"LearnThreatOpsEDR",event:"cmd.exe (PID:4398) spawned from WINWORD.EXE — score:91 — unusual parent-child"},
+      {time:"08:17:14",sev:"high",src:"LearnThreatOpsEDR",event:"powershell.exe (PID:4501) — -Enc flag — AMSI bypass in process memory — score:97"},
+      {time:"08:17:33",sev:"crit",src:"LearnThreatOpsEDR",event:"svchost32.exe dropped to AppData\\Temp — SHA256: a3f19c2d — VT: 48/72 — beacon started"},
+      {time:"08:18:12",sev:"crit",src:"LearnThreatOpsEDR",event:"LSASS memory access — GrantedAccess=0x1fffff — full credential access — Cobalt Strike-type pattern [fictional simulation]"},
+      {time:"08:18:44",sev:"high",src:"LearnThreatOpsEDR",event:"Registry Run key written — HKCU\\Run\\WindowsUpdate — persistence established"},
+      {time:"08:19:01",sev:"high",src:"LearnThreatOpsEDR",event:"SMB lateral attempt: 10.10.44.112 → 10.10.44.60:445 — blocked by FW ACL"},
     ],
     file_events:[
       {time:"08:17:33",action:"CREATE",path:"C:\\Users\\analyst.user\\AppData\\Local\\Temp\\svchost32.exe",sha256:"a3f19c2d8e4b7f1c9d2e",size:"284KB",signed:false},
@@ -677,16 +677,16 @@ const INCIDENTS = {
       },
       evidence_bullets:["Risk Score: 97/100 — High Confidence","Rules: OUTBOUND_C2_BEACON + LSASS_MEMORY_ACCESS","Host: WS-CORP-FIN-044 (Finance workstation)","User: analyst.user@corp.internal","Time: 08:17 IST — business hours"],
       action_label:"Classify TRUE POSITIVE — Open Incident",
-      action_result:"INC-2026-0441 opened\nAssigned: "+ANALYST.name+"\nSLA timer: 60:00 started\nStatus: In Progress\nNext: Pivot to SentinelEDR",
+      action_result:"INC-2026-0441 opened\nAssigned: "+ANALYST.name+"\nSLA timer: 60:00 started\nStatus: In Progress\nNext: Pivot to LearnThreatOpsEDR",
     },
     {
       id:1,phase:"INVESTIGATION",xp:30,
-      tool:"SentinelEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
+      tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Read the Process Tree",
-      objective:"Switch to SentinelEDR. Look at the process tree for WS-CORP-FIN-044. It shows every program that ran and what started it. Think: does this chain make sense for a normal Finance workstation?",
+      objective:"Switch to LearnThreatOpsEDR. Look at the process tree for WS-CORP-FIN-044. It shows every program that ran and what started it. Think: does this chain make sense for a normal Finance workstation?",
       lookFor:["Parent-child relationships — what program started what?","Programs running from AppData or Temp folders","Risk scores above 80 — highly suspicious","The LSASS entry — if something accessed lsass.exe, credentials may be stolen"],
       seniorThinking:"Word documents should never spawn cmd.exe. That one relationship tells me almost everything. A macro ran a command. The command ran PowerShell with encoded content — how attackers hide their code. The chain tells the story.",
-      instruction:"Switch to SentinelEDR. Open the process tree for WS-CORP-FIN-044. Trace the full execution chain. What spawned what? Where did legitimate execution stop and malicious begin?",
+      instruction:"Switch to LearnThreatOpsEDR. Open the process tree for WS-CORP-FIN-044. Trace the full execution chain. What spawned what? Where did legitimate execution stop and malicious begin?",
       analyst_note:"OUTLOOK → WINWORD → cmd.exe is your red flag. Word should NEVER spawn cmd.exe. That is a macro executing. Trace: cmd → powershell (-Enc) → svchost32.exe in AppData/Temp. Score: 99/100.",
       decision:{
         question:"You see WINWORD.EXE spawning cmd.exe in the process tree. What does this indicate?",
@@ -725,7 +725,7 @@ const INCIDENTS = {
     },
     {
       id:3,phase:"CONTAINMENT",xp:30,
-      tool:"SentinelEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
+      tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Contain the Endpoint",
       objective:"The C2 beacon is live right now. LSASS was accessed — the attacker may already have credentials. Every second increases risk. You must act — but think carefully about HOW you act. The wrong containment method loses forensic evidence.",
       lookFor:["Network tab — are C2 sessions still ESTABLISHED?","Containment tab — what does isolation do vs shutdown?","Does isolation keep the EDR sensor connected?","What volatile evidence is lost if you power off?"],
@@ -830,7 +830,7 @@ const INCIDENTS = {
   },
 
   edr:{
-    tool:"SentinelEDR",
+    tool:"LearnThreatOpsEDR",
     sensor_id:"9f2a8c1d3e4b",
     prevention_policy:"DC-STRICT-POLICY-v2",
     policy_note:"Domain Controller policy — all detections logged, high-risk auto-quarantine enabled",
@@ -847,12 +847,12 @@ const INCIDENTS = {
       {time:"02:14:01",proto:"LDAP", src:"10.10.1.20:49281",dst:"10.10.1.5:389",   proc:"svchost.exe",bytes:"2,440",         state:"CLOSED",    bad:false},
     ],
     timeline:[
-      {time:"02:13:55",sev:"info",src:"SentinelEDR",event:"services.exe normal activity — DC service startup pattern"},
-      {time:"02:13:58",sev:"med", src:"SentinelEDR",event:"svc_backup: Interactive logon to DC-CORP-FIN-01 — service accounts should use non-interactive sessions"},
-      {time:"02:14:05",sev:"high",src:"SentinelEDR",event:"powershell.exe -EncodedCommand launched by svc_backup — score: 81 — decoded: IEX (New-Object Net.WebClient).DownloadString('...'}"},
-      {time:"02:14:33",sev:"crit",src:"SentinelEDR",event:"wdu.exe dropped to C:\\Windows\\Temp — SHA256: b7e2f1a9c4d3 — VT: 41/72 — connects to 198.51.100.48:8080"},
-      {time:"02:14:38",sev:"crit",src:"SentinelEDR",event:"Scheduled task created: WindowsDefenderUpdate — runs wdu.exe at SYSTEM logon — persistence"},
-      {time:"02:15:01",sev:"high",src:"SentinelEDR",event:"wdu.exe HTTP beacon to 198.51.100.48:8080 — no DNS — direct IP connection — C2 pattern"},
+      {time:"02:13:55",sev:"info",src:"LearnThreatOpsEDR",event:"services.exe normal activity — DC service startup pattern"},
+      {time:"02:13:58",sev:"med", src:"LearnThreatOpsEDR",event:"svc_backup: Interactive logon to DC-CORP-FIN-01 — service accounts should use non-interactive sessions"},
+      {time:"02:14:05",sev:"high",src:"LearnThreatOpsEDR",event:"powershell.exe -EncodedCommand launched by svc_backup — score: 81 — decoded: IEX (New-Object Net.WebClient).DownloadString('...'}"},
+      {time:"02:14:33",sev:"crit",src:"LearnThreatOpsEDR",event:"wdu.exe dropped to C:\\Windows\\Temp — SHA256: b7e2f1a9c4d3 — VT: 41/72 — connects to 198.51.100.48:8080"},
+      {time:"02:14:38",sev:"crit",src:"LearnThreatOpsEDR",event:"Scheduled task created: WindowsDefenderUpdate — runs wdu.exe at SYSTEM logon — persistence"},
+      {time:"02:15:01",sev:"high",src:"LearnThreatOpsEDR",event:"wdu.exe HTTP beacon to 198.51.100.48:8080 — no DNS — direct IP connection — C2 pattern"},
     ],
     file_events:[
       {time:"02:14:33",action:"CREATE",path:"C:\\Windows\\Temp\\wdu.exe",sha256:"b7e2f1a9c4d3ee7f2a1b",size:"318KB",signed:false},
@@ -868,7 +868,7 @@ const INCIDENTS = {
        categories:["C2 Server","Malware Distribution","Bulletproof Hosting"],
        country:"RU",asn:"AS197695 — Reg.ru Hosting",
        last_seen:"2026-05-28",campaigns:["Cobalt Strike C2 — multiple finance sector victims 2026","Linked to TA505 infrastructure (low confidence)"],
-       passive_dns:["update.windefender-cdn.com","c2-example.net"],
+       passive_dns:["update.windows-update-example.com","c2-example.net"],
        first_seen:"2026-02-14",verdict:"MALICIOUS — block immediately",verdictColor:"#dc2626"},
       {type:"Hash",value:"b7e2f1a9c4d3ee7f",
        vt_score:"41/72 detections",abuse_score:0,
@@ -908,16 +908,16 @@ const INCIDENTS = {
       },
       evidence_bullets:["Time: 02:14 AM — outside all approved change windows","Host: DC-CORP-FIN-01 — Domain Controller (critical asset)","User: svc_backup — service account (interactive logon is abnormal)","Rules fired: ENCODED_POWERSHELL_DC + SCHEDULED_TASK_CREATED","Risk score: 84/100 — High confidence"],
       action_label:"Open P1 Incident — Unauthorised DC Activity",
-      action_result:"INC-2026-0442 opened\nPriority: P1 — Domain Controller\nSLA: 60 minutes\nOn-call DC Admin: notified\nNext: Pivot to SentinelEDR — read the process tree",
+      action_result:"INC-2026-0442 opened\nPriority: P1 — Domain Controller\nSLA: 60 minutes\nOn-call DC Admin: notified\nNext: Pivot to LearnThreatOpsEDR — read the process tree",
     },
     {
       id:1,phase:"INVESTIGATION",xp:30,
-      tool:"SentinelEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
+      tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Decode the PowerShell Command",
-      objective:"Switch to SentinelEDR. The process tree shows powershell.exe ran with -EncodedCommand. That base64 string hides the actual command. Analysts can decode it. Look at the decoded command — what is it doing? Then trace the full chain down to wdu.exe.",
+      objective:"Switch to LearnThreatOpsEDR. The process tree shows powershell.exe ran with -EncodedCommand. That base64 string hides the actual command. Analysts can decode it. Look at the decoded command — what is it doing? Then trace the full chain down to wdu.exe.",
       lookFor:["The encoded command — what does it decode to?","Where was wdu.exe dropped? Legitimate programs live in Program Files — not Temp","The scheduled task name — does 'WindowsDefenderUpdate' seem designed to blend in?","The SHA256 of wdu.exe — is it signed by a legitimate vendor?"],
       seniorThinking:"Attackers love three tricks: encoded PowerShell to hide the download command, dropping payloads to Temp folders, and naming their malware after legitimate Windows processes. 'WindowsDefenderUpdate' is classic camouflage. If I ever see a file in Temp with a name that sounds like a Windows component but is NOT signed by Microsoft — that is malware.",
-      instruction:"Read the process tree in SentinelEDR. Find the encoded PowerShell command. Trace what it drops. Check where wdu.exe lives and whether it is signed.",
+      instruction:"Read the process tree in LearnThreatOpsEDR. Find the encoded PowerShell command. Trace what it drops. Check where wdu.exe lives and whether it is signed.",
       analyst_note:"Decoded command: IEX (New-Object Net.WebClient).DownloadString — classic download cradle. wdu.exe in C:\\Windows\\Temp — unsigned — SHA256: b7e2f1a9c4d3. Scheduled task for persistence. This is a RAT.",
       decision:{
         question:"wdu.exe was dropped to C:\\Windows\\Temp and is NOT digitally signed. What does this tell you?",
@@ -938,25 +938,25 @@ const INCIDENTS = {
       title:"Validate the C2 Infrastructure",
       objective:"Look up the C2 IP and the file hash in ThreatLens. Before reading the verdict — check the raw evidence. Look at: abuse score, passive DNS domains (they often reveal the attacker's naming patterns), and the campaign history. What kind of attacker uses this infrastructure?",
       lookFor:["The passive DNS names — do they all impersonate Microsoft security products?","The campaign history — has this IP been used in similar finance sector attacks?","The file hash campaign description — does it match what you are seeing?","The hosting provider — bulletproof hosters are used by advanced threat actors"],
-      seniorThinking:"When I see passive DNS names like 'windefender-cdn.com' and 'ms-security-patch.net' — I know this is a sophisticated attacker. They register domains that sound like legitimate Microsoft infrastructure specifically to bypass email security filters and fool analysts. This is not a script kiddie.",
+      seniorThinking:"When I see passive DNS names like 'windows-update-example.com' and 'security-patch-example.net' — I know this is a sophisticated attacker. They register domains that sound like legitimate Microsoft infrastructure specifically to bypass email security filters and fool analysts. This is not a script kiddie.",
       instruction:"Look up 198.51.100.48 and hash b7e2f1a9c4d3 in ThreatLens. Read the passive DNS carefully — what pattern do you see?",
       analyst_note:"IP: 96/100 abuse score — bulletproof hosting in Russia. Passive DNS names impersonate Microsoft security services. Campaign linked to finance sector targeting. Sophisticated actor.",
       decision:{
-        question:"Passive DNS shows domains like 'windefender-cdn.com' and 'ms-security-patch.net'. What does this reveal about the attacker?",
+        question:"Passive DNS shows domains like 'windows-update-example.com' and 'security-patch-example.net'. What does this reveal about the attacker?",
         options:[
-          {text:"These are legitimate Microsoft domains — the alert might be a false positive",correct:false,why:"Incorrect. Microsoft domains end in microsoft.com or windowsupdate.com. Domains like 'windefender-cdn.com' are typosquats — specifically registered to look like Microsoft services but are attacker-controlled."},
+          {text:"These are legitimate Microsoft domains — the alert might be a false positive",correct:false,why:"Incorrect. Microsoft domains end in microsoft.com or windowsupdate.com. Domains like 'windows-update-example.com' are typosquats — specifically registered to look like Microsoft services but are attacker-controlled."},
           {text:"The attacker deliberately chose domain names that look like Microsoft services to avoid detection",correct:true,why:"Correct. This is a classic advanced threat tactic called domain mimicry. Domains designed to look legitimate help bypass email filters, fool analysts, and blend into network traffic. This indicates a sophisticated, targeted attacker."},
           {text:"The passive DNS is probably outdated — ignore it",correct:false,why:"Incorrect. Passive DNS is one of the most reliable IOC signals. Attackers reuse infrastructure across campaigns. These domains confirm this IP is part of a deliberate Microsoft-impersonation campaign."},
           {text:"Any domain can end up in threat intel by mistake",correct:false,why:"Incorrect. An abuse score of 96/100 combined with domain names specifically designed to mimic Microsoft security products is not a coincidence or a false positive."},
         ]
       },
-      evidence_bullets:["IP 198.51.100.48 — AbuseIPDB: 96/100 — Bulletproof hosting","Passive DNS: 'windefender-cdn.com', 'ms-security-patch.net' — Microsoft impersonation","Hash b7e2f1a9c4d3 — 41/72 VT — custom RAT, finance targeting","Campaign: TA505-linked (low confidence) — Q1-Q2 2026 finance sector","Assessment: Sophisticated targeted threat — not opportunistic"],
+      evidence_bullets:["IP 198.51.100.48 — AbuseIPDB: 96/100 — Bulletproof hosting","Passive DNS: 'windows-update-example.com', 'security-patch-example.net' — Microsoft impersonation","Hash b7e2f1a9c4d3 — 41/72 VT — custom RAT, finance targeting","Campaign: TA505-linked (low confidence) — Q1-Q2 2026 finance sector","Assessment: Sophisticated targeted threat — not opportunistic"],
       action_label:"IOCs Confirmed — Sophisticated Finance-Sector Targeting",
-      action_result:"IOCs documented:\n[IP] 198.51.100.48 — BLOCK estate-wide — 96/100\n[Hash] b7e2f1a9c4d3 — BLOCK+KILL all endpoints\n[Domains] windefender-cdn.com, ms-security-patch.net — DNS SINKHOLE\nThreat level: SOPHISTICATED — escalate to SOC L2",
+      action_result:"IOCs documented:\n[IP] 198.51.100.48 — BLOCK estate-wide — 96/100\n[Hash] b7e2f1a9c4d3 — BLOCK+KILL all endpoints\n[Domains] windows-update-example.com, security-patch-example.net — DNS SINKHOLE\nThreat level: SOPHISTICATED — escalate to SOC L2",
     },
     {
       id:3,phase:"CONTAINMENT",xp:35,
-      tool:"SentinelEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
+      tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Contain the Domain Controller",
       objective:"This is a Domain Controller. Containing a DC is more complex than containing a workstation. If you isolate a DC from the network, authentication for the entire domain may break. What is the correct containment approach for this critical asset?",
       lookFor:["Is this the ONLY domain controller, or are there replicas?","How long has the C2 been active — can you act in the next few minutes?","What does the DC admin team need to do before you isolate?","Can you kill the malicious process without full network isolation?"],
@@ -1040,7 +1040,7 @@ const INCIDENTS = {
   },
 
   edr:{
-    tool:"SentinelEDR",
+    tool:"LearnThreatOpsEDR",
     sensor_id:"9f2a8c1d3e4b",
     prevention_policy:"DC-STRICT-POLICY-v2",
     policy_note:"Domain Controller policy — all detections logged",
@@ -1055,11 +1055,11 @@ const INCIDENTS = {
       {time:"23:44:58",proto:"LDAP", src:"10.10.1.20:49281",dst:"10.10.1.5:389",   proc:"services.exe", bytes:"1,240",               state:"CLOSED",bad:false},
     ],
     timeline:[
-      {time:"23:44:50",sev:"info",src:"SentinelEDR",event:"WSUS patching client started — scheduled maintenance window"},
-      {time:"23:44:55",sev:"info",src:"SentinelEDR",event:"adm_patching logon — admin account — within INC-CHG-2026-0112 change window"},
-      {time:"23:45:05",sev:"med", src:"SentinelEDR",event:"powershell.exe -EncodedCommand launched — parent: WSUSClient.exe — score: 42"},
-      {time:"23:45:44",sev:"info",src:"SentinelEDR",event:"wusa.exe installing KB5378905 — Windows Server patch — legitimate WSUS activity"},
-      {time:"23:45:50",sev:"info",src:"SentinelEDR",event:"WSUS client connected to internal update server 10.10.1.100:8530 — no external connections"},
+      {time:"23:44:50",sev:"info",src:"LearnThreatOpsEDR",event:"WSUS patching client started — scheduled maintenance window"},
+      {time:"23:44:55",sev:"info",src:"LearnThreatOpsEDR",event:"adm_patching logon — admin account — within INC-CHG-2026-0112 change window"},
+      {time:"23:45:05",sev:"med", src:"LearnThreatOpsEDR",event:"powershell.exe -EncodedCommand launched — parent: WSUSClient.exe — score: 42"},
+      {time:"23:45:44",sev:"info",src:"LearnThreatOpsEDR",event:"wusa.exe installing KB5378905 — Windows Server patch — legitimate WSUS activity"},
+      {time:"23:45:50",sev:"info",src:"LearnThreatOpsEDR",event:"WSUS client connected to internal update server 10.10.1.100:8530 — no external connections"},
     ],
     file_events:[
       {time:"23:45:44",action:"CREATE",path:"C:\\Windows\\SoftwareDistribution\\KB5378905.msu",sha256:"",size:"48MB",signed:true},
@@ -1108,11 +1108,11 @@ const INCIDENTS = {
       },
       evidence_bullets:["Active change window: INC-CHG-2026-0112 (23:00-03:00) — approved tonight","Account: adm_patching — admin patching account (not service account)","Only 1 rule fired (vs 4 in a typical malicious case)","Risk score: 72/100 (lower than typical malware alerts)","No beaconing or lateral movement alerts"],
       action_label:"Investigate Fully — Verify Against Change Window",
-      action_result:"INC-2026-0445 opened for investigation\nPriority: P2 (change window context reduces urgency)\nApproach: verify activity against approved change ticket\nNext: Pivot to SentinelEDR — read the process tree",
+      action_result:"INC-2026-0445 opened for investigation\nPriority: P2 (change window context reduces urgency)\nApproach: verify activity against approved change ticket\nNext: Pivot to LearnThreatOpsEDR — read the process tree",
     },
     {
       id:1,phase:"INVESTIGATION",xp:30,
-      tool:"SentinelEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
+      tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Check the Process Tree — What Spawned PowerShell?",
       objective:"In the malicious scenario, powershell.exe was spawned by svchost.exe. In this scenario — look at what spawned powershell.exe. The parent process tells you almost everything. Then check where the child process went — wusa.exe or wdu.exe?",
       lookFor:["What is the PARENT of powershell.exe — a WSUS client or an unknown process?","What does powershell.exe spawn — wusa.exe (Windows Update) or an unknown .exe?","Where does the child process connect to — internal WSUS server or external IP?","Is the file downloaded signed by Microsoft or unsigned?"],
@@ -1200,14 +1200,14 @@ earliest=-30m
   },
 
   edr:{
-    tool:"SentinelEDR",
+    tool:"LearnThreatOpsEDR",
     sensor_id:"N/A — cloud identity incident",
     prevention_policy:"N/A",
     policy_note:"This is an identity incident — no endpoint EDR data. Investigate via Azure AD sign-in logs and M365 audit log.",
     process_tree:[],
     network:[
-      {time:"09:20:02",proto:"HTTPS",src:"10.10.5.22",      dst:"login.example-corp.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Mumbai office",bad:false},
-      {time:"09:23:58",proto:"HTTPS",src:"198.51.100.47",   dst:"login.example-corp.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Amsterdam (attacker)",bad:true},
+      {time:"09:20:02",proto:"HTTPS",src:"10.10.5.22",      dst:"login.example-corp-example.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Mumbai office",bad:false},
+      {time:"09:23:58",proto:"HTTPS",src:"198.51.100.47",   dst:"login.example-corp-example.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Amsterdam (attacker)",bad:true},
       {time:"09:25:14",proto:"HTTPS",src:"198.51.100.47",   dst:"corp.sharepoint.com",       proc:"Browser",bytes:"142MB out",state:"ACTIVE — downloading",bad:true},
     ],
     timeline:[
@@ -1376,7 +1376,7 @@ earliest=-30m
   },
 
   edr:{
-    tool:"SentinelEDR",
+    tool:"LearnThreatOpsEDR",
     sensor_id:"3c4d5e6f7a8b",
     sensor_version:"7.14.17706",
     prevention_policy:"CORP-SERVER-DETECT-ONLY",
@@ -1392,12 +1392,12 @@ earliest=-30m
       {time:"02:30:45",proto:"HTTPS",src:"10.10.1.88:51001",dst:"10.10.1.50:443",proc:"BackupAgent.exe",bytes:"2.1GB sent",state:"COMPLETED",bad:false},
     ],
     timeline:[
-      {time:"02:29:55",sev:"info",src:"SentinelEDR",event:"BackupAgent.exe started — scheduled task: NightlyBackup — running as svc_backup"},
-      {time:"02:30:05",sev:"info",src:"SentinelEDR",event:"BackupAgent.exe connecting to FS-CORP-01 — SMB — reading backup source"},
-      {time:"02:30:11",sev:"med", src:"SentinelEDR",event:"powershell.exe launched — parent: BackupAgent.exe — -EncodedCommand flag — score 62"},
-      {time:"02:30:14",sev:"info",src:"SentinelEDR",event:"SMB read: 47GB from \\\\FS-CORP-01\\Backups — typical nightly backup volume"},
-      {time:"02:30:45",sev:"info",src:"SentinelEDR",event:"HTTPS upload: 2.1GB to 10.10.1.50 (CORP-BACKUP-SRV) — internal backup destination"},
-      {time:"02:31:12",sev:"info",src:"SentinelEDR",event:"BackupAgent.exe exited cleanly — exit code 0 — backup completed"},
+      {time:"02:29:55",sev:"info",src:"LearnThreatOpsEDR",event:"BackupAgent.exe started — scheduled task: NightlyBackup — running as svc_backup"},
+      {time:"02:30:05",sev:"info",src:"LearnThreatOpsEDR",event:"BackupAgent.exe connecting to FS-CORP-01 — SMB — reading backup source"},
+      {time:"02:30:11",sev:"med", src:"LearnThreatOpsEDR",event:"powershell.exe launched — parent: BackupAgent.exe — -EncodedCommand flag — score 62"},
+      {time:"02:30:14",sev:"info",src:"LearnThreatOpsEDR",event:"SMB read: 47GB from \\\\FS-CORP-01\\Backups — typical nightly backup volume"},
+      {time:"02:30:45",sev:"info",src:"LearnThreatOpsEDR",event:"HTTPS upload: 2.1GB to 10.10.1.50 (CORP-BACKUP-SRV) — internal backup destination"},
+      {time:"02:31:12",sev:"info",src:"LearnThreatOpsEDR",event:"BackupAgent.exe exited cleanly — exit code 0 — backup completed"},
     ],
     file_events:[],
   },
@@ -1467,12 +1467,12 @@ earliest=-30m
         ]
       },
       evidence_bullets:["Risk Score: 62/100 — Medium confidence, not high","User: svc_backup (service account, not a human user)","Time: 02:30 IST — typical overnight maintenance window","Previous: 2 identical incidents closed as backup jobs in 14 days","No network beaconing alerts in correlated events"],
-      action_label:"Investigate in SentinelEDR — Check Process Tree",
-      action_result:"Moving to SentinelEDR to verify the process chain.\nHypothesis: Scheduled backup job\nStatus: Investigating",
+      action_label:"Investigate in LearnThreatOpsEDR — Check Process Tree",
+      action_result:"Moving to LearnThreatOpsEDR to verify the process chain.\nHypothesis: Scheduled backup job\nStatus: Investigating",
     },
     {
       id:1,phase:"INVESTIGATION",xp:25,
-      tool:"SentinelEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
+      tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Read the Process Tree — Who is the Parent?",
       objective:"Open the process tree for MGMT-SRV-01. Look at what launched the PowerShell process. The parent process tells you almost everything. In a real attack the chain usually starts with something user-facing — email, browser, document. What do you see here?",
       lookFor:["What is the IMMEDIATE parent of powershell.exe?","What is the grandparent — what started BackupAgent.exe?","Does the execution chain start from something a user touched?","Does BackupAgent.exe look like a known, legitimate application?"],
@@ -1565,8 +1565,8 @@ earliest=-30m
     policy_note:"No high-risk sign-in block policy active — gap identified",
     process_tree:[],
     network:[
-      {time:"11:20:11",proto:"HTTPS",src:"192.0.2.11:44201",dst:"login.example-corp.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Mumbai IN",bad:false},
-      {time:"11:23:47",proto:"HTTPS",src:"203.0.113.23:42341",dst:"login.example-corp.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Amsterdam NL",bad:true},
+      {time:"11:20:11",proto:"HTTPS",src:"192.0.2.11:44201",dst:"login.example-corp-example.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Mumbai IN",bad:false},
+      {time:"11:23:47",proto:"HTTPS",src:"203.0.113.23:42341",dst:"login.example-corp-example.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Amsterdam NL",bad:true},
       {time:"11:31:00",proto:"HTTPS",src:"192.0.2.10:55001",dst:"corp.sharepoint.com:443",proc:"SharePoint Download",bytes:"2.3GB",state:"COMPLETED",bad:true},
     ],
     timeline:[
@@ -1772,7 +1772,7 @@ earliest=-30m
     previous_incidents:["INC-2026-0512 (Low, same source, closed — vulnerability scan, 7 days ago)","INC-2026-0498 (Low, same source, closed — vulnerability scan, 14 days ago)"],
   },
   edr:{
-    tool:"SentinelEDR",sensor_id:"",sensor_version:"",
+    tool:"LearnThreatOpsEDR",sensor_id:"",sensor_version:"",
     prevention_policy:"Network sensor only",policy_note:"No EDR sensor on scanner host",
     process_tree:[],
     network:[
@@ -1874,7 +1874,7 @@ earliest=-30m
     previous_incidents:["No previous DLP incidents for deepak.verma"],
   },
   edr:{
-    tool:"SentinelEDR",sensor_id:"9f0a1b2c3d4e",sensor_version:"7.14.17706",
+    tool:"LearnThreatOpsEDR",sensor_id:"9f0a1b2c3d4e",sensor_version:"7.14.17706",
     prevention_policy:"CORP-STANDARD-DETECT-ONLY",policy_note:"DLP policy: detect and alert only — no auto-block",
     process_tree:[
       {pid:"2201",ppid:"1400",depth:0,name:"explorer.exe",sha256:"",score:0,bad:false,time:"14:30:00",user:"CORP\\deepak.verma",cmd:"C:\\Windows\\explorer.exe"},
@@ -1883,8 +1883,8 @@ earliest=-30m
     network:[],
     timeline:[
       {time:"14:29:55",sev:"med", src:"DLP",event:"USB device inserted: SanDisk USB 3.0 Serial: 4C531234560123 on WS-CORP-HR-031 — user: deepak.verma"},
-      {time:"14:30:00",sev:"med", src:"SentinelEDR",event:"File Explorer opened — navigated to C:\\Users\\deepak.verma\\HR_Data — folder contains HR compensation files"},
-      {time:"14:31:05",sev:"high",src:"SentinelEDR",event:"robocopy.exe launched — source: C:\\Users\\deepak.verma\\HR_Data — destination: E:\\ (USB) — /COPYALL flag — preserves metadata"},
+      {time:"14:30:00",sev:"med", src:"LearnThreatOpsEDR",event:"File Explorer opened — navigated to C:\\Users\\deepak.verma\\HR_Data — folder contains HR compensation files"},
+      {time:"14:31:05",sev:"high",src:"LearnThreatOpsEDR",event:"robocopy.exe launched — source: C:\\Users\\deepak.verma\\HR_Data — destination: E:\\ (USB) — /COPYALL flag — preserves metadata"},
       {time:"14:33:12",sev:"high",src:"DLP",event:"DLP alert: 4.7GB copied to USB — 847 files — includes CONFIDENTIAL files — HR_Compensation_2026.xlsx, Org_Chart_Internal.pptx"},
       {time:"14:52:08",sev:"high",src:"DLP",event:"USB device removed — SanDisk USB 3.0 Serial: 4C531234560123 — copy completed"},
     ],
@@ -1931,7 +1931,7 @@ earliest=-30m
     },
     {
       id:1,phase:"INVESTIGATION",xp:25,
-      tool:"SentinelEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
+      tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Confirm the Copy Method — Intent Evidence",
       objective:"The process tree shows robocopy.exe was used. This is significant. A user who accidentally copied files would use File Explorer drag-and-drop. robocopy.exe is a command-line tool specifically designed for bulk copying with metadata preservation. What does this tell you about intent?",
       lookFor:["What flags did robocopy use? What does /E /COPYALL /LOG mean?","Is there a log file? Where does it go?","Did the user navigate to the files deliberately or did they just happen to be there?","What is the timeline of events — how long did the copy take?"],
@@ -1984,25 +1984,25 @@ earliest=-30m
   host:"WS-CORP-DEV-088",user:"arjun.nair@corp.internal",
   srcIp:"10.10.22.88",c2Ip:null,assignee:null,
   tags:["DNS","C2","Beaconing","Threat Hunting","DGA"],
-  summary:"BlueTrace SIEM flagged anomalous DNS query volume from WS-CORP-DEV-088. 2,847 DNS queries in 4 hours — 98% to a single domain pattern: random-looking subdomains of update-telemetry-cdn.net. Average query every 5 seconds. No established network connections. Classic DNS tunneling/beaconing pattern.",
+  summary:"BlueTrace SIEM flagged anomalous DNS query volume from WS-CORP-DEV-088. 2,847 DNS queries in 4 hours — 98% to a single domain pattern: random-looking subdomains of telemetry-example.net. Average query every 5 seconds. No established network connections. Classic DNS tunneling/beaconing pattern.",
   mitre:["T1071.004","T1132.001"],isTP:true,
   siem:{
     tool:"BlueTrace SIEM",
     correlation_rule:"CORP-RULE-5512 — DNS Anomaly — High Query Rate to Single Domain",
     fired_at:tsNow(0),risk_score:84,
     alerts:[
-      {id:"BT-7701",time:"07:15:00",sev:"High",rule:"DNS_BEACON_PATTERN",src:"DNS Gateway",msg:"WS-CORP-DEV-088 sent 2,847 DNS queries in 4h — 98% to *.update-telemetry-cdn.net — query every 5s — beacon pattern"},
+      {id:"BT-7701",time:"07:15:00",sev:"High",rule:"DNS_BEACON_PATTERN",src:"DNS Gateway",msg:"WS-CORP-DEV-088 sent 2,847 DNS queries in 4h — 98% to *.telemetry-example.net — query every 5s — beacon pattern"},
       {id:"BT-7702",time:"07:15:00",sev:"Medium",rule:"DGA_PATTERN_DETECTED",src:"DNS Gateway",msg:"Subdomain pattern analysis: random 16-char subdomains — entropy score 4.2/5.0 — DGA signature detected"},
     ],
     raw_search:`index=dns src_ip=10.10.22.88 earliest=-4h
 | stats count by query_name
-| where match(query_name, "update-telemetry-cdn.net")
+| where match(query_name, "telemetry-example.net")
 | head 20`,
     correlated_hosts:["WS-CORP-DEV-088"],
     previous_incidents:["No previous DNS anomaly incidents for this host"],
   },
   edr:{
-    tool:"SentinelEDR",sensor_id:"1a2b3c4d5e6f",sensor_version:"7.14.17706",
+    tool:"LearnThreatOpsEDR",sensor_id:"1a2b3c4d5e6f",sensor_version:"7.14.17706",
     prevention_policy:"CORP-DEV-DETECT-ONLY",policy_note:"Developer workstation — detect only",
     process_tree:[
       {pid:"4401",ppid:"1200",depth:0,name:"svchost.exe",sha256:"",score:0,bad:false,time:"03:15:00",user:"NT AUTHORITY\\SYSTEM",cmd:"C:\\Windows\\System32\\svchost.exe -k netsvcs"},
@@ -2013,11 +2013,11 @@ earliest=-30m
       {time:"03:15:05",proto:"DNS",src:"10.10.22.88:54002",dst:"10.10.1.5:53",proc:"UpdateService.exe",bytes:"61 bytes per query",state:"QUERY — no connection",bad:true},
     ],
     timeline:[
-      {time:"03:14:55",sev:"med", src:"SentinelEDR",event:"UpdateService.exe started — AppData\\Roaming — score 82 — parent: svchost.exe"},
-      {time:"03:15:00",sev:"high",src:"SentinelEDR",event:"DNS query: a7f2k9m1p4r8.update-telemetry-cdn.net — UpdateService.exe"},
-      {time:"03:15:05",sev:"high",src:"SentinelEDR",event:"DNS query: x9b3n7q2w5t6.update-telemetry-cdn.net — UpdateService.exe"},
-      {time:"03:15:10",sev:"high",src:"SentinelEDR",event:"DNS query: m4d8h1j6l0p9.update-telemetry-cdn.net — UpdateService.exe"},
-      {time:"07:15:00",sev:"high",src:"BlueTrace",event:"2,847 total DNS queries to *.update-telemetry-cdn.net over 4 hours — SIEM alert fired"},
+      {time:"03:14:55",sev:"med", src:"LearnThreatOpsEDR",event:"UpdateService.exe started — AppData\\Roaming — score 82 — parent: svchost.exe"},
+      {time:"03:15:00",sev:"high",src:"LearnThreatOpsEDR",event:"DNS query: a7f2k9m1p4r8.telemetry-example.net — UpdateService.exe"},
+      {time:"03:15:05",sev:"high",src:"LearnThreatOpsEDR",event:"DNS query: x9b3n7q2w5t6.telemetry-example.net — UpdateService.exe"},
+      {time:"03:15:10",sev:"high",src:"LearnThreatOpsEDR",event:"DNS query: m4d8h1j6l0p9.telemetry-example.net — UpdateService.exe"},
+      {time:"07:15:00",sev:"high",src:"BlueTrace",event:"2,847 total DNS queries to *.telemetry-example.net over 4 hours — SIEM alert fired"},
     ],
     file_events:[
       {time:"03:14:50",action:"CREATE",path:"C:\\Users\\arjun.nair\\AppData\\Roaming\\UpdateService.exe",sha256:"b8c9d0e1f2a3b4c5",size:"156KB",signed:false},
@@ -2027,13 +2027,13 @@ earliest=-30m
     tool:"ThreatLens",
     lookups:[
       {
-        type:"Domain",value:"update-telemetry-cdn.net",
+        type:"Domain",value:"telemetry-example.net",
         vt_score:"41/90 detections",abuse_score:91,
         categories:["DNS C2 Infrastructure","Malware Communication","DGA Domain"],
         country:"US",asn:"AS13335 — Cloudflare (fronted)",
         last_seen:"2026-05-28",
         campaigns:["DNS beacon malware family — IcedID variant","APT activity using DNS C2 — Q1 2026"],
-        passive_dns:["*.update-telemetry-cdn.net — wildcard — 50,000+ subdomains seen"],
+        passive_dns:["*.telemetry-example.net — wildcard — 50,000+ subdomains seen"],
         first_seen:"2025-11-04",
         verdict:"MALICIOUS — Known DNS C2 domain. Wildcard DNS responses for any subdomain. Malware encodes data in subdomain strings and receives commands in DNS responses.",
         verdictColor:"#dc2626",
@@ -2070,15 +2070,15 @@ earliest=-30m
           {text:"All malware uses DNS — there is nothing special about this",correct:false,why:"Incorrect. Most malware uses HTTPS for C2. DNS C2 is a more sophisticated technique used by targeted malware families. It indicates a more capable threat actor."},
         ]
       },
-      evidence_bullets:["2,847 DNS queries in 4 hours = 1 every 5 seconds (automated)","98% of queries to *.update-telemetry-cdn.net","Subdomain pattern: random 16-char strings — DGA entropy 4.2/5.0","No established TCP/UDP connections — DNS only","UpdateService.exe in AppData\\Roaming — not a system service"],
-      action_label:"Pivot to SentinelEDR — Find the Process",
+      evidence_bullets:["2,847 DNS queries in 4 hours = 1 every 5 seconds (automated)","98% of queries to *.telemetry-example.net","Subdomain pattern: random 16-char strings — DGA entropy 4.2/5.0","No established TCP/UDP connections — DNS only","UpdateService.exe in AppData\\Roaming — not a system service"],
+      action_label:"Pivot to LearnThreatOpsEDR — Find the Process",
       action_result:"SIEM analysis complete:\nBeacon interval: 1 query per 5 seconds (confirmed automated)\nDomain: Known C2 infrastructure (ThreatLens)\nProcess: UpdateService.exe — suspicious location\nStatus: Pivoting to EDR for process analysis",
     },
     {
       id:1,phase:"INVESTIGATION",xp:20,
       tool:"ThreatLens",toolIcon:"🔍",toolAnalogy:"like a criminal database for IPs and files",
       title:"Confirm the Domain and Binary",
-      objective:"Look up update-telemetry-cdn.net and the hash b8c9d0e1f2a3b4c5 in ThreatLens. Before reading the verdict — look at the raw indicators. What tells you this is malicious before you see the label?",
+      objective:"Look up telemetry-example.net and the hash b8c9d0e1f2a3b4c5 in ThreatLens. Before reading the verdict — look at the raw indicators. What tells you this is malicious before you see the label?",
       lookFor:["How many engines flag this domain?","What campaign is this associated with?","What does wildcard DNS mean for this domain?","What is IcedID and why is it significant?"],
       seniorThinking:"When I see wildcard DNS responses for a domain — meaning ANY subdomain resolves — that is a red flag for DNS C2. Legitimate CDNs use specific subdomains. Wildcard DNS is set up specifically to receive random subdomain queries from malware.",
       instruction:"Look up both IOCs. Read the campaign associations carefully. What family is this? What does that tell you about the risk level?",
@@ -2092,7 +2092,7 @@ earliest=-30m
           {text:"Wait for the malware to establish a TCP connection before acting",correct:false,why:"Incorrect. Waiting for escalation is exactly what the attacker wants. IcedID can exfiltrate data and receive commands via DNS alone — you do not need a TCP connection to have a serious incident."},
         ]
       },
-      evidence_bullets:["Domain: update-telemetry-cdn.net — 41/90 VT — wildcard DNS — known C2","Hash b8c9d0e1f2a3b4c5 — 38/72 VT — IcedID DNS beacon variant","IcedID targets: financial sector — banking credentials, financial data","Campaign: IcedID DNS beacon — financial sector targeting Q1 2026","Risk: IcedID is a loader — ransomware drops observed in related campaigns"],
+      evidence_bullets:["Domain: telemetry-example.net — 41/90 VT — wildcard DNS — known C2","Hash b8c9d0e1f2a3b4c5 — 38/72 VT — IcedID DNS beacon variant","IcedID targets: financial sector — banking credentials, financial data","Campaign: IcedID DNS beacon — financial sector targeting Q1 2026","Risk: IcedID is a loader — ransomware drops observed in related campaigns"],
       action_label:"Contain WS-CORP-DEV-088 + Escalate to IR Team",
       action_result:"INC-2026-0578 escalated — IR Team notified\n\nWS-CORP-DEV-088 — Network Containment: ACTIVE\nIcedID DNS beacon — communication: SEVERED\nEDR sensor: CONNECTED (forensics preserved)\n\nIR Team briefed:\n→ IcedID variant — financial sector targeting\n→ Possible loader — check for secondary payloads\n→ Forensic image requested\n→ Developer access reviewed — source code repos checked",
     },
@@ -2123,7 +2123,7 @@ earliest=-30m
     previous_incidents:["INC-2026-0556 (Medium, closed — authorized pentest, Change Ticket CHG-2026-0122, 30 days ago)"],
   },
   edr:{
-    tool:"SentinelEDR",sensor_id:"2b3c4d5e6f7a",sensor_version:"7.14.17706",
+    tool:"LearnThreatOpsEDR",sensor_id:"2b3c4d5e6f7a",sensor_version:"7.14.17706",
     prevention_policy:"CORP-SECURITY-TEAM-POLICY",policy_note:"Security team workstation — reduced restrictions",
     process_tree:[
       {pid:"3300",ppid:"1100",depth:0,name:"cmd.exe",sha256:"",score:0,bad:false,time:"14:00:00",user:"CORP\\soc-infra",cmd:"C:\\Windows\\System32\\cmd.exe"},
@@ -2131,9 +2131,9 @@ earliest=-30m
       {pid:"4401",ppid:"3300",depth:1,name:"pkitconsole.exe",sha256:"",score:71,bad:false,time:"14:00:30",user:"CORP\\soc-infra",cmd:"pkitconsole.exe -q"},
     ],
     network:[],timeline:[
-      {time:"14:00:00",sev:"med",src:"SentinelEDR",event:"soc-infra logged into WS-CORP-SEC-002 — security team workstation"},
-      {time:"14:00:15",sev:"high",src:"SentinelEDR",event:"portscan.exe — scanning 10.10.0.0/16 — ports 22,80,443,8080,3389,445"},
-      {time:"14:00:30",sev:"high",src:"SentinelEDR",event:"pkitconsole.exe launched — no exploitation modules loaded yet"},
+      {time:"14:00:00",sev:"med",src:"LearnThreatOpsEDR",event:"soc-infra logged into WS-CORP-SEC-002 — security team workstation"},
+      {time:"14:00:15",sev:"high",src:"LearnThreatOpsEDR",event:"portscan.exe — scanning 10.10.0.0/16 — ports 22,80,443,8080,3389,445"},
+      {time:"14:00:30",sev:"high",src:"LearnThreatOpsEDR",event:"pkitconsole.exe launched — no exploitation modules loaded yet"},
     ],
     file_events:[],
   },
@@ -2206,17 +2206,17 @@ earliest=-30m
   host:"Exchange Online / Finance Department",user:"finance-ap@corp.internal",
   srcIp:null,c2Ip:null,assignee:null,
   tags:["BEC","Wire Transfer","Email Fraud","CEO Fraud","Financial"],
-  summary:"Finance AP team received email from 'CFO Rajesh Mehta' requesting urgent wire transfer of ₹47,00,000 to a new vendor account. Email appears to come from rajesh.mehta@corp.com — note: corp.com not corp.internal. Finance almost processed the payment. Employee flagged it as suspicious. Investigate the email and advise Finance immediately.",
+  summary:"Finance AP team received email from 'CFO Rajesh Mehta' requesting urgent wire transfer of ₹47,00,000 to a new vendor account. Email appears to come from rajesh.mehta@corp-example.com — note: corp-example.com not corp.internal. Finance almost processed the payment. Employee flagged it as suspicious. Investigate the email and advise Finance immediately.",
   mitre:["T1566.001","T1078.004"],isTP:true,
   siem:{
     tool:"BlueTrace SIEM",
     correlation_rule:"CORP-RULE-9901 — BEC Pattern — External Domain Impersonation",
     fired_at:tsNow(0),risk_score:94,
     alerts:[
-      {id:"BT-9901",time:"11:45:00",sev:"Critical",rule:"BEC_DOMAIN_IMPERSONATION",src:"Email GW",msg:"Email from rajesh.mehta@corp.com (external) impersonating CFO — sent to finance-ap — urgent wire transfer request — ₹47L"},
-      {id:"BT-9902",time:"11:45:00",sev:"High",rule:"LOOKALIKE_DOMAIN",src:"Email GW",msg:"Domain corp.com registered 6 days ago — lookalike of corp.internal — DMARC: none — SPF: pass (spoofed)"},
+      {id:"BT-9901",time:"11:45:00",sev:"Critical",rule:"BEC_DOMAIN_IMPERSONATION",src:"Email GW",msg:"Email from rajesh.mehta@corp-example.com (external) impersonating CFO — sent to finance-ap — urgent wire transfer request — ₹47L"},
+      {id:"BT-9902",time:"11:45:00",sev:"High",rule:"LOOKALIKE_DOMAIN",src:"Email GW",msg:"Domain corp-example.com registered 6 days ago — lookalike of corp.internal — DMARC: none — SPF: pass (spoofed)"},
     ],
-    raw_search:`index=email from_domain="corp.com" earliest=-24h
+    raw_search:`index=email from_domain="corp-example.com" earliest=-24h
 | table _time, from, to, subject, attachment_count, dmarc_result, spf_result
 | where dmarc_result != "pass"`,
     correlated_hosts:["Exchange Online","Finance Department"],
@@ -2227,8 +2227,8 @@ earliest=-30m
     prevention_policy:"Email Security Standard",policy_note:"No DMARC enforcement on receiving domain",
     process_tree:[],network:[],
     timeline:[
-      {time:"11:42:30",sev:"high",src:"MailShield",event:"Email received: from=rajesh.mehta@corp.com to=finance-ap@corp.internal subj='Urgent Wire Transfer Required - Confidential'"},
-      {time:"11:42:30",sev:"high",src:"MailShield",event:"Domain analysis: corp.com — registered 2026-05-22 (6 days ago) — DMARC: none — typosquat of corp.internal"},
+      {time:"11:42:30",sev:"high",src:"MailShield",event:"Email received: from=rajesh.mehta@corp-example.com to=finance-ap@corp.internal subj='Urgent Wire Transfer Required - Confidential'"},
+      {time:"11:42:30",sev:"high",src:"MailShield",event:"Domain analysis: corp-example.com — registered 2026-05-22 (6 days ago) — DMARC: none — typosquat of corp.internal"},
       {time:"11:43:00",sev:"crit",src:"MailShield",event:"Email body: 'Process immediately, do not discuss with colleagues, I am in a meeting' — high-pressure language pattern"},
       {time:"11:44:45",sev:"crit",src:"MailShield",event:"Finance AP employee called IT Security — suspicious wire request — payment NOT yet processed"},
       {time:"11:45:00",sev:"crit",src:"BlueTrace", event:"BEC pattern detected — alert fired — SOC investigating"},
@@ -2239,13 +2239,13 @@ earliest=-30m
     tool:"ThreatLens",
     lookups:[
       {
-        type:"Domain",value:"corp.com",
+        type:"Domain",value:"corp-example.com",
         vt_score:"12/90 flagged",abuse_score:76,
         categories:["Lookalike Domain","BEC Infrastructure","Typosquat"],
         country:"US",asn:"AS13335 — Cloudflare",
         last_seen:"2026-05-28",
         campaigns:["BEC campaign targeting Indian corporates — May 2026","Wire fraud targeting CFO/Finance teams — same infrastructure"],
-        passive_dns:["mail.corp.com","smtp.corp.com"],
+        passive_dns:["mail.corp-example.com","smtp.corp-example.com"],
         first_seen:"2026-05-22",
         verdict:"MALICIOUS — Lookalike domain registered 6 days ago specifically for BEC. No DMARC. Used in active BEC campaign targeting Indian finance teams.",
         verdictColor:"#dc2626",
@@ -2259,20 +2259,20 @@ earliest=-30m
       tool:"BlueTrace SIEM",toolIcon:"📊",toolAnalogy:"like a security camera control room",
       title:"BEC — Business Email Compromise",
       objective:"Business Email Compromise is one of the most financially damaging attack types. No malware. No process trees. Just a convincing email that makes Finance transfer company money to criminals. Look at the two alerts. What are the specific indicators that make this suspicious?",
-      lookFor:["The sender domain — corp.com vs corp.internal. Spot the difference.","How old is corp.com? Why does domain age matter for BEC?","The email content — what pressure tactics were used?","DMARC status — what does 'none' mean for email security?"],
-      seniorThinking:"BEC is about urgency, authority, and secrecy. The attacker impersonates a CFO and says: 'Do this now, do not discuss with others, I am busy.' That combination is the textbook BEC pattern. The technical indicator is the lookalike domain — corp.com vs corp.internal. Most users miss it at a glance.",
+      lookFor:["The sender domain — corp-example.com vs corp.internal. Spot the difference.","How old is corp-example.com? Why does domain age matter for BEC?","The email content — what pressure tactics were used?","DMARC status — what does 'none' mean for email security?"],
+      seniorThinking:"BEC is about urgency, authority, and secrecy. The attacker impersonates a CFO and says: 'Do this now, do not discuss with others, I am busy.' That combination is the textbook BEC pattern. The technical indicator is the lookalike domain — corp-example.com vs corp.internal. Most users miss it at a glance.",
       instruction:"Look at both alerts. Identify the domain difference and the behavioral red flags in the email content.",
-      analyst_note:"corp.com ≠ corp.internal. Registered 6 days ago. DMARC none. Urgency + secrecy = classic BEC. Payment not yet processed — you have time.",
+      analyst_note:"corp-example.com ≠ corp.internal. Registered 6 days ago. DMARC none. Urgency + secrecy = classic BEC. Payment not yet processed — you have time.",
       decision:{
         question:"Finance has not yet processed the payment. What is the most urgent action right now?",
         options:[
           {text:"Immediately contact the Finance AP team and the real CFO to confirm this is fraudulent",correct:true,why:"Correct. Payment has not been processed. You have a window to prevent the fraud. Call Finance AP directly (not via email — the attacker may be monitoring) and verify with the real CFO using a phone number from your corporate directory, not the one in the email."},
           {text:"Investigate the domain thoroughly before contacting Finance",correct:false,why:"Incorrect priority. Every minute you investigate without contacting Finance is a minute Finance might process the payment. Prevent the fraud first, investigate second."},
-          {text:"Block corp.com at the email gateway and tell Finance to ignore the email",correct:false,why:"Partially correct but incomplete. Blocking the domain is a good action but not your first priority. The payment prevention call to Finance must happen immediately. Blocking alone does not prevent someone from processing the existing email."},
+          {text:"Block corp-example.com at the email gateway and tell Finance to ignore the email",correct:false,why:"Partially correct but incomplete. Blocking the domain is a good action but not your first priority. The payment prevention call to Finance must happen immediately. Blocking alone does not prevent someone from processing the existing email."},
           {text:"Wait for the CFO to confirm they did not send the email",correct:false,why:"Too slow and wrong channel. Do not email the CFO — that may go to the attacker's inbox. Call the CFO directly using the corporate directory number. And do not wait — stop Finance immediately."},
         ]
       },
-      evidence_bullets:["Sender: rajesh.mehta@corp.com (NOT corp.internal — different domain)","corp.com registered: 6 days ago — brand new lookalike domain","DMARC: none — no email authentication on this domain","Email text: 'urgent, confidential, do not discuss' — pressure tactics","Amount: ₹47,00,000 — to new/unrecognised vendor account","Payment status: NOT YET PROCESSED — act now"],
+      evidence_bullets:["Sender: rajesh.mehta@corp-example.com (NOT corp.internal — different domain)","corp-example.com registered: 6 days ago — brand new lookalike domain","DMARC: none — no email authentication on this domain","Email text: 'urgent, confidential, do not discuss' — pressure tactics","Amount: ₹47,00,000 — to new/unrecognised vendor account","Payment status: NOT YET PROCESSED — act now"],
       action_label:"Call Finance AP + Call Real CFO — Stop the Payment",
       action_result:"Finance AP called (11:47):\nPayment has NOT been processed — held pending verification\nFinance confirms: did not receive verbal instruction from CFO\n\nCFO called directly (corporate directory):\n'I did not send any wire transfer request. Do not process this.'\n\nPayment: BLOCKED\nFraud: PREVENTED\nAmount saved: ₹47,00,000\nStatus: Investigating the attack infrastructure",
     },
@@ -2280,13 +2280,13 @@ earliest=-30m
       id:1,phase:"INVESTIGATION",xp:20,
       tool:"ThreatLens",toolIcon:"🔍",toolAnalogy:"like a criminal database for IPs and files",
       title:"Investigate the Attack Infrastructure",
-      objective:"Payment is blocked. Now understand the attack. Look up corp.com in ThreatLens. Is this part of a wider campaign? Has this domain been used against other companies? Understanding the threat actor helps you advise the CISO on risk level.",
+      objective:"Payment is blocked. Now understand the attack. Look up corp-example.com in ThreatLens. Is this part of a wider campaign? Has this domain been used against other companies? Understanding the threat actor helps you advise the CISO on risk level.",
       lookFor:["How old is the domain? This tells you if it was purpose-built for this attack","What campaigns is this infrastructure associated with?","Are there other domains in the same infrastructure?","Has this attacker targeted others in your industry?"],
       seniorThinking:"BEC infrastructure investigation tells you if you are targeted specifically or if you are one of many victims in a campaign. If it is a campaign, your CISO needs to brief other companies in your sector. If it is targeted, the threat model is different — someone researched your company specifically.",
-      instruction:"Look up corp.com. Read the campaign associations. Advise the CISO on whether this is targeted or campaign-based.",
+      instruction:"Look up corp-example.com. Read the campaign associations. Advise the CISO on whether this is targeted or campaign-based.",
       analyst_note:"Domain 6 days old — campaign targeting Indian corporates — same infrastructure used against other finance teams. Not specifically targeted — mass BEC campaign.",
       decision:{
-        question:"corp.com is linked to a BEC campaign targeting Indian finance teams. What should you recommend to the CISO?",
+        question:"corp-example.com is linked to a BEC campaign targeting Indian finance teams. What should you recommend to the CISO?",
         options:[
           {text:"Implement DMARC enforcement on your domain and share IOCs with sector peers",correct:true,why:"Correct. DMARC enforcement would have flagged or blocked this email. Sharing IOCs with peer companies (ISAC/sector coordination) warns others who may be targeted in the same campaign. Both are the right recommendations."},
           {text:"Nothing — the payment was blocked so the incident is over",correct:false,why:"Incorrect. The attack vector (no DMARC enforcement) still exists. The next BEC email will get through and might not be caught by a vigilant employee. Fix the root cause."},
@@ -2294,9 +2294,9 @@ earliest=-30m
           {text:"Train the one Finance employee who was suspicious — they did the right thing",correct:false,why:"Training that employee is good but limited. The real fix is DMARC — a technical control that would make the lookalike domain visually obvious or blocked. Do not rely solely on human detection for BEC."},
         ]
       },
-      evidence_bullets:["corp.com: 6 days old — purpose-built for this BEC campaign","Linked to: BEC campaign targeting Indian corporates May 2026","Same infrastructure: used against multiple finance teams this month","DMARC gap: your domain has no enforcement — same email would pass again","Root cause: no DMARC policy preventing spoofed lookalike domain emails"],
+      evidence_bullets:["corp-example.com: 6 days old — purpose-built for this BEC campaign","Linked to: BEC campaign targeting Indian corporates May 2026","Same infrastructure: used against multiple finance teams this month","DMARC gap: your domain has no enforcement — same email would pass again","Root cause: no DMARC policy preventing spoofed lookalike domain emails"],
       action_label:"Block Domain + Recommend DMARC + Brief CISO",
-      action_result:"INC-2026-0612 — CLOSED\n\nOUTCOME: BEC PREVENTED — ₹47,00,000 fraud blocked\n\nACTIONS:\n[✓] corp.com blocked at email gateway\n[✓] Finance AP + real CFO notified\n[✓] CISO briefed — campaign targeting Indian corporates\n\nRECOMMENDATIONS:\n[1] Implement DMARC enforcement on corp.internal domain\n[2] Finance wire transfer policy: verbal confirmation required for >₹10L\n[3] Share IOCs with financial sector ISAC\n[4] User awareness training: lookalike domains",
+      action_result:"INC-2026-0612 — CLOSED\n\nOUTCOME: BEC PREVENTED — ₹47,00,000 fraud blocked\n\nACTIONS:\n[✓] corp-example.com blocked at email gateway\n[✓] Finance AP + real CFO notified\n[✓] CISO briefed — campaign targeting Indian corporates\n\nRECOMMENDATIONS:\n[1] Implement DMARC enforcement on corp.internal domain\n[2] Finance wire transfer policy: verbal confirmation required for >₹10L\n[3] Share IOCs with financial sector ISAC\n[4] User awareness training: lookalike domains",
     },
   ],
 },
@@ -2429,7 +2429,7 @@ requestParameters.bucketName=corp-data-backup-prod
     previous_incidents:["No previous brute force incidents at this scale"],
   },
   edr:{
-    tool:"SentinelEDR",sensor_id:"DC-CORP-01-SENSOR",sensor_version:"7.14.17706",
+    tool:"LearnThreatOpsEDR",sensor_id:"DC-CORP-01-SENSOR",sensor_version:"7.14.17706",
     prevention_policy:"CORP-DC-DETECT-ONLY",policy_note:"Domain controller — detect only",
     process_tree:[],network:[],
     timeline:[
@@ -3150,16 +3150,16 @@ function BlueTraceSIEM({inc,activeStep}){
 // TOOL: SENTINEL EDR
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SentinelEDR({inc,activeStep,isContained}){
+function LearnThreatOpsEDR({inc,activeStep,isContained}){
   const [tab,setTab]=useState("process");
-  const stepTool=activeStep?.tool==="SentinelEDR";
+  const stepTool=activeStep?.tool==="LearnThreatOpsEDR";
 
   return(
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"var(--bg)"}}>
       <div style={{background:"#0d0f1a",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:42,display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:7}}>
           <div style={{width:20,height:20,borderRadius:4,background:"linear-gradient(135deg,#dc2626,#991b1b)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>SE</div>
-          <span style={{fontSize:12,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:0.5}}>SentinelEDR</span>
+          <span style={{fontSize:12,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:0.5}}>LearnThreatOpsEDR</span>
         </div>
         <div style={{flex:1}}/>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -3665,7 +3665,7 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
       {/* HEADER */}
       <div style={{background:"var(--bg2)",borderBottom:"1px solid var(--bd)",padding:"0 20px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,boxShadow:"var(--sh)"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:28,height:28,borderRadius:6,background:"linear-gradient(135deg,#3b82f6,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>LBT</div>
+          <div style={{width:28,height:28,borderRadius:6,background:"linear-gradient(135deg,#3b82f6,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>LearnThreatOps</div>
           <div>
             <span style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>LEARN</span>
             <span style={{fontSize:14,fontWeight:700,color:"#60a5fa"}}>BLUETEAM</span>
@@ -3883,7 +3883,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
 
   const toolMap={
     "BlueTrace SIEM":"siem",
-    "SentinelEDR":"edr",
+    "LearnThreatOpsEDR":"edr",
     "ThreatLens":"ti",
     "IncidentDesk":"desk",
   };
@@ -4006,7 +4006,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
         <span style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginRight:12,letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Tools</span>
         {[
           {id:"siem",label:"BlueTrace SIEM",color:"#3b82f6",shortLabel:"SIEM"},
-          {id:"edr",label:"SentinelEDR",color:"#ef4444",shortLabel:"EDR"},
+          {id:"edr",label:"LearnThreatOpsEDR",color:"#ef4444",shortLabel:"EDR"},
           {id:"ti",label:"ThreatLens",color:"#8b5cf6",shortLabel:"INTEL"},
           {id:"desk",label:"IncidentDesk",color:"#10b981",shortLabel:"DESK"},
         ].map(t=>{
@@ -4035,7 +4035,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
       {/* TOOL CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",paddingBottom:(status==="action_idle"||status==="action_running"||status==="action_done")?90:0}}>
         {activeTool==="siem"&&<BlueTraceSIEM inc={inc} activeStep={status!=="coach"?step:null}/>}
-        {activeTool==="edr"&&<SentinelEDR inc={inc} activeStep={status!=="coach"?step:null} isContained={contained}/>}
+        {activeTool==="edr"&&<LearnThreatOpsEDR inc={inc} activeStep={status!=="coach"?step:null} isContained={contained}/>}
         {activeTool==="ti"&&<ThreatLens inc={inc} activeStep={status!=="coach"?step:null}/>}
         {activeTool==="desk"&&<IncidentDesk inc={inc} activeStep={status!=="coach"?step:null} stepsDone={doneSteps.length} analyst={analystProp||ANALYST} elapsed={elapsed}/>}
       </div>
@@ -4259,6 +4259,7 @@ const POLICIES = {
     ["Your Rights","You can request access, correction, or deletion of your data anytime. Email support.learnthreatops@gmail.com. We process within 30 days."],
     ["Children","Platform is for users 16+. We do not knowingly collect data from children under 16."],
     ["Changes","We will notify registered users of significant changes via email. For data protection queries, contact: support.learnthreatops@gmail.com."],
+    ["Contact Details","LearnThreatOps | Email: support.learnthreatops@gmail.com | Phone: +91 9284837848 | Address: Shivajinagar, Pune, Maharashtra, India"],
   ]},
   terms:{title:"Terms of Service",sections:[
     ["Acceptance","By using LearnThreatOps (learnthreatops.com) you agree to these Terms. LearnThreatOps is currently operated as an individual project in beta validation phase. If you disagree with these Terms, please do not use the platform."],
@@ -4268,19 +4269,19 @@ const POLICIES = {
     ["Intellectual Property","All content — simulations, scenarios, UI, logos — is owned by LearnThreatOps and protected by copyright. No reproduction without written permission."],
     ["Limitation of Liability","Platform is provided as-is. We are not liable for indirect or consequential damages. Total liability shall not exceed amounts paid in the prior 12 months."],
     ["Governing Law","Governed by the laws of India. Disputes resolved in courts of Mumbai, Maharashtra."],
-    ["Grievance Officer","In accordance with the Information Technology Act 2000 and Intermediary Guidelines 2021, the Grievance Officer for LearnThreatOps is: Saif Shaikh, Email: support.learnthreatops@gmail.com. Complaints will be acknowledged within 24 hours and resolved within 15 days."],
+    ["Grievance Officer","In accordance with the Information Technology Act 2000 and Intermediary Guidelines 2021, the Grievance Officer for LearnThreatOps is: Saif Shaikh | Email: support.learnthreatops@gmail.com | Phone: +91 9284837848 | Address: Shivajinagar, Pune, Maharashtra, India. Complaints will be acknowledged within 24 hours and resolved within 15 days."],
     ["CERT-In Compliance","LearnThreatOps complies with CERT-In guidelines. Security incidents on our platform can be reported to support.learnthreatops@gmail.com. We maintain server logs as required by applicable law."],
   ]},
   refund:{title:"Refund Policy",sections:[
     ["Beta / Free Access","The platform is currently free during beta. No payment is collected. When paid plans are introduced, a separate refund policy will apply."],
-    ["Pro Monthly","Full refund within 7 days of initial purchase. After 7 days, no refund for current period but cancel anytime to prevent future charges."],
+    
     
     
     ["How to Request","Email support.learnthreatops@gmail.com with subject 'Refund Request'. Include registered email, order details, and reason. Processed within 7-10 business days."],
     ["Exceptions","No refunds for accounts suspended due to ToS violations."],
   ]},
   "ai-disclaimer":{title:"AI Disclaimer",sections:[
-    ["AI-Assisted Content","LBT uses AI to generate scenario variations, coaching hints, and threat summaries. This content is educational simulation — not real threat intelligence."],
+    ["AI-Assisted Content","LearnThreatOps uses AI to generate scenario variations, coaching hints, and threat summaries. This content is educational simulation — not real threat intelligence."],
     ["Not Real Security Advice","All AI content is for educational simulation only. Do not rely on it for real-world security decisions or incident response."],
     ["Accuracy","AI content may contain errors, outdated information, or simplified representations of real attack techniques. ATT&CK mappings are approximations for training."],
     ["MITRE ATT&CK","This product uses the MITRE ATT&CK® framework. ATT&CK® is a registered trademark of The MITRE Corporation. LearnThreatOps is not affiliated with or endorsed by MITRE."],
@@ -4291,7 +4292,7 @@ const POLICIES = {
     ["Local Storage","Progress also saved in browser localStorage. Creating an account backs up your progress to our servers."],
     ["Data Retention","Active account data retained for account lifetime. On deletion, all personal data removed within 30 days."],
     ["Security","Passwords handled by Supabase Auth which uses bcrypt server-side — your password never touches our application code. HTTPS for all data in transit. Regular security reviews."],
-    ["Third Parties","We use Railway (hosting), Gmail (email), analytics. Minimum necessary data shared under strict agreements."],
+    ["Third Parties","We use Railway (hosting) and Supabase (database/auth). Minimum necessary data shared under strict data processing agreements. We do not use advertising or tracking analytics."],
     ["Portability","Request a data export anytime at support.learnthreatops@gmail.com. Delivered in 14 days."],
   ]},
   rules:{title:"Community Rules",sections:[
@@ -4323,6 +4324,9 @@ function PolicyPage({policyKey,nav}) {
       <div style={{marginTop:40,padding:"18px",background:"var(--bg)",border:"1px solid var(--bd)",borderRadius:10,textAlign:"center"}}>
         <div style={{fontSize:13,color:"var(--tx3)",marginBottom:5}}>Questions?</div>
         <a href="mailto:support.learnthreatops@gmail.com" style={{fontSize:14,fontWeight:600,color:"var(--ac)"}}>support.learnthreatops@gmail.com</a>
+        <div style={{fontSize:12,color:"var(--tx4)",marginTop:6}}>+91 9284837848</div>
+        <div style={{fontSize:12,color:"var(--tx4)",marginTop:2}}>Shivajinagar, Pune, Maharashtra, India</div>
+        <div style={{fontSize:11,color:"var(--tx4)",marginTop:6,fontStyle:"italic"}}>Grievance Officer: Saif Shaikh</div>
       </div>
     </div>
   );
@@ -4347,7 +4351,7 @@ function OnboardingModal({onStart}) {
   const [step,setStep] = useState(0);
   const tools = [
     {color:"#1a56db",icon:"📊",name:"BlueTrace SIEM",desc:"Detects suspicious activity across your network. This is where alerts fire and investigations begin."},
-    {color:"#dc2626",icon:"🖥",name:"SentinelEDR",desc:"Shows exactly what happened on the endpoint — process tree, network connections, files created."},
+    {color:"#dc2626",icon:"🖥",name:"LearnThreatOpsEDR",desc:"Shows exactly what happened on the endpoint — process tree, network connections, files created."},
     {color:"#7c3aed",icon:"🔍",name:"ThreatLens",desc:"Checks whether IPs, domains, and file hashes are known malicious. Your threat intelligence tool."},
     {color:"#059669",icon:"📋",name:"IncidentDesk",desc:"Where you manage the ticket, write your IR report, and close the incident."},
   ];
@@ -4625,9 +4629,9 @@ function Landing({nav=()=>{},appUser=null}) {
           {[
             {n:1,icon:"🚨",title:"Receive Security Alert",desc:"SIEM detects suspicious activity and fires a correlated alert.",tool:"BlueTrace SIEM",color:"#1a56db"},
             {n:2,icon:"📊",title:"Review SIEM Evidence",desc:"Analyse the correlated alert, check rules fired, and read the timeline.",tool:"BlueTrace SIEM",color:"#1a56db"},
-            {n:3,icon:"🖥",title:"Investigate Endpoint Activity",desc:"Open the EDR to read the process tree, network connections, and file events.",tool:"SentinelEDR",color:"#dc2626"},
+            {n:3,icon:"🖥",title:"Investigate Endpoint Activity",desc:"Open the EDR to read the process tree, network connections, and file events.",tool:"LearnThreatOpsEDR",color:"#dc2626"},
             {n:4,icon:"🔍",title:"Validate IOC Intelligence",desc:"Look up IPs, hashes, and domains to confirm if they are malicious.",tool:"ThreatLens",color:"#7c3aed"},
-            {n:5,icon:"🔒",title:"Contain the Threat",desc:"Isolate the endpoint, block IOCs, and reset compromised credentials.",tool:"SentinelEDR",color:"#dc2626"},
+            {n:5,icon:"🔒",title:"Contain the Threat",desc:"Isolate the endpoint, block IOCs, and reset compromised credentials.",tool:"LearnThreatOpsEDR",color:"#dc2626"},
             {n:6,icon:"📋",title:"Close the Incident",desc:"Write the IR report, document findings, and close the ticket.",tool:"IncidentDesk",color:"#059669"},
             {n:7,icon:"⚡",title:"Earn XP and Level Up",desc:"Every completed investigation earns XP and progresses your career path.",tool:"",color:"#f59e0b"},
           ].map((s,i,arr)=>(
@@ -4810,6 +4814,21 @@ function Landing({nav=()=>{},appUser=null}) {
           <p style={{fontSize:14,color:"#6b7280",lineHeight:1.8,maxWidth:500,margin:"0 auto 28px"}}>Every cybersecurity job asks for hands-on experience. Every fresher has certificates and zero real experience. LearnThreatOps closes that gap.</p>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:28}}>{[{s:"4.7M",l:"unfilled cyber jobs",c:"#3b82f6"},{s:"60%",l:"of SOC work is alert triage",c:"#22c55e"},{s:"0",l:"platforms teaching real blue team",c:"#ef4444"}].map(x=>(<div key={x.s} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"18px",textAlign:"center"}}><div style={{fontSize:30,fontWeight:800,color:x.c,fontFamily:"var(--mo)",marginBottom:4}}>{x.s}</div><div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{x.l}</div></div>))}</div>
           <button onClick={()=>nav("signup")} style={{background:"#1a56db",color:"#fff",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>Start Building Real Experience</button>
+        </div>
+      </div>
+
+      {/* Grievance Officer + Copyright Footer */}
+      <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",padding:"14px 20px",textAlign:"center"}}>
+        <div style={{fontSize:11,color:"#9ca3af",lineHeight:2,flexWrap:"wrap"}}>
+          <strong style={{color:"#6b7280"}}>Grievance Officer:</strong> Saif Shaikh &nbsp;·&nbsp;
+          <a href="mailto:support.learnthreatops@gmail.com" style={{color:"#1a56db",textDecoration:"none",fontSize:11}}>support.learnthreatops@gmail.com</a> &nbsp;·&nbsp;
+          +91 9284837848 &nbsp;·&nbsp; Shivajinagar, Pune, Maharashtra
+        </div>
+        <div style={{fontSize:10,color:"#c0c7d0",marginTop:4}}>
+          © 2026 LearnThreatOps · Educational Simulation Platform · All scenarios are fictional ·{" "}
+          <span onClick={()=>nav("privacy")} style={{cursor:"pointer",color:"#1a56db"}}>Privacy</span> &nbsp;·&nbsp;
+          <span onClick={()=>nav("terms")} style={{cursor:"pointer",color:"#1a56db"}}>Terms</span> &nbsp;·&nbsp;
+          <span onClick={()=>nav("data-policy")} style={{cursor:"pointer",color:"#1a56db"}}>Data Policy</span>
         </div>
       </div>
 
