@@ -261,7 +261,10 @@ function useSupabase() {
           setUser(u);
           return {success:true, needsConfirm:true};
         }
-        const u = {id:data.user.id, name, email};
+        const u = {id:data.user.id, name, email,
+          consentAt:new Date().toISOString(),
+          consentVersion:"v1.0-2026-05"
+        };
         localStorage.setItem("lbt_user", JSON.stringify(u));
         localStorage.setItem("lbt_token", token);
         setUser(u);
@@ -391,7 +394,7 @@ function FeedbackModal({ incId, onClose, onSubmit }) {
           <div style={{textAlign:"center",padding:"20px 0"}}>
             <div style={{fontSize:40,marginBottom:10}}>🙏</div>
             <div style={{fontSize:17,fontWeight:700,color:"#111318",marginBottom:4}}>Thank you!</div>
-            <div style={{fontSize:13,color:"#6b7280"}}>Your feedback helps us improve LearnBlueTeam.</div>
+            <div style={{fontSize:13,color:"#6b7280"}}>Your feedback helps us improve LearnThreatOps.</div>
           </div>
         ) : (
           <>
@@ -4100,7 +4103,7 @@ function ContactPage({nav}) {
       <h1 style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:700,color:"var(--tx)",marginBottom:6}}>Get in Touch</h1>
       <p style={{fontSize:14,color:"var(--tx3)",lineHeight:1.7,marginBottom:28}}>Questions, feedback, or support? We reply within 24 hours.</p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,marginBottom:28}}>
-        {[["📧","Email","support.learnblueteam@gmail.com"],["🌐","Website","learnblueteam.cloud"],["📍","Based in","Mumbai, India"]].map(([ic,l,v])=>(
+        {[["📧","Email","support.learnthreatops@gmail.com"],["🌐","Website","learnthreatops.com"],["📍","Based in","Mumbai, India"]].map(([ic,l,v])=>(
           <div key={l} style={{background:"var(--w)",border:"1px solid var(--bd)",borderRadius:10,padding:"14px",boxShadow:"var(--sh)"}}>
             <div style={{fontSize:20,marginBottom:7}}>{ic}</div>
             <div style={{fontSize:10,fontWeight:700,color:"var(--tx4)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3,fontFamily:"var(--mo)"}}>{l}</div>
@@ -4253,48 +4256,50 @@ const POLICIES = {
     ["How We Use Your Data","To operate the platform, personalise your experience, track progress, issue certificates, send service updates, and respond to support. We never sell your data."],
     ["Data Storage & Security","Stored securely with HTTPS encryption in transit and encryption at rest. Progress also saved in localStorage for offline access."],
     ["Cookies","Essential cookies only — login state and preferences. No advertising or tracking cookies."],
-    ["Your Rights","You can request access, correction, or deletion of your data anytime. Email support.learnblueteam@gmail.com. We process within 30 days."],
+    ["Your Rights","You can request access, correction, or deletion of your data anytime. Email support.learnthreatops@gmail.com. We process within 30 days."],
     ["Children","Platform is for users 16+. We do not knowingly collect data from children under 16."],
-    ["Changes","We will notify registered users of significant changes via email."],
+    ["Changes","We will notify registered users of significant changes via email. For data protection queries, contact: support.learnthreatops@gmail.com."],
   ]},
   terms:{title:"Terms of Service",sections:[
-    ["Acceptance","By using learnblueteam.cloud you agree to these Terms. If you disagree, please do not use the platform."],
-    ["Platform Use","LearnBlueTeam provides simulated defensive security exercises for education only. You may not use knowledge gained here to attack systems you do not own or have explicit permission to test."],
+    ["Acceptance","By using LearnThreatOps (learnthreatops.com) you agree to these Terms. LearnThreatOps is currently operated as an individual project in beta validation phase. If you disagree with these Terms, please do not use the platform."],
+    ["Platform Use","LearnThreatOps provides simulated defensive security exercises for education only. You may not use knowledge gained here to attack systems you do not own or have explicit permission to test."],
     ["Account Responsibility","You are responsible for all activity under your account. Do not share credentials. Notify us immediately of any unauthorised use."],
     ["Acceptable Use","Do not reverse-engineer platform content, scrape data, impersonate others, post harmful content, or circumvent security measures."],
-    ["Intellectual Property","All content — simulations, scenarios, UI, logos — is owned by LearnBlueTeam and protected by copyright. No reproduction without written permission."],
+    ["Intellectual Property","All content — simulations, scenarios, UI, logos — is owned by LearnThreatOps and protected by copyright. No reproduction without written permission."],
     ["Limitation of Liability","Platform is provided as-is. We are not liable for indirect or consequential damages. Total liability shall not exceed amounts paid in the prior 12 months."],
     ["Governing Law","Governed by the laws of India. Disputes resolved in courts of Mumbai, Maharashtra."],
+    ["Grievance Officer","In accordance with the Information Technology Act 2000 and Intermediary Guidelines 2021, the Grievance Officer for LearnThreatOps is: Saif Shaikh, Email: support.learnthreatops@gmail.com. Complaints will be acknowledged within 24 hours and resolved within 15 days."],
+    ["CERT-In Compliance","LearnThreatOps complies with CERT-In guidelines. Security incidents on our platform can be reported to support.learnthreatops@gmail.com. We maintain server logs as required by applicable law."],
   ]},
   refund:{title:"Refund Policy",sections:[
-    ["Free Tier","No payment, no refund consideration."],
+    ["Beta / Free Access","The platform is currently free during beta. No payment is collected. When paid plans are introduced, a separate refund policy will apply."],
     ["Pro Monthly","Full refund within 7 days of initial purchase. After 7 days, no refund for current period but cancel anytime to prevent future charges."],
-    ["Annual","Refund within 14 days if less than 10% content used. After 14 days, prorated credits at our discretion."],
-    ["Certification Exam","Non-refundable once started. Refundable within 7 days if not started."],
-    ["How to Request","Email support.learnblueteam@gmail.com with subject 'Refund Request'. Include registered email, order details, and reason. Processed within 7-10 business days."],
+    
+    
+    ["How to Request","Email support.learnthreatops@gmail.com with subject 'Refund Request'. Include registered email, order details, and reason. Processed within 7-10 business days."],
     ["Exceptions","No refunds for accounts suspended due to ToS violations."],
   ]},
   "ai-disclaimer":{title:"AI Disclaimer",sections:[
     ["AI-Assisted Content","LBT uses AI to generate scenario variations, coaching hints, and threat summaries. This content is educational simulation — not real threat intelligence."],
     ["Not Real Security Advice","All AI content is for educational simulation only. Do not rely on it for real-world security decisions or incident response."],
     ["Accuracy","AI content may contain errors, outdated information, or simplified representations of real attack techniques. ATT&CK mappings are approximations for training."],
-    ["MITRE ATT&CK","References to MITRE ATT&CK are educational. MITRE ATT&CK is a registered trademark of The MITRE Corporation. LBT is not affiliated with MITRE."],
+    ["MITRE ATT&CK","This product uses the MITRE ATT&CK® framework. ATT&CK® is a registered trademark of The MITRE Corporation. LearnThreatOps is not affiliated with or endorsed by MITRE."],
     ["Data for AI","Anonymised usage data may improve our AI coaching models. No PII used for AI training without consent."],
   ]},
   "data-policy":{title:"Data Policy",sections:[
     ["What We Store","Account: name, email, hashed password. Progress: XP, level, scores, grades, time. Certificates: completion records with unique IDs. Sessions: login timestamps."],
     ["Local Storage","Progress also saved in browser localStorage. Creating an account backs up your progress to our servers."],
     ["Data Retention","Active account data retained for account lifetime. On deletion, all personal data removed within 30 days."],
-    ["Security","Passwords hashed with bcrypt. HTTPS for all data in transit. Regular security reviews."],
+    ["Security","Passwords handled by Supabase Auth which uses bcrypt server-side — your password never touches our application code. HTTPS for all data in transit. Regular security reviews."],
     ["Third Parties","We use Railway (hosting), Gmail (email), analytics. Minimum necessary data shared under strict agreements."],
-    ["Portability","Request a data export anytime at support.learnblueteam@gmail.com. Delivered in 14 days."],
+    ["Portability","Request a data export anytime at support.learnthreatops@gmail.com. Delivered in 14 days."],
   ]},
   rules:{title:"Community Rules",sections:[
     ["Be Respectful","Treat all community members, staff, and content with respect. Harassment, hate speech, or personal attacks result in immediate suspension."],
     ["No Real-World Attacks","Knowledge from this platform must only be used defensively and on systems you own or have explicit permission to test. Using techniques learned here illegally is strictly prohibited."],
     ["No Cheating","Do not manipulate scores, exploit bugs, or share scenario answers publicly. Shortcuts undermine your own growth."],
     ["Privacy","Do not share other users' personal information without consent."],
-    ["Responsible Disclosure","If you find a security vulnerability in our platform, report it to support.learnblueteam@gmail.com before public disclosure."],
+    ["Responsible Disclosure","If you find a security vulnerability in our platform, report it to support.learnthreatops@gmail.com before public disclosure."],
     ["Consequences","Violations result in warnings, suspension, or permanent ban depending on severity."],
   ]},
 };
@@ -4306,7 +4311,7 @@ function PolicyPage({policyKey,nav}) {
     <div style={{maxWidth:720,margin:"0 auto",padding:"28px 20px 60px"}}>
       <button onClick={()=>nav("landing")} style={{background:"var(--w)",border:"1px solid var(--bd)",color:"var(--tx3)",padding:"6px 12px",borderRadius:6,fontSize:12,marginBottom:22,cursor:"pointer",boxShadow:"var(--sh)"}}>Home</button>
       <h1 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:700,color:"var(--tx)",marginBottom:5,lineHeight:1.2}}>{p.title}</h1>
-      <div style={{fontSize:12,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:28}}>Updated May 2026 · learnblueteam.cloud</div>
+      <div style={{fontSize:12,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:28}}>Updated May 2026 · learnthreatops.com</div>
       <div style={{display:"flex",flexDirection:"column",gap:22}}>
         {p.sections.map(([title,body],i)=>(
           <div key={i}>
@@ -4317,7 +4322,7 @@ function PolicyPage({policyKey,nav}) {
       </div>
       <div style={{marginTop:40,padding:"18px",background:"var(--bg)",border:"1px solid var(--bd)",borderRadius:10,textAlign:"center"}}>
         <div style={{fontSize:13,color:"var(--tx3)",marginBottom:5}}>Questions?</div>
-        <a href="mailto:support.learnblueteam@gmail.com" style={{fontSize:14,fontWeight:600,color:"var(--ac)"}}>support.learnblueteam@gmail.com</a>
+        <a href="mailto:support.learnthreatops@gmail.com" style={{fontSize:14,fontWeight:600,color:"var(--ac)"}}>support.learnthreatops@gmail.com</a>
       </div>
     </div>
   );
@@ -4353,7 +4358,7 @@ function OnboardingModal({onStart}) {
           <>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:32,marginBottom:10}}>👋</div>
-              <h2 style={{fontSize:20,fontWeight:800,color:"#111318",marginBottom:6}}>Welcome to LearnBlueTeam</h2>
+              <h2 style={{fontSize:20,fontWeight:800,color:"#111318",marginBottom:6}}>Welcome to LearnThreatOps</h2>
               <p style={{fontSize:14,color:"#5a6272",lineHeight:1.7}}>You are about to investigate a real-world security incident. You will use the same tools professional SOC analysts use every day.</p>
             </div>
             <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,padding:"14px",marginBottom:16,fontSize:13,color:"#5a6272",lineHeight:1.7}}>
@@ -4538,7 +4543,7 @@ function Landing({nav=()=>{},appUser=null}) {
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Defensive Security Paths</div>
           <h2 style={{fontSize:"clamp(20px,4vw,30px)",fontWeight:800,color:"#111318",marginBottom:8,lineHeight:1.2}}>Choose Your Defensive Security Path</h2>
-          <p style={{fontSize:14,color:"#5a6272",maxWidth:480,margin:"0 auto"}}>LearnBlueTeam covers the full spectrum of defensive security careers.</p>
+          <p style={{fontSize:14,color:"#5a6272",maxWidth:480,margin:"0 auto"}}>LearnThreatOps covers the full spectrum of defensive security careers.</p>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,maxWidth:1060,margin:"0 auto"}}>
           {[
@@ -4714,7 +4719,7 @@ function Landing({nav=()=>{},appUser=null}) {
       {/* ── WHY LEARNBLUETEAM ── */}
       <div style={{background:"#f7f8fa",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",padding:"48px 20px"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnBlueTeam</div>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Why LearnThreatOps</div>
           <h2 style={{fontSize:"clamp(20px,4vw,26px)",fontWeight:800,color:"#111318",marginBottom:6}}>Different from everything else</h2>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,maxWidth:860,margin:"0 auto"}}>
@@ -4724,7 +4729,7 @@ function Landing({nav=()=>{},appUser=null}) {
             ["📱","Zero Setup","Runs in your browser in seconds. Mobile-friendly. No VMs, no downloads."],
             ["🏆","Blue Team Focused","100% defensive security. SOC, DFIR, Threat Hunting, Cloud Security."],
             ["📊","Career Progression","XP, levels, badges. A clear path from beginner to senior analyst."],
-            ["📜","Verified Certificates","LearnBlueTeam Certificate of Completion. Unique verifiable ID."],
+            ["📜","Verified Certificates","LearnThreatOps Certificate of Completion. Certificate feature coming soon — all completions are recorded."],
           ].map(([ic,tl,ds])=>(
             <div key={tl} style={{display:"flex",gap:13,alignItems:"flex-start",padding:"16px",background:"#fff",borderRadius:12,border:"1px solid #e1e4ed",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
               <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{ic}</span>
@@ -4887,6 +4892,20 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
         <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.15em",color:"var(--ac)",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:4}}>Welcome back</div>
         <div style={{fontSize:24,fontWeight:700,color:"var(--tx)",marginBottom:2}}>{appUser?.name||"Analyst"}</div>
         <div style={{fontSize:13,color:"var(--tx3)"}}>{lvlTitle(prog.level)} · Level {prog.level} · {prog.xp} XP</div>
+        <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+          <button onClick={logout} style={{background:"var(--bg2)",border:"1px solid var(--bd)",color:"var(--tx3)",padding:"5px 12px",borderRadius:6,fontSize:11,cursor:"pointer",fontWeight:500}}>
+            Sign Out
+          </button>
+          <button onClick={()=>{
+            if(window.confirm("Permanently delete your account and all progress? This cannot be undone.")){
+              try{["lbt_user","lbt_token","lbt_prog","lbt_iz_done"].forEach(k=>localStorage.removeItem(k));}catch{}
+              window.open("mailto:support.learnthreatops@gmail.com?subject=Delete My Account - DPDPA Request&body=Please delete all my personal data from LearnThreatOps. My registered email: "+(appUser?.email||""),"_blank");
+              logout();
+            }
+          }} style={{background:"transparent",border:"1px solid #fca5a5",color:"#ef4444",padding:"5px 12px",borderRadius:6,fontSize:11,cursor:"pointer"}}>
+            Delete Account
+          </button>
+        </div>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
@@ -4988,12 +5007,19 @@ function AuthPage({nav,mode,login=()=>({}),signup=()=>({}),authError=null,loadin
             </div>
             {err&&<div style={{background:"var(--errl)",border:"1px solid var(--errb)",color:"var(--err)",padding:"10px 13px",borderRadius:8,fontSize:13,marginBottom:14}}>{err}</div>}
             {mode==="signup"&&(
-              <div style={{fontSize:11,color:"#6b7280",lineHeight:1.7,marginBottom:8,padding:"8px 10px",background:"#f7f8fa",borderRadius:7,border:"1px solid #e1e4ed"}}>
-                By creating an account you agree to our{" "}
-                <span onClick={()=>nav("terms")} style={{color:"var(--ac)",cursor:"pointer",textDecoration:"underline"}}>Terms of Service</span>
-                {" "}and{" "}
-                <span onClick={()=>nav("privacy")} style={{color:"var(--ac)",cursor:"pointer",textDecoration:"underline"}}>Privacy Policy</span>.
-                {" "}We collect your name, email, and usage data under DPDPA 2023.
+              <div style={{marginBottom:10}}>
+                <label style={{display:"flex",gap:8,alignItems:"flex-start",cursor:"pointer",marginBottom:8}}>
+                  <input type="checkbox" required style={{marginTop:3,flexShrink:0,accentColor:"var(--ac)"}}/>
+                  <span style={{fontSize:11,color:"#6b7280",lineHeight:1.7}}>
+                    I confirm I am <strong>16 years of age or older</strong> and I agree to the{" "}
+                    <span onClick={()=>nav("terms")} style={{color:"var(--ac)",cursor:"pointer",textDecoration:"underline"}}>Terms of Service</span>
+                    {" "}and{" "}
+                    <span onClick={()=>nav("privacy")} style={{color:"var(--ac)",cursor:"pointer",textDecoration:"underline"}}>Privacy Policy</span>.
+                  </span>
+                </label>
+                <div style={{fontSize:10,color:"#9ca3af",padding:"6px 8px",background:"#f7f8fa",borderRadius:6,border:"1px solid #e1e4ed"}}>
+                  🔒 Your data is protected under DPDPA 2023. We collect name, email, and usage progress only. We never sell your data.
+                </div>
               </div>
             )}
             <button type="submit" disabled={authLoading} style={{width:"100%",background:"var(--ac)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:600,border:"none",cursor:"pointer",opacity:authLoading?0.7:1,boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
