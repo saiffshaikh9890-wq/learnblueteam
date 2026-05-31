@@ -1,0 +1,33 @@
+# LearnThreatOps — learnthreatops.com
+# robots.txt
+
+# Allow all crawlers including AI bots
+User-agent: *
+Allow: /
+
+# Explicitly allow AI crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: Gemini
+Allow: /
+
+Sitemap: https://learnthreatops.com/sitemap.xml
