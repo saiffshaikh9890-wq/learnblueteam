@@ -4424,7 +4424,7 @@ function Landing({nav=()=>{},appUser=null}) {
         {/* Beta badge */}
         <div style={{display:"inline-flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid #e1e4ed",color:"#5a6272",padding:"5px 13px",borderRadius:100,fontSize:11,fontWeight:600,marginBottom:20,position:"relative",zIndex:1,fontFamily:"var(--mo)",boxShadow:"0 1px 3px rgba(17,19,24,0.06)"}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:"#16a34a",animation:"pulse 2s infinite"}}/>
-          BETA — FREE ACCESS OPEN
+          🎉 Beta — All 10 Investigations Free
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
@@ -4819,10 +4819,19 @@ function FeedbackButton({submitFeedback}) {
 // ── dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvlPct=()=>0,invZeroDone=false,logout=()=>{}}) {
   const allSims=Object.values(SCENARIOS);
-  const FREE_SIMS=["phishing-c2","fp-powershell","impossible-travel"];
+  const FREE_SIMS=Object.keys(SCENARIOS); // Beta: all free
   const [showUpgrade,setShowUpgrade]=useState(false);
   return (
     <div style={{padding:"20px"}}>
+      {/* Beta free banner */}
+      <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",borderRadius:12,padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+        <span style={{fontSize:18}}>🎉</span>
+        <div style={{flex:1,minWidth:200}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Beta — All 10 Investigations Free</div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>No credit card. No catch. Full access while we are in beta.</div>
+        </div>
+        <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.6)",fontFamily:"var(--mo)",letterSpacing:"0.08em",textTransform:"uppercase",flexShrink:0}}>Limited Time</div>
+      </div>
       {showUpgrade&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowUpgrade(false)}>
           <div style={{background:"#fff",borderRadius:16,maxWidth:420,width:"100%",overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
@@ -4837,7 +4846,7 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
                 <div style={{fontSize:26,fontWeight:800,color:"#1a56db",fontFamily:"var(--mo)"}}>{"₹499/month"}</div>
                 <div style={{fontSize:12,color:"#6b7280"}}>30-day money-back guarantee</div>
               </div>
-              <button onClick={()=>window.open("mailto:support.learnthreatops@gmail.com?subject=Pro Access","_blank")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginBottom:8}}>Get Pro Access</button>
+              <button onClick={()=>window.open("mailto:support.learnthreatops@gmail.com?subject=Early Pro Access - LearnThreatOps","_blank")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginBottom:8}}>Join Pro Waitlist →</button>
               <button onClick={()=>setShowUpgrade(false)} style={{width:"100%",background:"#f7f8fa",color:"#6b7280",padding:"10px",borderRadius:9,border:"1px solid #e1e4ed",fontSize:13,cursor:"pointer"}}>Continue free</button>
             </div>
           </div>
@@ -4873,13 +4882,13 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
         {allSims.map(s=>{
           const d=prog.done[s.id];
           return (
-            <div key={s.id} onClick={()=>{if(!FREE_SIMS.includes(s.id)&&!prog?.pro){setShowUpgrade(true);}else nav("sim-"+s.id);}}
+            <div key={s.id} onClick={()=>nav("sim-"+s.id)}
               style={{background:"var(--w)",border:"1px solid "+(s.id==="phishing-c2"&&!Object.keys(prog.done).length?"#1a56db":"var(--bd)"),borderRadius:14,padding:"18px",cursor:"pointer",boxShadow:s.id==="phishing-c2"&&!Object.keys(prog.done).length?"0 0 0 3px rgba(26,86,219,0.15), var(--sh)":"var(--sh)",position:"relative",transition:"all 0.15s"}}>
               {s.id==="phishing-c2"&&!Object.keys(prog.done).length&&(
                 <div style={{position:"absolute",top:-10,left:16,background:"#1a56db",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 10px",borderRadius:20,fontFamily:"var(--mo)",letterSpacing:"0.08em",textTransform:"uppercase"}}>Start Here</div>
               )}
               <div style={{position:"absolute",top:16,right:16}}>
-                {d?<Pill color="green" sm>Done · {d.grade}</Pill>:FREE_SIMS.includes(s.id)||prog?.pro?<Pill color="blue" sm>Play</Pill>:<Pill color="gray" sm>Pro</Pill>}
+                {d?<Pill color="green" sm>Done · {d.grade}</Pill>:<Pill color="blue" sm>Play</Pill>}
               </div>
               <div style={{marginBottom:8}}><Pill color={s.difficulty==="Easy"?"green":"amber"} sm>{s.difficulty}</Pill></div>
               <div style={{fontSize:16,fontWeight:700,color:"var(--tx)",marginBottom:4,paddingRight:70,lineHeight:1.3}}>{s.title}</div>
