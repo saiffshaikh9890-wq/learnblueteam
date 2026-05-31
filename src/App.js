@@ -39,7 +39,7 @@ const INVESTIGATION_ZERO = {
       concept:"A security alert is an automated notification that something suspicious has been detected. It could be a real attack (True Positive) or a harmless event that looks suspicious (False Positive).",
       example:{
         label:"Real Alert Example",
-        content:"ALERT: Unusual outbound connection from WS-CORP-FIN-044\nDestination: 185.220.101.47 (Russia)\nTime: 08:17:33\nProcess: svchost32.exe\nRisk Score: 97/100"
+        content:"ALERT: Unusual outbound connection from WS-CORP-FIN-044\nDestination: 203.0.113.47 (Russia)\nTime: 08:17:33\nProcess: svchost32.exe\nRisk Score: 97/100"
       },
       question:"Based on a risk score of 97/100 and a connection to a foreign IP — what would you do first?",
       options:[
@@ -56,7 +56,7 @@ const INVESTIGATION_ZERO = {
       concept:"SIEM stands for Security Information and Event Management. It collects logs from every system in the organisation — computers, servers, firewalls, email — and correlates them to detect suspicious patterns.",
       example:{
         label:"What a SIEM does",
-        content:"Log from Email Gateway: Macro-enabled file delivered to kiran.mehta\n+ Log from Endpoint: Word.exe spawned cmd.exe\n+ Log from Network: Unknown process connecting to foreign IP\n= SIEM fires: CRITICAL alert — Possible malware infection"
+        content:"Log from Email Gateway: Macro-enabled file delivered to analyst.user\n+ Log from Endpoint: Word.exe spawned cmd.exe\n+ Log from Network: Unknown process connecting to foreign IP\n= SIEM fires: CRITICAL alert — Possible malware infection"
       },
       question:"Why is a SIEM useful for a SOC analyst?",
       options:[
@@ -90,7 +90,7 @@ const INVESTIGATION_ZERO = {
       concept:"Threat Intelligence (TI) helps analysts validate whether indicators — IP addresses, domains, file hashes — are known to be malicious. If 67 out of 72 antivirus engines flag a file, that's a very strong signal.",
       example:{
         label:"ThreatLens lookup result",
-        content:"IP: 185.220.101.47\nAbuseIPDB Score: 100/100\nCategory: Tor Exit Node / C2 Infrastructure\nCountry: Russia\nLast Reported: Today\nVerdict: MALICIOUS — Block immediately"
+        content:"IP: 203.0.113.47\nAbuseIPDB Score: 100/100\nCategory: Tor Exit Node / C2 Infrastructure\nCountry: Russia\nLast Reported: Today\nVerdict: MALICIOUS — Block immediately"
       },
       question:"You look up an IP address and it scores 100/100 on AbuseIPDB. What do you conclude?",
       options:[
@@ -517,12 +517,12 @@ const INCIDENTS = {
   status:"New",
   created: tsNow(0),
   host:"WS-CORP-FIN-044",
-  user:"kiran.mehta@corp.internal",
+  user:"analyst.user@corp.internal",
   srcIp:"10.10.44.112",
-  c2Ip:"185.220.101.47",
+  c2Ip:"203.0.113.47",
   assignee:null,
   tags:["Phishing","C2","Credential Theft","LSASS"],
-  summary:"BlueTrace SIEM correlated 4 rules on WS-CORP-FIN-044. Finance user opened macro-enabled document at 08:17. EDR detected process injection into lsass.exe. Outbound beacon to 185.220.101.47:443 (geo: RU, Tor exit). Incident auto-promoted to Critical by correlation engine.",
+  summary:"BlueTrace SIEM correlated 4 rules on WS-CORP-FIN-044. Finance user opened macro-enabled document at 08:17. EDR detected process injection into lsass.exe. Outbound beacon to 203.0.113.47:443 (geo: RU, Tor exit). Incident auto-promoted to Critical by correlation engine.",
   mitre:["T1566.001","T1059.001","T1071.001","T1003.001","T1547.001"],
 
   // ── BLUETRACE SIEM ─────────────────────────────────────────────────────────
@@ -532,11 +532,11 @@ const INCIDENTS = {
     fired_at: tsNow(0),
     risk_score:97,
     alerts:[
-      {id:"BT-9901",time:"08:17:33",sev:"Critical",rule:"OUTBOUND_C2_BEACON",src:"EDR",msg:"svchost32.exe beaconing 185.220.101.47:443 every 30s — process parent chain: OUTLOOK→WINWORD→cmd→powershell→svchost32.exe"},
+      {id:"BT-9901",time:"08:17:33",sev:"Critical",rule:"OUTBOUND_C2_BEACON",src:"EDR",msg:"svchost32.exe beaconing 203.0.113.47:443 every 30s — process parent chain: OUTLOOK→WINWORD→cmd→powershell→svchost32.exe"},
       {id:"BT-9902",time:"08:18:12",sev:"Critical",rule:"LSASS_MEMORY_ACCESS",src:"EDR",msg:"Process svchost32.exe (PID:4612) opened lsass.exe with GrantedAccess=0x1fffff — credential theft in progress"},
       {id:"BT-9903",time:"08:17:14",sev:"High",   rule:"ENCODED_POWERSHELL",src:"EDR",msg:"powershell.exe -WindowStyle Hidden -Enc SUVYKEkuTihuZXQuV2ViQ2xpZW50KS5Eb3dubG9hZFN0cmluZy — AMSI bypass detected"},
-      {id:"BT-9904",time:"08:16:55",sev:"High",   rule:"PHISHING_MACRO_DELIVERY",src:"Email GW",msg:"Email delivered from hr-payroll@corp-financegroup.com — attachment: INV_Q4_2026_FINAL.docm — macro content detected"},
-      {id:"BT-9905",time:"08:18:44",sev:"High",   rule:"REGISTRY_PERSISTENCE",src:"EDR",msg:"RegKey write: HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\WindowsUpdate = svchost32.exe --server 185.220.101.47"},
+      {id:"BT-9904",time:"08:16:55",sev:"High",   rule:"PHISHING_MACRO_DELIVERY",src:"Email GW",msg:"Email delivered from hr-payroll@corp-example.com — attachment: INV_Q4_2026_FINAL.docm — macro content detected"},
+      {id:"BT-9905",time:"08:18:44",sev:"High",   rule:"REGISTRY_PERSISTENCE",src:"EDR",msg:"RegKey write: HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\WindowsUpdate = svchost32.exe --server 203.0.113.47"},
       {id:"BT-9906",time:"08:19:01",sev:"Intermediate", rule:"SMB_LATERAL_ATTEMPT",src:"NDR",msg:"WS-CORP-FIN-044 → FS-CORP-01:445 SMB connection attempt — blocked by FW ACL RULE-2291"},
     ],
     raw_search:`index=corp_events host=WS-CORP-FIN-044 earliest=08:00 latest=08:30
@@ -555,32 +555,32 @@ const INCIDENTS = {
     prevention_policy:"CORP-DETECT-ONLY",
     policy_note:"⚠ Prevention policy is DETECT-ONLY on this host group — no auto-kill",
     process_tree:[
-      {pid:"3201",ppid:"804",  depth:0,name:"OUTLOOK.EXE",   sha256:"",score:0, bad:false,time:"08:16:50",user:"CORP\\kiran.mehta",cmd:"\"C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE\""},
-      {pid:"4102",ppid:"3201", depth:1,name:"WINWORD.EXE",   sha256:"",score:8, bad:false,time:"08:17:01",user:"CORP\\kiran.mehta",cmd:"WINWORD.EXE /n /dde \"C:\\Users\\kiran.mehta\\Downloads\\INV_Q4_2026_FINAL.docm\""},
-      {pid:"4398",ppid:"4102", depth:2,name:"cmd.exe",        sha256:"",score:91,bad:true, time:"08:17:09",user:"CORP\\kiran.mehta",cmd:"C:\\Windows\\System32\\cmd.exe /c powershell.exe -WindowStyle Hidden -NonI -Enc SUVYKEkuTihu..."},
-      {pid:"4501",ppid:"4398", depth:3,name:"powershell.exe", sha256:"",score:97,bad:true, time:"08:17:14",user:"CORP\\kiran.mehta",cmd:"powershell.exe -WindowStyle Hidden -NonInteractive -ExecutionPolicy Bypass -Enc SUVYKEku..."},
-      {pid:"4612",ppid:"4501", depth:4,name:"svchost32.exe",  sha256:"a3f19c2d8e4b7f1c",score:99,bad:true,time:"08:17:33",user:"CORP\\kiran.mehta",cmd:"C:\\Users\\kiran.mehta\\AppData\\Local\\Temp\\svchost32.exe --server 185.220.101.47 --port 443 --interval 30"},
+      {pid:"3201",ppid:"804",  depth:0,name:"OUTLOOK.EXE",   sha256:"",score:0, bad:false,time:"08:16:50",user:"CORP\\analyst.user",cmd:"\"C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE\""},
+      {pid:"4102",ppid:"3201", depth:1,name:"WINWORD.EXE",   sha256:"",score:8, bad:false,time:"08:17:01",user:"CORP\\analyst.user",cmd:"WINWORD.EXE /n /dde \"C:\\Users\\analyst.user\\Downloads\\INV_Q4_2026_FINAL.docm\""},
+      {pid:"4398",ppid:"4102", depth:2,name:"cmd.exe",        sha256:"",score:91,bad:true, time:"08:17:09",user:"CORP\\analyst.user",cmd:"C:\\Windows\\System32\\cmd.exe /c powershell.exe -WindowStyle Hidden -NonI -Enc SUVYKEkuTihu..."},
+      {pid:"4501",ppid:"4398", depth:3,name:"powershell.exe", sha256:"",score:97,bad:true, time:"08:17:14",user:"CORP\\analyst.user",cmd:"powershell.exe -WindowStyle Hidden -NonInteractive -ExecutionPolicy Bypass -Enc SUVYKEku..."},
+      {pid:"4612",ppid:"4501", depth:4,name:"svchost32.exe",  sha256:"a3f19c2d8e4b7f1c",score:99,bad:true,time:"08:17:33",user:"CORP\\analyst.user",cmd:"C:\\Users\\analyst.user\\AppData\\Local\\Temp\\svchost32.exe --server 203.0.113.47 --port 443 --interval 30"},
       {pid:"4701",ppid:"4612", depth:5,name:"lsass.exe",      sha256:"",score:99,bad:true, time:"08:18:12",user:"NT AUTHORITY\\SYSTEM",cmd:"[OpenProcess] GrantedAccess=0x1fffff — called by PID:4612 (svchost32.exe)"},
     ],
     network:[
-      {time:"08:17:33",proto:"HTTPS",src:"10.10.44.112:51234",dst:"185.220.101.47:443",proc:"svchost32.exe",bytes:"3,840 out / 142 in",state:"ESTABLISHED",bad:true},
-      {time:"08:17:34",proto:"HTTPS",src:"10.10.44.112:51241",dst:"185.220.101.47:443",proc:"svchost32.exe",bytes:"1,120 out / 98 in", state:"ESTABLISHED",bad:true},
+      {time:"08:17:33",proto:"HTTPS",src:"10.10.44.112:51234",dst:"203.0.113.47:443",proc:"svchost32.exe",bytes:"3,840 out / 142 in",state:"ESTABLISHED",bad:true},
+      {time:"08:17:34",proto:"HTTPS",src:"10.10.44.112:51241",dst:"203.0.113.47:443",proc:"svchost32.exe",bytes:"1,120 out / 98 in", state:"ESTABLISHED",bad:true},
       {time:"08:19:01",proto:"SMB",  src:"10.10.44.112:49411",dst:"10.10.44.60:445",   proc:"svchost32.exe",bytes:"0",             state:"RESET — FW",  bad:true},
       {time:"08:17:55",proto:"DNS",  src:"10.10.44.112:54321",dst:"10.10.1.5:53",      proc:"svchost.exe",  bytes:"62",             state:"CLOSED",      bad:false},
     ],
     timeline:[
-      {time:"08:16:50",sev:"info",src:"SentinelEDR",event:"OUTLOOK.EXE launched — user: kiran.mehta — PID:3201"},
+      {time:"08:16:50",sev:"info",src:"SentinelEDR",event:"OUTLOOK.EXE launched — user: analyst.user — PID:3201"},
       {time:"08:17:01",sev:"med", src:"SentinelEDR",event:"WINWORD.EXE opened macro-enabled doc: INV_Q4_2026_FINAL.docm — VBA AutoOpen() triggered"},
       {time:"08:17:09",sev:"high",src:"SentinelEDR",event:"cmd.exe (PID:4398) spawned from WINWORD.EXE — score:91 — unusual parent-child"},
       {time:"08:17:14",sev:"high",src:"SentinelEDR",event:"powershell.exe (PID:4501) — -Enc flag — AMSI bypass in process memory — score:97"},
       {time:"08:17:33",sev:"crit",src:"SentinelEDR",event:"svchost32.exe dropped to AppData\\Temp — SHA256: a3f19c2d — VT: 48/72 — beacon started"},
-      {time:"08:18:12",sev:"crit",src:"SentinelEDR",event:"LSASS memory access — GrantedAccess=0x1fffff — full credential access — Cobalt Strike-type pattern"},
+      {time:"08:18:12",sev:"crit",src:"SentinelEDR",event:"LSASS memory access — GrantedAccess=0x1fffff — full credential access — Cobalt Strike-type pattern [fictional simulation]"},
       {time:"08:18:44",sev:"high",src:"SentinelEDR",event:"Registry Run key written — HKCU\\Run\\WindowsUpdate — persistence established"},
       {time:"08:19:01",sev:"high",src:"SentinelEDR",event:"SMB lateral attempt: 10.10.44.112 → 10.10.44.60:445 — blocked by FW ACL"},
     ],
     file_events:[
-      {time:"08:17:33",action:"CREATE",path:"C:\\Users\\kiran.mehta\\AppData\\Local\\Temp\\svchost32.exe",sha256:"a3f19c2d8e4b7f1c9d2e",size:"284KB",signed:false},
-      {time:"08:17:01",action:"CREATE",path:"C:\\Users\\kiran.mehta\\AppData\\Local\\Temp\\~$INV_Q4_2026_FINAL.docm",sha256:"",size:"2KB",signed:false},
+      {time:"08:17:33",action:"CREATE",path:"C:\\Users\\analyst.user\\AppData\\Local\\Temp\\svchost32.exe",sha256:"a3f19c2d8e4b7f1c9d2e",size:"284KB",signed:false},
+      {time:"08:17:01",action:"CREATE",path:"C:\\Users\\analyst.user\\AppData\\Local\\Temp\\~$INV_Q4_2026_FINAL.docm",sha256:"",size:"2KB",signed:false},
     ],
   },
 
@@ -589,14 +589,14 @@ const INCIDENTS = {
     tool:"ThreatLens",
     lookups:[
       {
-        type:"IP",value:"185.220.101.47",
+        type:"IP",value:"203.0.113.47",
         vt_score:"reported by 67 engines",
         abuse_score:100,
         categories:["Tor Exit Node","C2 Infrastructure","Malware Distribution"],
         country:"RU",asn:"AS204957 — GreenFloid LLC",
         last_seen:"2026-05-28",
-        campaigns:["Cobalt Strike Campaigns 2024-2026","APT29 Infrastructure (low confidence)"],
-        passive_dns:["update.corp-financegroup.com","cdn.doc-secure.net"],
+        campaigns:["Cobalt Strike-type Campaigns (fictional simulation)","APT29 Infrastructure (low confidence)"],
+        passive_dns:["update.corp-example.com","phishing-example.net"],
         first_seen:"2024-11-03",
         verdict:"MALICIOUS — block immediately",
         verdictColor:"#dc2626",
@@ -615,14 +615,14 @@ const INCIDENTS = {
         verdictColor:"#dc2626",
       },
       {
-        type:"Domain",value:"corp-financegroup.com",
+        type:"Domain",value:"corp-example.com",
         vt_score:"23/90 reported",
         abuse_score:87,
         categories:["Phishing","Brand Impersonation","Malware Distribution"],
         country:"US",asn:"AS13335 — Cloudflare (fronted)",
         last_seen:"2026-05-28",
         campaigns:["Finance sector phishing wave May 2026","Domain registered 2026-05-01 — 27 days old"],
-        passive_dns:["hr-payroll.corp-financegroup.com","invoice.corp-financegroup.com"],
+        passive_dns:["hr-payroll.corp-example.com","invoice.corp-example.com"],
         first_seen:"2026-05-01",
         verdict:"MALICIOUS — phishing domain targeting finance teams",
         verdictColor:"#dc2626",
@@ -672,7 +672,7 @@ const INCIDENTS = {
           {text:"Assign to another analyst",correct:false,why:"Incorrect. The alert is assigned to you. You investigate first, escalate later if needed."},
         ]
       },
-      evidence_bullets:["Risk Score: 97/100 — High Confidence","Rules: OUTBOUND_C2_BEACON + LSASS_MEMORY_ACCESS","Host: WS-CORP-FIN-044 (Finance workstation)","User: kiran.mehta@corp.internal","Time: 08:17 IST — business hours"],
+      evidence_bullets:["Risk Score: 97/100 — High Confidence","Rules: OUTBOUND_C2_BEACON + LSASS_MEMORY_ACCESS","Host: WS-CORP-FIN-044 (Finance workstation)","User: analyst.user@corp.internal","Time: 08:17 IST — business hours"],
       action_label:"Classify TRUE POSITIVE — Open Incident",
       action_result:"INC-2026-0441 opened\nAssigned: "+ANALYST.name+"\nSLA timer: 60:00 started\nStatus: In Progress\nNext: Pivot to SentinelEDR",
     },
@@ -696,7 +696,7 @@ const INCIDENTS = {
       },
       evidence_bullets:["OUTLOOK.EXE → WINWORD.EXE (doc opened via email)","WINWORD.EXE → cmd.exe ← Macro executed! Score: 91","cmd.exe → powershell.exe -Enc ← Encoded payload Score: 97","powershell.exe → svchost32.exe (AppData/Temp) Score: 99","svchost32.exe → lsass.exe (GrantedAccess=0x1fffff) Score: 99"],
       action_label:"Document Kill Chain — Macro to C2 to LSASS",
-      action_result:"Kill chain confirmed:\nT1566.001 — Phishing macro document\nT1059.001 — PowerShell -Enc (AMSI bypass)\nT1071.001 — svchost32.exe beaconing 185.220.101.47\nT1003.001 — LSASS GrantedAccess=0x1fffff\nT1547.001 — Registry Run key persistence\nT1021.002 — SMB lateral attempt (blocked)",
+      action_result:"Kill chain confirmed:\nT1566.001 — Phishing macro document\nT1059.001 — PowerShell -Enc (AMSI bypass)\nT1071.001 — svchost32.exe beaconing 203.0.113.47\nT1003.001 — LSASS GrantedAccess=0x1fffff\nT1547.001 — Registry Run key persistence\nT1021.002 — SMB lateral attempt (blocked)",
     },
     {
       id:2,phase:"INVESTIGATION",xp:20,
@@ -705,10 +705,10 @@ const INCIDENTS = {
       objective:"You have 3 suspicious indicators. Look each one up in ThreatLens. Check the raw scores FIRST — form your own verdict before reading the tool's conclusion. This is how real analysts build judgment.",
       lookFor:["AbuseIPDB score — percentage of reporters flagging this IP","VirusTotal — how many out of 72 engines detect this file?","Domain age — how many days since registration?","Associated campaigns — linked to known threat actors?"],
       seniorThinking:"I check three things: IP reputation, file hash on VirusTotal, and domain age. If all three are bad, I have confirmation. A 27-day domain + 48/72 detections tells me this was purpose-built for this campaign.",
-      instruction:"Look up 3 IOCs in ThreatLens: IP 185.220.101.47, hash a3f19c2d, domain corp-financegroup.com. Check raw scores first — form your own verdict.",
+      instruction:"Look up 3 IOCs in ThreatLens: IP 203.0.113.47, hash a3f19c2d, domain corp-example.com. Check raw scores first — form your own verdict.",
       analyst_note:"AbuseIPDB: 100/100 — Tor exit for C2. Hash: 48/72 — Cobalt Strike-type beacon. Domain: 27 days old — created for this campaign.",
       decision:{
-        question:"IP 185.220.101.47 scores 100/100 on AbuseIPDB. What action do you take?",
+        question:"IP 203.0.113.47 scores 100/100 on AbuseIPDB. What action do you take?",
         options:[
           {text:"Block the IP estate-wide and document as IOC",correct:true,why:"Correct. 100/100 on AbuseIPDB is conclusive. Block perimeter-wide — any host could receive the same phishing email."},
           {text:"Wait for more data before blocking",correct:false,why:"Incorrect. A 100/100 score means hundreds of researchers flagged this IP. Waiting gives the attacker more time."},
@@ -716,9 +716,9 @@ const INCIDENTS = {
           {text:"Only block it on the affected host",correct:false,why:"Partially correct but incomplete. Block estate-wide — other hosts could be targeted by the same campaign."},
         ]
       },
-      evidence_bullets:["IP 185.220.101.47 — AbuseIPDB: 100/100 — Tor Exit Node","Hash a3f19c2d — VirusTotal: 48/72 — Cobalt Strike","Domain corp-financegroup.com — Age: 27 days — Newly registered","All 3 IOCs: Confirmed malicious","Campaign type: Targeted — not mass phishing"],
+      evidence_bullets:["IP 203.0.113.47 — AbuseIPDB: 100/100 — Tor Exit Node","Hash a3f19c2d — VirusTotal: 48/72 — Cobalt Strike","Domain corp-example.com — Age: 27 days — Newly registered","All 3 IOCs: Confirmed malicious","Campaign type: Targeted — not mass phishing"],
       action_label:"Block IOCs Estate-Wide — Cobalt Strike Confirmed",
-      action_result:"IOC actions applied:\n[IP] 185.220.101.47 — BLOCKED estate-wide\n[Hash] a3f19c2d — BLOCK+KILL on all endpoints\n[Domain] corp-financegroup.com — DNS SINKHOLE\nAssessment: Targeted Cobalt Strike — Finance team",
+      action_result:"IOC actions applied:\n[IP] 203.0.113.47 — BLOCKED estate-wide\n[Hash] a3f19c2d — BLOCK+KILL on all endpoints\n[Domain] corp-example.com — DNS SINKHOLE\nAssessment: Targeted Cobalt Strike — Finance team",
     },
     {
       id:3,phase:"CONTAINMENT",xp:30,
@@ -738,7 +738,7 @@ const INCIDENTS = {
           {text:"Change the user password and monitor",correct:false,why:"Partially correct but insufficient. Password rotation is needed, but the host is still compromised and the C2 beacon is still active."},
         ]
       },
-      evidence_bullets:["C2 Sessions: 2x ESTABLISHED to 185.220.101.47:443","LSASS accessed — credentials potentially stolen","Registry Run key — persistence established","SMB lateral attempt — blocked by firewall","EDR Policy: DETECT-ONLY — no auto-kill running"],
+      evidence_bullets:["C2 Sessions: 2x ESTABLISHED to 203.0.113.47:443","LSASS accessed — credentials potentially stolen","Registry Run key — persistence established","SMB lateral attempt — blocked by firewall","EDR Policy: DETECT-ONLY — no auto-kill running"],
       action_label:"Execute Network Containment — WS-CORP-FIN-044",
       action_result:"WS-CORP-FIN-044 — Network Containment: ACTIVE\nEDR sensor: CONNECTED (forensics available)\nC2 sessions: TERMINATED\nSMB lateral: SEVERED\nMemory: PRESERVED for forensics\nNext: Check blast radius",
     },
@@ -747,7 +747,7 @@ const INCIDENTS = {
       tool:"BlueTrace SIEM",toolIcon:"📊",toolAnalogy:"like a security camera control room",
       title:"Check the Blast Radius",
       objective:"One host is contained. But what if the attacker already spread to a second machine in those 14 minutes? If you close this case now without checking, you could wake up tomorrow with a second active breach — and no idea it started here. Search every endpoint, every mailbox. Find out before you close.",
-      lookFor:["Other hosts connecting to 185.220.101.47 in the last 24 hours","Other recipients of email from corp-financegroup.com","Whether the same file hash appeared on any other endpoint","Lateral movement activity from WS-CORP-FIN-044 before containment"],
+      lookFor:["Other hosts connecting to 203.0.113.47 in the last 24 hours","Other recipients of email from corp-example.com","Whether the same file hash appeared on any other endpoint","Lateral movement activity from WS-CORP-FIN-044 before containment"],
       seniorThinking:"I have been caught out before — closed a one-host incident, found a second host the next morning. Now I always run the blast radius search before writing my report. Takes 30 seconds. Saves hours.",
       instruction:"WS-CORP-FIN-044 is contained. Run the blast radius search in BlueTrace SIEM. Search all hosts for the C2 IP and malware hash. Check who else received the phishing email.",
       analyst_note:"Always check blast radius before closing. A missed second host becomes a full incident the next morning.",
@@ -760,7 +760,7 @@ const INCIDENTS = {
           {text:"Wait and monitor if they open it",correct:false,why:"Incorrect. Waiting is not a containment action. Remove the threat proactively."},
         ]
       },
-      evidence_bullets:["C2 IP — connected by: 1 host only (contained)","Malware hash — found on: 1 host only","Phishing email — delivered to 3 recipients","kiran.mehta: Opened — compromised (contained) ✗","rahul.singh: Not opened — still in inbox ⚠","priya.das: OOO — auto-quarantined ✓"],
+      evidence_bullets:["C2 IP — connected by: 1 host only (contained)","Malware hash — found on: 1 host only","Phishing email — delivered to 3 recipients","analyst.user: Opened — compromised (contained) ✗","rahul.singh: Not opened — still in inbox ⚠","priya.das: OOO — auto-quarantined ✓"],
       action_label:"Quarantine Emails + Confirm Blast Radius Clean",
       action_result:"Blast radius confirmed: 1 host compromised\nrahul.singh inbox: QUARANTINED\npriya.das: Already quarantined\n847 endpoints checked: CLEAN\nBlast radius: CONTAINED",
     },
@@ -784,7 +784,7 @@ const INCIDENTS = {
       },
       evidence_bullets:["Response time: 31 min (SLA: 60 min) ✓","Blast radius: 1 host, credentials exposed but not used","C2 active window: 14 minutes before containment","Root cause: EDR DETECT-ONLY on Finance VMs","Remaining: Reimage | Rotate creds | Fix EDR policy"],
       action_label:"Submit IR Report — Close INC-2026-0441",
-      action_result:"INC-2026-0441 — CLOSED ✓\n\nEXEC SUMMARY: Targeted Cobalt Strike phishing. 1 endpoint compromised, contained in 31 min.\n\nRESPONSE: 31 min vs 60 min SLA ✓\nBLAST RADIUS: 1 host, creds exposed (not used)\n\nROOT CAUSE: EDR DETECT-ONLY mode on Finance VMs\n\nPENDING: Reimage | Rotate kiran.mehta creds | EDR PREVENT mode | Email GW tuning",
+      action_result:"INC-2026-0441 — CLOSED ✓\n\nEXEC SUMMARY: Targeted Cobalt Strike phishing. 1 endpoint compromised, contained in 31 min.\n\nRESPONSE: 31 min vs 60 min SLA ✓\nBLAST RADIUS: 1 host, creds exposed (not used)\n\nROOT CAUSE: EDR DETECT-ONLY mode on Finance VMs\n\nPENDING: Reimage | Rotate analyst.user creds | EDR PREVENT mode | Email GW tuning",
     },
   ],
 },
@@ -798,7 +798,7 @@ const INCIDENTS = {
   host:"DC-CORP-FIN-01",
   user:"svc_backup@corp.internal",
   srcIp:"10.10.1.20",
-  c2Ip:"92.63.197.48",
+  c2Ip:"198.51.100.48",
   assignee:null,
   tags:["PowerShell","Encoded Command","Scheduled Task","C2"],
   concept:"False Positive vs True Positive — PowerShell",
@@ -813,7 +813,7 @@ const INCIDENTS = {
     alerts:[
       {id:"BT-4401",time:"02:14:11",sev:"High",  rule:"ENCODED_POWERSHELL_DC",    src:"EDR",     msg:"powershell.exe -EncodedCommand on DC-CORP-FIN-01 — service account svc_backup — outside change window"},
       {id:"BT-4402",time:"02:14:33",sev:"High",  rule:"SCHEDULED_TASK_CREATED",   src:"EDR",     msg:"New scheduled task 'WindowsDefenderUpdate' created — runs C:\\Windows\\Temp\\wdu.exe at logon"},
-      {id:"BT-4403",time:"02:15:01",sev:"High",  rule:"OUTBOUND_CONN_UNUSUAL_PORT",src:"NDR",    msg:"wdu.exe outbound connection to 92.63.197.48:8080 — no DNS resolution — direct IP"},
+      {id:"BT-4403",time:"02:15:01",sev:"High",  rule:"OUTBOUND_CONN_UNUSUAL_PORT",src:"NDR",    msg:"wdu.exe outbound connection to 198.51.100.48:8080 — no DNS resolution — direct IP"},
       {id:"BT-4404",time:"02:14:05",sev:"Intermediate",rule:"OFF_HOURS_DC_ACTIVITY",     src:"SIEM",   msg:"Domain Controller activity at 02:14 AM — no approved change window — last window closed 6 days ago"},
       {id:"BT-4405",time:"02:13:58",sev:"Low",   rule:"SERVICE_ACCOUNT_INTERACTIVE",src:"Windows",msg:"svc_backup logged in interactively to DC-CORP-FIN-01 — service accounts should not log in interactively"},
     ],
@@ -835,21 +835,21 @@ const INCIDENTS = {
       {pid:"1204",ppid:"508", depth:0,name:"services.exe",     sha256:"",score:0, bad:false,time:"02:13:55",user:"NT AUTHORITY\\SYSTEM",    cmd:"C:\\Windows\\System32\\services.exe"},
       {pid:"3841",ppid:"1204",depth:1,name:"svchost.exe",      sha256:"",score:2, bad:false,time:"02:13:58",user:"CORP\\svc_backup",         cmd:"C:\\Windows\\System32\\svchost.exe -k netsvcs -p"},
       {pid:"4102",ppid:"3841",depth:2,name:"powershell.exe",   sha256:"",score:81,bad:true, time:"02:14:05",user:"CORP\\svc_backup",         cmd:"powershell.exe -NonInteractive -WindowStyle Hidden -EncodedCommand aQBlAHgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAn"},
-      {pid:"4299",ppid:"4102",depth:3,name:"wdu.exe",          sha256:"b7e2f1a9c4d3",score:97,bad:true, time:"02:14:33",user:"CORP\\svc_backup",         cmd:"C:\\Windows\\Temp\\wdu.exe --server 92.63.197.48 --port 8080 --persist"},
+      {pid:"4299",ppid:"4102",depth:3,name:"wdu.exe",          sha256:"b7e2f1a9c4d3",score:97,bad:true, time:"02:14:33",user:"CORP\\svc_backup",         cmd:"C:\\Windows\\Temp\\wdu.exe --server 198.51.100.48 --port 8080 --persist"},
       {pid:"4411",ppid:"4299",depth:4,name:"schtasks.exe",     sha256:"",score:88,bad:true, time:"02:14:38",user:"CORP\\svc_backup",         cmd:'schtasks /create /tn "WindowsDefenderUpdate" /tr "C:\\Windows\\Temp\\wdu.exe" /sc onlogon /ru SYSTEM /f'},
     ],
     network:[
-      {time:"02:15:01",proto:"HTTP", src:"10.10.1.20:52341",dst:"92.63.197.48:8080",proc:"wdu.exe",bytes:"1,240 out / 88 in",state:"ESTABLISHED",bad:true},
-      {time:"02:15:32",proto:"HTTP", src:"10.10.1.20:52341",dst:"92.63.197.48:8080",proc:"wdu.exe",bytes:"880 out / 44 in", state:"ESTABLISHED",bad:true},
+      {time:"02:15:01",proto:"HTTP", src:"10.10.1.20:52341",dst:"198.51.100.48:8080",proc:"wdu.exe",bytes:"1,240 out / 88 in",state:"ESTABLISHED",bad:true},
+      {time:"02:15:32",proto:"HTTP", src:"10.10.1.20:52341",dst:"198.51.100.48:8080",proc:"wdu.exe",bytes:"880 out / 44 in", state:"ESTABLISHED",bad:true},
       {time:"02:14:01",proto:"LDAP", src:"10.10.1.20:49281",dst:"10.10.1.5:389",   proc:"svchost.exe",bytes:"2,440",         state:"CLOSED",    bad:false},
     ],
     timeline:[
       {time:"02:13:55",sev:"info",src:"SentinelEDR",event:"services.exe normal activity — DC service startup pattern"},
       {time:"02:13:58",sev:"med", src:"SentinelEDR",event:"svc_backup: Interactive logon to DC-CORP-FIN-01 — service accounts should use non-interactive sessions"},
       {time:"02:14:05",sev:"high",src:"SentinelEDR",event:"powershell.exe -EncodedCommand launched by svc_backup — score: 81 — decoded: IEX (New-Object Net.WebClient).DownloadString('...'}"},
-      {time:"02:14:33",sev:"crit",src:"SentinelEDR",event:"wdu.exe dropped to C:\\Windows\\Temp — SHA256: b7e2f1a9c4d3 — VT: 41/72 — connects to 92.63.197.48:8080"},
+      {time:"02:14:33",sev:"crit",src:"SentinelEDR",event:"wdu.exe dropped to C:\\Windows\\Temp — SHA256: b7e2f1a9c4d3 — VT: 41/72 — connects to 198.51.100.48:8080"},
       {time:"02:14:38",sev:"crit",src:"SentinelEDR",event:"Scheduled task created: WindowsDefenderUpdate — runs wdu.exe at SYSTEM logon — persistence"},
-      {time:"02:15:01",sev:"high",src:"SentinelEDR",event:"wdu.exe HTTP beacon to 92.63.197.48:8080 — no DNS — direct IP connection — C2 pattern"},
+      {time:"02:15:01",sev:"high",src:"SentinelEDR",event:"wdu.exe HTTP beacon to 198.51.100.48:8080 — no DNS — direct IP connection — C2 pattern"},
     ],
     file_events:[
       {time:"02:14:33",action:"CREATE",path:"C:\\Windows\\Temp\\wdu.exe",sha256:"b7e2f1a9c4d3ee7f2a1b",size:"318KB",signed:false},
@@ -860,12 +860,12 @@ const INCIDENTS = {
   threatintel:{
     tool:"ThreatLens",
     lookups:[
-      {type:"IP",   value:"92.63.197.48",
+      {type:"IP",   value:"198.51.100.48",
        vt_score:"flagged by 54 engines",abuse_score:96,
        categories:["C2 Server","Malware Distribution","Bulletproof Hosting"],
        country:"RU",asn:"AS197695 — Reg.ru Hosting",
        last_seen:"2026-05-28",campaigns:["Cobalt Strike C2 — multiple finance sector victims 2026","Linked to TA505 infrastructure (low confidence)"],
-       passive_dns:["update.windefender-cdn.com","cdn.ms-security-patch.net"],
+       passive_dns:["update.windefender-cdn.com","c2-example.net"],
        first_seen:"2026-02-14",verdict:"MALICIOUS — block immediately",verdictColor:"#dc2626"},
       {type:"Hash",value:"b7e2f1a9c4d3ee7f",
        vt_score:"41/72 detections",abuse_score:0,
@@ -927,7 +927,7 @@ const INCIDENTS = {
       },
       evidence_bullets:["PowerShell decoded: IEX(New-Object Net.WebClient).DownloadString — download cradle","wdu.exe dropped to: C:\\Windows\\Temp (not Program Files)","wdu.exe: UNSIGNED — no valid digital signature","SHA256 b7e2f1a9c4d3: 41/72 VT detections","Scheduled task 'WindowsDefenderUpdate': disguised persistence"],
       action_label:"Document Kill Chain — Download Cradle → RAT → Persistence",
-      action_result:"Kill chain:\nT1059.001 — PowerShell -EncodedCommand download cradle\nT1105 — wdu.exe dropped from remote server\nT1053.005 — Scheduled task persistence (SYSTEM level)\nT1071.001 — HTTP C2 beacon to 92.63.197.48:8080\nHost: DC-CORP-FIN-01 (Domain Controller — CRITICAL)",
+      action_result:"Kill chain:\nT1059.001 — PowerShell -EncodedCommand download cradle\nT1105 — wdu.exe dropped from remote server\nT1053.005 — Scheduled task persistence (SYSTEM level)\nT1071.001 — HTTP C2 beacon to 198.51.100.48:8080\nHost: DC-CORP-FIN-01 (Domain Controller — CRITICAL)",
     },
     {
       id:2,phase:"INVESTIGATION",xp:20,
@@ -936,7 +936,7 @@ const INCIDENTS = {
       objective:"Look up the C2 IP and the file hash in ThreatLens. Before reading the verdict — check the raw evidence. Look at: abuse score, passive DNS domains (they often reveal the attacker's naming patterns), and the campaign history. What kind of attacker uses this infrastructure?",
       lookFor:["The passive DNS names — do they all impersonate Microsoft security products?","The campaign history — has this IP been used in similar finance sector attacks?","The file hash campaign description — does it match what you are seeing?","The hosting provider — bulletproof hosters are used by advanced threat actors"],
       seniorThinking:"When I see passive DNS names like 'windefender-cdn.com' and 'ms-security-patch.net' — I know this is a sophisticated attacker. They register domains that sound like legitimate Microsoft infrastructure specifically to bypass email security filters and fool analysts. This is not a script kiddie.",
-      instruction:"Look up 92.63.197.48 and hash b7e2f1a9c4d3 in ThreatLens. Read the passive DNS carefully — what pattern do you see?",
+      instruction:"Look up 198.51.100.48 and hash b7e2f1a9c4d3 in ThreatLens. Read the passive DNS carefully — what pattern do you see?",
       analyst_note:"IP: 96/100 abuse score — bulletproof hosting in Russia. Passive DNS names impersonate Microsoft security services. Campaign linked to finance sector targeting. Sophisticated actor.",
       decision:{
         question:"Passive DNS shows domains like 'windefender-cdn.com' and 'ms-security-patch.net'. What does this reveal about the attacker?",
@@ -947,9 +947,9 @@ const INCIDENTS = {
           {text:"Any domain can end up in threat intel by mistake",correct:false,why:"Incorrect. An abuse score of 96/100 combined with domain names specifically designed to mimic Microsoft security products is not a coincidence or a false positive."},
         ]
       },
-      evidence_bullets:["IP 92.63.197.48 — AbuseIPDB: 96/100 — Bulletproof hosting","Passive DNS: 'windefender-cdn.com', 'ms-security-patch.net' — Microsoft impersonation","Hash b7e2f1a9c4d3 — 41/72 VT — custom RAT, finance targeting","Campaign: TA505-linked (low confidence) — Q1-Q2 2026 finance sector","Assessment: Sophisticated targeted threat — not opportunistic"],
+      evidence_bullets:["IP 198.51.100.48 — AbuseIPDB: 96/100 — Bulletproof hosting","Passive DNS: 'windefender-cdn.com', 'ms-security-patch.net' — Microsoft impersonation","Hash b7e2f1a9c4d3 — 41/72 VT — custom RAT, finance targeting","Campaign: TA505-linked (low confidence) — Q1-Q2 2026 finance sector","Assessment: Sophisticated targeted threat — not opportunistic"],
       action_label:"IOCs Confirmed — Sophisticated Finance-Sector Targeting",
-      action_result:"IOCs documented:\n[IP] 92.63.197.48 — BLOCK estate-wide — 96/100\n[Hash] b7e2f1a9c4d3 — BLOCK+KILL all endpoints\n[Domains] windefender-cdn.com, ms-security-patch.net — DNS SINKHOLE\nThreat level: SOPHISTICATED — escalate to SOC L2",
+      action_result:"IOCs documented:\n[IP] 198.51.100.48 — BLOCK estate-wide — 96/100\n[Hash] b7e2f1a9c4d3 — BLOCK+KILL all endpoints\n[Domains] windefender-cdn.com, ms-security-patch.net — DNS SINKHOLE\nThreat level: SOPHISTICATED — escalate to SOC L2",
     },
     {
       id:3,phase:"CONTAINMENT",xp:35,
@@ -969,9 +969,9 @@ const INCIDENTS = {
           {text:"Reboot the DC to clear the malware",correct:false,why:"Incorrect. Rebooting does not remove the scheduled task persistence — wdu.exe will rerun at next login. Also, you lose forensic evidence. Never reboot a compromised host as a containment strategy."},
         ]
       },
-      evidence_bullets:["Domain has 3 DCs — DC-CORP-FIN-01 is not primary — safe to isolate","wdu.exe C2 sessions: 2x ESTABLISHED to 92.63.197.48:8080","Scheduled task 'WindowsDefenderUpdate': SYSTEM-level persistence active","svc_backup credentials: potentially stolen (service account)","On-call DC admin: notified and standing by"],
+      evidence_bullets:["Domain has 3 DCs — DC-CORP-FIN-01 is not primary — safe to isolate","wdu.exe C2 sessions: 2x ESTABLISHED to 198.51.100.48:8080","Scheduled task 'WindowsDefenderUpdate': SYSTEM-level persistence active","svc_backup credentials: potentially stolen (service account)","On-call DC admin: notified and standing by"],
       action_label:"Kill Process + Block C2 + Isolate DC-CORP-FIN-01",
-      action_result:"wdu.exe (PID:4299) — KILLED via RTR\nC2 IP 92.63.197.48 — BLOCKED at perimeter firewall\nScheduled task 'WindowsDefenderUpdate' — DELETED via RTR\nDC-CORP-FIN-01 — Network Containment: ACTIVE\nReplica DCs: handling authentication\nDC Admin team: active on call",
+      action_result:"wdu.exe (PID:4299) — KILLED via RTR\nC2 IP 198.51.100.48 — BLOCKED at perimeter firewall\nScheduled task 'WindowsDefenderUpdate' — DELETED via RTR\nDC-CORP-FIN-01 — Network Containment: ACTIVE\nReplica DCs: handling authentication\nDC Admin team: active on call",
     },
     {
       id:4,phase:"CLOSE",xp:20,
@@ -1166,7 +1166,7 @@ const INCIDENTS = {
   created:tsNow(12),
   host:"Azure AD / M365",
   user:"priya.sharma@corp.onmicrosoft.com",
-  srcIp:"31.184.253.47",
+  srcIp:"198.51.100.47",
   c2Ip:null,
   assignee:null,
   tags:["Impossible Travel","Account Takeover","Azure AD","Identity","MFA"],
@@ -1181,10 +1181,10 @@ const INCIDENTS = {
     risk_score:99,
     alerts:[
       {id:"BT-8801",time:"09:24:11",sev:"Critical",rule:"IMPOSSIBLE_TRAVEL_M365",     src:"Azure AD",  msg:"priya.sharma: login from IN/Mumbai (09:20) then NL/Amsterdam (09:24) — 7,200km in 4 min — impossible travel"},
-      {id:"BT-8802",time:"09:24:44",sev:"Critical",rule:"SIMULTANEOUS_SESSIONS_M365", src:"Azure AD",  msg:"priya.sharma: 2 concurrent active sessions — IP 10.10.5.22 (Mumbai office) and 31.184.253.47 (Amsterdam)"},
-      {id:"BT-8803",time:"09:25:14",sev:"High",    rule:"SHAREPOINT_MASS_DOWNLOAD",   src:"M365",      msg:"priya.sharma: 23 files downloaded from SharePoint /sites/Finance in 3 minutes from 31.184.253.47"},
+      {id:"BT-8802",time:"09:24:44",sev:"Critical",rule:"SIMULTANEOUS_SESSIONS_M365", src:"Azure AD",  msg:"priya.sharma: 2 concurrent active sessions — IP 10.10.5.22 (Mumbai office) and 198.51.100.47 (Amsterdam)"},
+      {id:"BT-8803",time:"09:25:14",sev:"High",    rule:"SHAREPOINT_MASS_DOWNLOAD",   src:"M365",      msg:"priya.sharma: 23 files downloaded from SharePoint /sites/Finance in 3 minutes from 198.51.100.47"},
       {id:"BT-8804",time:"09:25:55",sev:"High",    rule:"MFA_PUSH_BURST",             src:"Azure AD",  msg:"priya.sharma: 31 MFA push notifications sent in 7 minutes — 30 denied — 1 approved at 09:23:58"},
-      {id:"BT-8805",time:"09:26:01",sev:"High",    rule:"NEW_MFA_DEVICE_REGISTERED",  src:"Azure AD",  msg:"priya.sharma: new Authenticator device registered from 31.184.253.47 — persistence attempt"},
+      {id:"BT-8805",time:"09:26:01",sev:"High",    rule:"NEW_MFA_DEVICE_REGISTERED",  src:"Azure AD",  msg:"priya.sharma: new Authenticator device registered from 198.51.100.47 — persistence attempt"},
     ],
     raw_search:`index=azure_ad sourcetype=azure:aad:signin
 UserPrincipalName="priya.sharma@corp.onmicrosoft.com"
@@ -1203,14 +1203,14 @@ earliest=-30m
     policy_note:"This is an identity incident — no endpoint EDR data. Investigate via Azure AD sign-in logs and M365 audit log.",
     process_tree:[],
     network:[
-      {time:"09:20:02",proto:"HTTPS",src:"10.10.5.22",      dst:"login.microsoftonline.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Mumbai office",bad:false},
-      {time:"09:23:58",proto:"HTTPS",src:"31.184.253.47",   dst:"login.microsoftonline.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Amsterdam (attacker)",bad:true},
-      {time:"09:25:14",proto:"HTTPS",src:"31.184.253.47",   dst:"corp.sharepoint.com",       proc:"Browser",bytes:"142MB out",state:"ACTIVE — downloading",bad:true},
+      {time:"09:20:02",proto:"HTTPS",src:"10.10.5.22",      dst:"login.example-corp.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Mumbai office",bad:false},
+      {time:"09:23:58",proto:"HTTPS",src:"198.51.100.47",   dst:"login.example-corp.com",proc:"Chrome",bytes:"normal",state:"SUCCESS — Amsterdam (attacker)",bad:true},
+      {time:"09:25:14",proto:"HTTPS",src:"198.51.100.47",   dst:"corp.sharepoint.com",       proc:"Browser",bytes:"142MB out",state:"ACTIVE — downloading",bad:true},
     ],
     timeline:[
       {time:"09:20:02",sev:"info",src:"Azure AD",event:"priya.sharma: normal login from Mumbai office — IP 10.10.5.22 — MFA approved on registered device"},
-      {time:"09:15:00",sev:"high",src:"Azure AD",event:"[PRECURSOR] 31 MFA push notifications to priya.sharma in 7 minutes from 31.184.253.47 (Amsterdam)"},
-      {time:"09:23:58",sev:"crit",src:"Azure AD",event:"priya.sharma: login approved from 31.184.253.47 (Amsterdam) — MFA fatigue attack — user approved push after 31 attempts"},
+      {time:"09:15:00",sev:"high",src:"Azure AD",event:"[PRECURSOR] 31 MFA push notifications to priya.sharma in 7 minutes from 198.51.100.47 (Amsterdam)"},
+      {time:"09:23:58",sev:"crit",src:"Azure AD",event:"priya.sharma: login approved from 198.51.100.47 (Amsterdam) — MFA fatigue attack — user approved push after 31 attempts"},
       {time:"09:24:11",sev:"crit",src:"Azure AD",event:"IMPOSSIBLE TRAVEL: 7,200km in 4 minutes — same user active in Mumbai AND Amsterdam simultaneously"},
       {time:"09:24:44",sev:"crit",src:"Azure AD",event:"Attacker session active — accessing M365 apps from Amsterdam"},
       {time:"09:25:14",sev:"high",src:"M365",    event:"Mass download: 23 files from SharePoint /sites/Finance — including Q4 payroll, HR records"},
@@ -1226,7 +1226,7 @@ earliest=-30m
   threatintel:{
     tool:"ThreatLens",
     lookups:[
-      {type:"IP",value:"31.184.253.47",
+      {type:"IP",value:"198.51.100.47",
        vt_score:"reported by 41 engines",abuse_score:89,
        categories:["Residential Proxy","Account Takeover Infrastructure","MFA Fatigue Tooling"],
        country:"NL",asn:"AS50673 — Serverius Datacenter",
@@ -1296,7 +1296,7 @@ earliest=-30m
       objective:"Look up the Amsterdam IP in ThreatLens. You are looking for: what type of infrastructure is this (VPN? Tor? Residential proxy?)? Has this IP been used in other ATO attacks? Understanding the attacker helps you assess: is priya.sharma targeted, or is this mass credential stuffing?",
       lookFor:["The IP type — residential proxy means the attacker is hiding behind real users' IPs","Has this IP been seen in other Microsoft 365 ATO campaigns?","What does the campaign description tell you about attacker sophistication?","Is this likely targeted or opportunistic?"],
       seniorThinking:"Residential proxies are the hardest to block. Unlike Tor or VPN ranges, residential proxy IPs look like real users — they route traffic through compromised home routers. The fact that this attacker used a residential proxy + ran a 31-push MFA fatigue attack tells me this was deliberate, not a basic credential stuffing attack.",
-      instruction:"Look up 31.184.253.47 in ThreatLens. Determine: targeted attack or opportunistic? What is the attacker's technique?",
+      instruction:"Look up 198.51.100.47 in ThreatLens. Determine: targeted attack or opportunistic? What is the attacker's technique?",
       analyst_note:"Residential proxy network — used for targeted M365 ATO campaigns. MFA fatigue is a specific, deliberate technique. This was targeted. priya.sharma was likely selected because of her access to Finance SharePoint.",
       decision:{
         question:"The attacker used a residential proxy and ran a 31-push MFA fatigue attack. What does this tell you about the nature of the attack?",
@@ -1307,7 +1307,7 @@ earliest=-30m
           {text:"Insider — priya.sharma may have shared her credentials",correct:false,why:"The evidence does not support this. priya.sharma is confirmed in the Mumbai office, did not log in from Amsterdam, and had 31 MFA notifications before the attacker got in. She was the victim, not a participant."},
         ]
       },
-      evidence_bullets:["IP 31.184.253.47 — AbuseIPDB: 89/100 — residential proxy","Proxy type: residential — hides attacker behind real home IPs","Campaign: M365 MFA fatigue ATO — targeted Finance sector","Technique: credential stuffing + MFA fatigue — not opportunistic","Implication: priya.sharma's credentials were previously compromised elsewhere"],
+      evidence_bullets:["IP 198.51.100.47 — AbuseIPDB: 89/100 — residential proxy","Proxy type: residential — hides attacker behind real home IPs","Campaign: M365 MFA fatigue ATO — targeted Finance sector","Technique: credential stuffing + MFA fatigue — not opportunistic","Implication: priya.sharma's credentials were previously compromised elsewhere"],
       action_label:"Profile Complete — Targeted Finance Attack",
       action_result:"Attacker profile:\nInfrastructure: residential proxy (high stealth)\nTechnique: credential stuffing + MFA fatigue\nTarget: Finance SharePoint access (priya.sharma)\nAssessment: TARGETED — credentials likely from prior breach\nAction required: check HaveIBeenPwned for priya.sharma email",
     },
@@ -1525,7 +1525,7 @@ earliest=-30m
   created:tsNow(0),
   host:"Azure AD / M365",
   user:"priya.sharma@corp.onmicrosoft.com",
-  srcIp:"91.108.56.123",
+  srcIp:"203.0.113.23",
   c2Ip:null,
   assignee:null,
   tags:["Impossible Travel","MFA Fatigue","Account Takeover","Azure AD","Identity"],
@@ -1541,7 +1541,7 @@ earliest=-30m
     alerts:[
       {id:"BT-8801",time:"11:23:47",sev:"Critical",rule:"IMPOSSIBLE_TRAVEL",src:"Azure AD",msg:"priya.sharma — login from IN (Mumbai) at 11:20 then NL (Amsterdam) at 11:24 — distance 7,200km — travel time 4 min — physically impossible"},
       {id:"BT-8802",time:"11:23:47",sev:"Critical",rule:"MFA_FATIGUE_DETECTION",src:"Azure AD",msg:"47 MFA push notifications to priya.sharma in 8 minutes — 46 denied — 1 approved at 11:23:47 — attacker persistence pattern"},
-      {id:"BT-8803",time:"11:24:58",sev:"High",rule:"NEW_MFA_DEVICE_REGISTERED",src:"Azure AD",msg:"New Authenticator app registered by priya.sharma from IP 91.108.56.123 — device: iPhone-Unknown — not corporate MDM enrolled"},
+      {id:"BT-8803",time:"11:24:58",sev:"High",rule:"NEW_MFA_DEVICE_REGISTERED",src:"Azure AD",msg:"New Authenticator app registered by priya.sharma from IP 203.0.113.23 — device: iPhone-Unknown — not corporate MDM enrolled"},
       {id:"BT-8804",time:"11:25:14",sev:"High",rule:"OAUTH_CONSENT_GRANT",src:"Azure AD",msg:"OAuth app 'OfficeExtension' granted Mail.Read + Files.ReadWrite.All by priya.sharma — unknown publisher"},
       {id:"BT-8805",time:"11:31:00",sev:"High",rule:"MASS_CLOUD_DOWNLOAD",src:"SharePoint",msg:"priya.sharma downloaded 2.3GB from SharePoint in 11 minutes — Finance + HR folders"},
     ],
@@ -1562,15 +1562,15 @@ earliest=-30m
     policy_note:"No high-risk sign-in block policy active — gap identified",
     process_tree:[],
     network:[
-      {time:"11:20:11",proto:"HTTPS",src:"103.21.244.10:44201",dst:"login.microsoftonline.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Mumbai IN",bad:false},
-      {time:"11:23:47",proto:"HTTPS",src:"91.108.56.123:42341",dst:"login.microsoftonline.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Amsterdam NL",bad:true},
-      {time:"11:31:00",proto:"HTTPS",src:"103.21.244.0:55001",dst:"corp.sharepoint.com:443",proc:"SharePoint Download",bytes:"2.3GB",state:"COMPLETED",bad:true},
+      {time:"11:20:11",proto:"HTTPS",src:"192.0.2.11:44201",dst:"login.example-corp.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Mumbai IN",bad:false},
+      {time:"11:23:47",proto:"HTTPS",src:"203.0.113.23:42341",dst:"login.example-corp.com:443",proc:"Azure AD Sign-in",bytes:"",state:"SUCCESS — Amsterdam NL",bad:true},
+      {time:"11:31:00",proto:"HTTPS",src:"192.0.2.10:55001",dst:"corp.sharepoint.com:443",proc:"SharePoint Download",bytes:"2.3GB",state:"COMPLETED",bad:true},
     ],
     timeline:[
-      {time:"11:15:00",sev:"high",src:"Azure AD",event:"MFA push notifications begin for priya.sharma — source IP: 91.108.56.123 (NL)"},
-      {time:"11:20:11",sev:"info",src:"Azure AD",event:"priya.sharma successful login — IP: 103.21.244.10 — Location: Mumbai IN — legitimate session"},
+      {time:"11:15:00",sev:"high",src:"Azure AD",event:"MFA push notifications begin for priya.sharma — source IP: 203.0.113.23 (NL)"},
+      {time:"11:20:11",sev:"info",src:"Azure AD",event:"priya.sharma successful login — IP: 192.0.2.11 — Location: Mumbai IN — legitimate session"},
       {time:"11:22:55",sev:"crit",src:"Azure AD",event:"46 MFA denials in 7 minutes — priya.sharma device receiving constant push notifications"},
-      {time:"11:23:47",sev:"crit",src:"Azure AD",event:"MFA APPROVED — priya.sharma approves push notification #47 — IP: 91.108.56.123 — Amsterdam NL"},
+      {time:"11:23:47",sev:"crit",src:"Azure AD",event:"MFA APPROVED — priya.sharma approves push notification #47 — IP: 203.0.113.23 — Amsterdam NL"},
       {time:"11:24:02",sev:"crit",src:"Azure AD",event:"IMPOSSIBLE TRAVEL: previous login Mumbai IN 4 min ago — 7,200km distance — impossible"},
       {time:"11:24:58",sev:"crit",src:"Azure AD",event:"New Authenticator device registered — iPhone-Unknown — not in MDM — persistence established"},
       {time:"11:25:14",sev:"high",src:"Azure AD",event:"OAuth consent: 'OfficeExtension' (unknown publisher) — Mail.Read + Files.ReadWrite.All granted"},
@@ -1587,14 +1587,14 @@ earliest=-30m
     tool:"ThreatLens",
     lookups:[
       {
-        type:"IP",value:"91.108.56.123",
+        type:"IP",value:"203.0.113.23",
         vt_score:"reported by 54 engines",
         abuse_score:97,
         categories:["MFA Fatigue Infrastructure","Telegram CDN — Proxy","Known ATO Tooling"],
         country:"NL",asn:"AS62041 — Telegram Messenger",
         last_seen:"2026-05-28",
         campaigns:["Lapsus$ MFA fatigue operations 2025-2026","Oktapus — SIM swap + MFA fatigue campaign","Multiple corporate ATO incidents Q1 2026"],
-        passive_dns:["proxy.t.me","cdn-telegram-redirect.net"],
+        passive_dns:["proxy.t.me","malware-example.net"],
         first_seen:"2024-08-14",
         verdict:"MALICIOUS — Known MFA fatigue attack infrastructure. This IP has been used in multiple ATO campaigns.",
         verdictColor:"#dc2626",
@@ -1644,7 +1644,7 @@ earliest=-30m
           {text:"Revoke all active sessions immediately, then investigate",correct:true,why:"Correct. An active attacker session means damage is happening in real time. Revoke first, investigate second. Every minute the session is active = more data exfiltrated."},
           {text:"Investigate all the evidence before taking any action",correct:false,why:"Incorrect for this situation. When an attacker has an active session, time matters. You do not have the luxury of a full investigation before acting. Revoke first."},
           {text:"Email priya.sharma to ask if she recognises the login",correct:false,why:"Too slow. Emailing the user takes time they may not have. Also, if the attacker controls her email (via the OAuth app), they might see your message. Act immediately."},
-          {text:"Block the IP 91.108.56.123 at the firewall",correct:false,why:"Partially helpful but insufficient. Blocking the IP does not kill the existing authenticated session. The attacker can simply switch IPs. Revoke the session tokens directly."},
+          {text:"Block the IP 203.0.113.23 at the firewall",correct:false,why:"Partially helpful but insufficient. Blocking the IP does not kill the existing authenticated session. The attacker can simply switch IPs. Revoke the session tokens directly."},
         ]
       },
       evidence_bullets:["47 MFA pushes in 8 min — 1 approved — MFA fatigue attack confirmed","Mumbai login at 11:20 + Amsterdam login at 11:24 — IMPOSSIBLE TRAVEL","Attacker session: ACTIVE — still logged in","New rogue MFA device registered at 11:24:58","Mass download: 2.3GB from Finance + HR SharePoint"],
@@ -1677,10 +1677,10 @@ earliest=-30m
       id:2,phase:"INVESTIGATION",xp:20,
       tool:"ThreatLens",toolIcon:"🔍",toolAnalogy:"like a criminal database for IPs and files",
       title:"Enrich the Attack Source",
-      objective:"Look up the attacker's IP 91.108.56.123 in ThreatLens. Before you read the verdict — look at the raw data. What category is this IP in? What campaigns has it been seen in? How long has it been active? This tells you if this is a targeted attack or opportunistic.",
+      objective:"Look up the attacker's IP 203.0.113.23 in ThreatLens. Before you read the verdict — look at the raw data. What category is this IP in? What campaigns has it been seen in? How long has it been active? This tells you if this is a targeted attack or opportunistic.",
       lookFor:["What categories does ThreatLens assign to this IP?","Has this IP been seen in previous campaigns?","How long has this IP been active as a threat?","Does the campaign name tell you anything about the threat actor?"],
       seniorThinking:"Lapsus$ and Oktapus are known for exactly this — MFA fatigue against M365 and Okta environments. When I see this IP associated with those campaigns, I know this is not a random attack. This is a professional criminal group targeting corporate M365 tenants. That changes the severity of my report.",
-      instruction:"Look up 91.108.56.123 in ThreatLens. Read the raw data before the verdict. What story does the threat intelligence tell?",
+      instruction:"Look up 203.0.113.23 in ThreatLens. Read the raw data before the verdict. What story does the threat intelligence tell?",
       analyst_note:"AbuseIPDB: 97/100. Associated with Lapsus$ and Oktapus MFA fatigue campaigns. This is a known criminal operation targeting M365 tenants.",
       decision:{
         question:"ThreatLens shows this IP is linked to Lapsus$/Oktapus MFA fatigue campaigns. What does this mean for your incident?",
@@ -1691,7 +1691,7 @@ earliest=-30m
           {text:"Report to police immediately",correct:false,why:"Eventually, yes. But not your first action as an analyst. Your job right now is containment and investigation. Legal and compliance handle regulatory reporting."},
         ]
       },
-      evidence_bullets:["IP 91.108.56.123 — AbuseIPDB: 97/100 — MFA fatigue tool","Associated: Lapsus$ + Oktapus campaigns (organised criminal groups)","Active since: 2024-08-14 (nearly 2 years of malicious activity)","Method: MFA fatigue — requires password to be already known","Implication: priya.sharma's password was previously compromised"],
+      evidence_bullets:["IP 203.0.113.23 — AbuseIPDB: 97/100 — MFA fatigue tool","Associated: Lapsus$ + Oktapus campaigns (organised criminal groups)","Active since: 2024-08-14 (nearly 2 years of malicious activity)","Method: MFA fatigue — requires password to be already known","Implication: priya.sharma's password was previously compromised"],
       action_label:"Check Other Accounts + Brief IR Team",
       action_result:"Threat Intel briefing complete:\nAttacker: Lapsus$/Oktapus pattern — organised criminal group\nMethod: MFA fatigue (password already known — prior breach)\n\nBlast radius check: scanning 2,847 M365 accounts for same IP\nResults: 3 other accounts received push notifications — none approved\nAction: Force password reset on all 4 accounts\nIR team: BRIEFED\nCISO: NOTIFIED",
     },
@@ -1708,7 +1708,7 @@ earliest=-30m
         question:"Which single change would have PREVENTED this MFA fatigue attack entirely?",
         options:[
           {text:"Enable MFA Number Matching on Authenticator push notifications",correct:true,why:"Correct. Number Matching requires the user to type a 2-digit code they see on the login screen into their Authenticator app. A fatigue attack relies on the user clicking Approve without thinking — Number Matching removes that possibility."},
-          {text:"Block the IP 91.108.56.123 at the firewall",correct:false,why:"Ineffective. The attacker controls hundreds of IPs. Blocking one IP is playing whack-a-mole. Address the authentication weakness, not the source address."},
+          {text:"Block the IP 203.0.113.23 at the firewall",correct:false,why:"Ineffective. The attacker controls hundreds of IPs. Blocking one IP is playing whack-a-mole. Address the authentication weakness, not the source address."},
           {text:"Require the user to use a stronger password",correct:false,why:"Incorrect. The attacker already had the password. Password strength was not the issue — MFA approval was the issue."},
           {text:"Disable MFA and use password-only authentication",correct:false,why:"The opposite of the correct answer. MFA — even push-based — is still far better than no MFA. The fix is to make MFA stronger, not to remove it."},
         ]
@@ -3006,7 +3006,7 @@ function BlueTraceSIEM({inc,activeStep}){
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <div style={{display:"flex",alignItems:"center",gap:5}}>
             <Dot color="#22c55e" pulse/>
-            <span style={{fontSize:9.5,color:"var(--tx3)",fontFamily:"var(--mo)"}}>LIVE</span>
+            <span style={{fontSize:9.5,color:"var(--tx3)",fontFamily:"var(--mo)"}}>SIMULATION</span>
           </div>
           <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>Corp · Primary Cluster</div>
         </div>
@@ -3850,7 +3850,7 @@ function IncidentBriefing({inc, onStart}) {
           <button onClick={onStart} style={{width:"100%",background:"#dc2626",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(220,38,38,0.35)"}}>
             Begin Investigation →
           </button>
-          <div style={{textAlign:"center",marginTop:8,fontSize:10.5,color:"#9ca3af"}}>⚠ Educational simulation — all users and organisations are fictional</div>
+          <div style={{textAlign:"center",marginTop:8,fontSize:10.5,color:"#9ca3af"}}>🔒 TRAINING SIMULATION ONLY — All incidents, users, companies, IP addresses, and data are completely fictional and created for educational purposes. No real organisations or individuals are represented. No real security tools or data sources are used.</div>
         </div>
       </div>
     </div>
@@ -3988,7 +3988,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
           <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",color:"var(--tx2)",fontWeight:600}}>{mm}:{ss2}</div>
           <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",color:"var(--ac)",fontWeight:600}}>Step {si+1}/{inc.steps.length}</div>
           <div style={{background:contained?"var(--okl)":"var(--errl)",border:"1px solid "+(contained?"var(--okb)":"var(--errb)"),borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",fontWeight:600,color:contained?"var(--ok)":"var(--err)"}}>
-            {contained?"CONTAINED":"LIVE THREAT"}
+            {contained?"CONTAINED":"SIMULATED THREAT"}
           </div>
         </div>
       </div>
@@ -4453,7 +4453,7 @@ function Landing({nav=()=>{},appUser=null}) {
           <div style={{background:"#0f1117",borderRadius:12,padding:"16px",border:"1px solid rgba(220,38,38,0.35)"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
               <div style={{width:7,height:7,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite",flexShrink:0}}/>
-              <span style={{fontSize:9,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)"}}>LIVE INCIDENT · INC-2026-0441 · P1 CRITICAL</span>
+              <span style={{fontSize:9,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)"}}>SIMULATED SCENARIO · INC-2026-0441 · TRAINING</span>
             </div>
             <div style={{fontSize:12.5,color:"#e8ecf4",lineHeight:1.75,marginBottom:10}}>Finance analyst opened an invoice at 08:17. SIEM fired 4 rules. EDR shows WINWORD.EXE spawning cmd.exe. Active beacon to Russia.</div>
             <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>Is this a real attack or a false positive?</div>
@@ -4484,7 +4484,7 @@ function Landing({nav=()=>{},appUser=null}) {
               <div style={{flex:1}}/>
               <div style={{display:"flex",alignItems:"center",gap:5}}>
                 <div style={{width:6,height:6,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite"}}/>
-                <span style={{fontSize:9,color:"#dc2626",fontFamily:"var(--mo)",fontWeight:700}}>LIVE THREAT</span>
+                <span style={{fontSize:9,color:"#dc2626",fontFamily:"var(--mo)",fontWeight:700}}>SIMULATED</span>
               </div>
             </div>
             <div style={{padding:"12px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -4987,6 +4987,15 @@ function AuthPage({nav,mode,login=()=>({}),signup=()=>({}),authError=null,loadin
               <input style={inp} type="password" placeholder="Min 6 characters" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}/>
             </div>
             {err&&<div style={{background:"var(--errl)",border:"1px solid var(--errb)",color:"var(--err)",padding:"10px 13px",borderRadius:8,fontSize:13,marginBottom:14}}>{err}</div>}
+            {mode==="signup"&&(
+              <div style={{fontSize:11,color:"#6b7280",lineHeight:1.7,marginBottom:8,padding:"8px 10px",background:"#f7f8fa",borderRadius:7,border:"1px solid #e1e4ed"}}>
+                By creating an account you agree to our{" "}
+                <span onClick={()=>nav("terms")} style={{color:"var(--ac)",cursor:"pointer",textDecoration:"underline"}}>Terms of Service</span>
+                {" "}and{" "}
+                <span onClick={()=>nav("privacy")} style={{color:"var(--ac)",cursor:"pointer",textDecoration:"underline"}}>Privacy Policy</span>.
+                {" "}We collect your name, email, and usage data under DPDPA 2023.
+              </div>
+            )}
             <button type="submit" disabled={authLoading} style={{width:"100%",background:"var(--ac)",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:600,border:"none",cursor:"pointer",opacity:authLoading?0.7:1,boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
               {authLoading?"Loading...":mode==="login"?"Login →":"Create Account — Free →"}
             </button>
