@@ -343,7 +343,11 @@ function useSupabase() {
   };
 
   const finishSim = (id, score, grade, sec) => {
-    saveProg({...prog, done:{...prog.done, [id]:{score,grade,sec,at:Date.now()}}});
+    // Save under both INC id and scenario id for compatibility
+    const INC_TO_SCENARIO = Object.fromEntries(Object.entries(SCENARIO_TO_INC).map(([k,v])=>[v,k]));
+    const scenarioId = INC_TO_SCENARIO[id] || id;
+    const entry = {score,grade,sec,at:Date.now()};
+    saveProg({...prog, done:{...prog.done, [id]:entry, [scenarioId]:entry}});
   };
 
   const submitFeedback = async (incId, rating, difficulty, recommend, comment) => {
@@ -5236,7 +5240,7 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
       <div style={{fontSize:12,fontWeight:700,color:"var(--tx)",marginBottom:14,letterSpacing:"0.05em",textTransform:"uppercase"}}>Simulations</div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {allSims.map(s=>{
-          const d=prog.done[s.id];
+          const d=prog.done[s.id]||prog.done[s.incId];
           return (
             <div key={s.id} onClick={()=>nav("sim-"+s.id)}
               style={{background:"var(--w)",border:"1px solid "+(s.id==="phishing-c2"&&!Object.keys(prog.done).length?"#1a56db":"var(--bd)"),borderRadius:14,padding:"18px",cursor:"pointer",boxShadow:s.id==="phishing-c2"&&!Object.keys(prog.done).length?"0 0 0 3px rgba(26,86,219,0.15), var(--sh)":"var(--sh)",position:"relative",transition:"all 0.15s"}}>
