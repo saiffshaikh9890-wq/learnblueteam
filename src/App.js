@@ -3687,7 +3687,8 @@ function IncidentAnimation({incId}) {
 
 
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp}){
-  const inc=INCIDENTS[incId];
+  const inc=INCIDENTS[incId]||INCIDENTS["INC-2026-0441"];
+  if(!inc){return(<div style={{padding:40,color:"red",fontFamily:"monospace"}}>Incident {incId} not found</div>);}
   const [activeTool,setActiveTool]=useState("siem");
   const [si,setSi]=useState(0);
   const [status,setStatus]=useState("ticket_review"); // ticket_review | mode_select | coach | decision | action_idle | action_running | action_done
@@ -3696,11 +3697,14 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
   const selectMode=(m)=>{setMode(m);setStatus("coach");};
   const handleDecision=(correct)=>{
     setDecisionCorrect(correct);
+    const capturedPhase = step?.phase;
+    const capturedXp = step?.xp||0;
+    const capturedSi = si;
     setStatus("action_running");
     setTimeout(()=>{
-      if(step.phase==="CONTAINMENT") setContained(true);
-      setDoneSteps(p=>[...p,si]);
-      setXpBurstAmt(step.xp);
+      if(capturedPhase==="CONTAINMENT") setContained(true);
+      setDoneSteps(p=>[...p,capturedSi]);
+      setXpBurstAmt(capturedXp);
       setStatus("action_done");
     },1400);
   };
@@ -3713,7 +3717,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
 
   useEffect(()=>{const t=setInterval(()=>setElapsed(s=>s+1),1000);return()=>clearInterval(t);},[]);
 
-  const step=inc.steps[si];
+  const step=inc?.steps?.[si]||inc?.steps?.[0];
   const pct=doneSteps.length===0?0:Math.round((doneSteps.length/inc.steps.length)*100);
 
   const toolMap={
