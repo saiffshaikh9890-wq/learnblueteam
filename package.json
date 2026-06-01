@@ -10,7 +10,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test"
+    "test": "react-scripts test",
+    "postinstall": "node -e \"try{const f=require.resolve('fork-ts-checker-webpack-plugin/lib/ForkTsCheckerWebpackPlugin');console.log('fork-ts-checker ok')}catch(e){console.log('skipping fork-ts-checker patch')}\""
   },
   "browserslist": {
     "production": [
@@ -25,7 +26,9 @@
     ]
   },
   "engines": {
-    "node": "18.x",
-    "npm": ">=8"
+    "node": "18.x"
+  },
+  "overrides": {
+    "fork-ts-checker-webpack-plugin": ">=4.0.0 <5.0.0"
   }
 }
