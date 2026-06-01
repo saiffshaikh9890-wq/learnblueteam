@@ -2617,120 +2617,99 @@ function GT({t,children}) { return <span>{children}</span>; }
 
 
 function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
-  const mm=String(Math.floor(elapsed/60)).padStart(2,"0");
-  const ss=String(elapsed%60).padStart(2,"0");
-  const totalXp=steps.reduce((a,s)=>a+s.xp,0);
-  const hintPenalty=hintCount*15;
-  const finalXp=Math.max(0,totalXp-hintPenalty);
-  const pct=Math.round(finalXp/totalXp*100);
-  const grade=pct>=90?"S":pct>=75?"A":pct>=60?"B":"C";
-  const gc={S:"#a855f7",A:"#22c55e",B:"#3b82f6",C:"#f59e0b"}[grade];
+  const mm = String(Math.floor(elapsed/60)).padStart(2,"0");
+  const ss2 = String(elapsed%60).padStart(2,"0");
+  const xpEarned = steps.reduce((a,s)=>a+s.xp,0) - (hintCount*5);
+  const grade = elapsed < 600 ? "S" : elapsed < 900 ? "A" : elapsed < 1200 ? "B" : "C";
+  const gradeColor = {"S":"#fbbf24","A":"#22c55e","B":"#3b82f6","C":"#9ca3af"}[grade];
+  const isTP = inc.type === "TP";
 
-  // Emotional payoffs per incident
-  const IMPACT={
-    "INC-2026-0441":{
-      stopped:"a targeted Cobalt Strike attack on the Finance team",
-      prevented:"payroll system access and credential theft",
-      detail:"The attacker had an active C2 session for 14 minutes. You cut it off before they could move laterally to payroll servers.",
-      nextTitle:"IT Admin PowerShell — False Positive?",
-      nextId:"fp-powershell",
-      lesson:"Not every attack succeeds because of the phishing email. It succeeds because the EDR was in detect-only mode. You found that gap."
-    },
-  };
-  const impact=IMPACT[inc?.id]||{stopped:"a security incident",prevented:"further damage",detail:"Investigation complete.",nextTitle:null,nextId:null,lesson:null};
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:999,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{background:"#0d1117",border:"1px solid rgba(255,255,255,0.08)",
+        borderRadius:20,maxWidth:480,width:"100%",overflow:"hidden",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}>
 
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.95)",zIndex:1000,
-      display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
-      <div style={{background:"#fff",borderRadius:18,padding:0,maxWidth:500,width:"100%",
-        overflow:"hidden",animation:"fadeUp 0.4s ease"}}>
-
-        {/* Grade banner */}
-        <div style={{background:grade==="S"?"linear-gradient(135deg,#7c3aed,#1a56db)":
-          grade==="A"?"linear-gradient(135deg,#16a34a,#0891b2)":
-          "linear-gradient(135deg,#1a56db,#7c3aed)",
-          padding:"28px 24px",textAlign:"center",position:"relative"}}>
-          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.7)",
-            letterSpacing:"0.2em",fontFamily:"monospace",textTransform:"uppercase",marginBottom:8}}>
-            Case Closed — {inc?.id}
+        {/* Hero banner */}
+        <div style={{background:isTP
+            ?"linear-gradient(135deg,#dc2626 0%,#7c3aed 100%)"
+            :"linear-gradient(135deg,#22c55e 0%,#0891b2 100%)",
+          padding:"28px 24px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",inset:0,opacity:0.1,
+            backgroundImage:"radial-gradient(circle at 20% 50%, white 1px, transparent 1px)",
+            backgroundSize:"24px 24px"}}/>
+          <div style={{fontSize:48,marginBottom:8}}>
+            {isTP ? "🚨" : "✅"}
           </div>
-          <div style={{fontSize:72,fontWeight:900,color:"#fff",fontFamily:"monospace",
-            lineHeight:1,marginBottom:4,textShadow:"0 2px 20px rgba(0,0,0,0.3)"}}>{grade}</div>
-          <div style={{fontSize:16,fontWeight:700,color:"rgba(255,255,255,0.9)"}}>
-            You stopped {impact.stopped}
+          <div style={{fontSize:22,fontWeight:800,color:"#fff",marginBottom:4}}>
+            {isTP ? "Attack Stopped" : "False Positive Identified"}
+          </div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>
+            {isTP
+              ? "You detected and contained a real attack. A finance workstation is safe because of your investigation."
+              : "You correctly identified a false alarm and avoided wasting incident response resources."}
           </div>
         </div>
 
+        {/* Stats */}
         <div style={{padding:"20px 24px"}}>
-          {/* What you prevented */}
-          <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:10,
-            padding:"12px 14px",marginBottom:14}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#166534",fontFamily:"monospace",
-              letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>🛡 Threat Prevented</div>
-            <div style={{fontSize:13,color:"#14532d",lineHeight:1.7}}>{impact.detail}</div>
-          </div>
-
-          {/* Stats */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
-            {[["XP Earned",finalXp+"","var(--ac)"],
-              ["Response",mm+":"+ss,elapsed<900?"#16a34a":"#f59e0b"],
-              ["Hints",hintCount+"",hintCount===0?"#16a34a":"#f59e0b"]
-            ].map(([l,v,c])=>(
-              <div key={l} style={{background:"#f7f8fa",border:"1px solid #e1e4ed",
-                borderRadius:9,padding:"10px",textAlign:"center"}}>
-                <div style={{fontSize:22,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
-                <div style={{fontSize:9,color:"#9ca3af",textTransform:"uppercase",
-                  letterSpacing:"0.08em",marginTop:2}}>{l}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
+            {[
+              ["Grade", grade, gradeColor],
+              ["XP Earned", "+"+xpEarned, "#22c55e"],
+              ["Time", mm+":"+ss2, "#60a5fa"],
+            ].map(([label,val,color])=>(
+              <div key={label} style={{background:"rgba(255,255,255,0.04)",
+                border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,
+                padding:"12px",textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:800,color,fontFamily:"var(--mo)",marginBottom:2}}>{val}</div>
+                <div style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase"}}>{label}</div>
               </div>
             ))}
           </div>
 
-          {/* Key lesson */}
-          {impact.lesson&&(
-            <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,
-              padding:"12px 14px",marginBottom:14}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#b45309",fontFamily:"monospace",
-                letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:5}}>👩‍💻 Key Lesson</div>
-              <div style={{fontSize:13,color:"#78350f",lineHeight:1.7,fontStyle:"italic"}}>
-                "{impact.lesson}"
-              </div>
+          {/* What you learned */}
+          <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",
+            borderRadius:10,padding:"14px",marginBottom:16}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#6b7280",fontFamily:"var(--mo)",
+              letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>What You Practised</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {inc.tags?.map(t=>(
+                <div key={t} style={{fontSize:11,background:"rgba(59,130,246,0.1)",
+                  color:"#60a5fa",border:"1px solid rgba(59,130,246,0.2)",
+                  borderRadius:20,padding:"3px 10px",fontWeight:500}}>{t}</div>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* Next investigation */}
-          {impact.nextId&&(
-            <div onClick={()=>{onBack();setTimeout(()=>{},100);}}
-              style={{background:"linear-gradient(135deg,#eff6ff,#f0fdf4)",
-                border:"1px solid #bfdbfe",borderRadius:12,padding:"14px",
-                marginBottom:12,cursor:"pointer",transition:"all 0.15s"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#1a56db",fontFamily:"monospace",
-                letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Next Investigation →</div>
-              <div style={{fontSize:14,fontWeight:700,color:"#111318",marginBottom:8}}>
-                {impact.nextTitle}
-              </div>
-              <button style={{width:"100%",background:"#1a56db",color:"#fff",
-                padding:"12px",borderRadius:9,fontSize:13,fontWeight:700,
-                border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)"}}>
-                Start Next Investigation →
-              </button>
-            </div>
-          )}
+          {/* Legal disclaimer */}
+          <div style={{fontSize:10,color:"#374151",textAlign:"center",marginBottom:16,lineHeight:1.5}}>
+            This was a fictional simulation. No real systems or data were involved.
+          </div>
 
-          <button onClick={onBack}
-            style={{width:"100%",background:"#f7f8fa",color:"#6b7280",
-              padding:"11px",borderRadius:9,border:"1px solid #e1e4ed",
-              fontSize:13,cursor:"pointer"}}>
-            Return to Dashboard
-          </button>
-          <div style={{display:"flex",gap:8,marginTop:8}}>
-            <button onClick={()=>navigator.clipboard?.writeText("I just investigated a real SOC incident on LearnThreatOps! Free: learnblueteam-production.up.railway.app #CyberSecurity #SOCAnalyst").then(()=>alert("Copied!"))} style={{flex:1,background:"#0077b5",color:"#fff",padding:"9px",borderRadius:7,fontSize:12,fontWeight:600,border:"none",cursor:"pointer"}}>Copy for LinkedIn</button>
-            <button onClick={()=>window.open("https://wa.me/?text="+encodeURIComponent("I investigated a real SOC incident on LearnThreatOps! Free: learnblueteam-production.up.railway.app"),"_blank")} style={{flex:1,background:"#25d366",color:"#fff",padding:"9px",borderRadius:7,fontSize:12,fontWeight:600,border:"none",cursor:"pointer"}}>WhatsApp</button>
+          {/* Actions */}
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={onBack}
+              style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",
+                borderRadius:10,padding:"12px",fontSize:13,color:"#e8ecf4",cursor:"pointer",fontWeight:600}}>
+              ← Back to Dashboard
+            </button>
+            <button onClick={()=>{
+                const text = `I just completed a SOC analyst investigation on LearnThreatOps — ${isTP?"detected a phishing attack and stopped a C2 beacon":"correctly identified a false positive"}. Grade: ${grade}. Free beta at learnthreatops.cloud 🛡`;
+                navigator.clipboard?.writeText(text);
+              }}
+              style={{flex:1,background:"#1a56db",border:"none",borderRadius:10,
+                padding:"12px",fontSize:13,color:"#fff",cursor:"pointer",fontWeight:700}}>
+              Share Result 📤
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2822,9 +2801,9 @@ function CoachPopup({step, onClose, onHint, hintUsed, stepsDone, totalSteps}) {
           )}
           <button onClick={onClose}
             style={{flex:2,background:pc,border:"none",borderRadius:8,
-              padding:"10px",fontSize:13,color:"#fff",cursor:"pointer",
-              fontWeight:700,boxShadow:"0 4px 14px "+pc+"40"}}>
-            Open {step.tool} →
+              padding:"12px",fontSize:13,color:"#fff",cursor:"pointer",
+              fontWeight:700,boxShadow:"0 4px 14px "+pc+"40",letterSpacing:"0.02em"}}>
+            {"Step "+(stepsDone+1)+" → Open "}{step.tool}
           </button>
         </div>
       </div>
@@ -2910,6 +2889,7 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
             <span style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>LEARN</span>
             <span style={{fontSize:14,fontWeight:700,background:"linear-gradient(90deg,#5b7fe8,#2a3bbd)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>LEARNTHREATOPS</span>
             <span style={{fontSize:9,color:"var(--tx4)",marginLeft:8,fontFamily:"var(--mo)"}}>SOC Operations Center</span>
+          <span style={{fontSize:8,color:"rgba(220,38,38,0.5)",fontFamily:"var(--mo)",marginLeft:4,letterSpacing:"0.05em"}}>· SIMULATION</span>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -3699,7 +3679,13 @@ function BlueTraceSIEM({inc,activeStep}){
               </div>
               {inc.siem.alerts.map((a,i)=>(
                 <div key={a.id} className={"clickrow"+(sel===a.id?" sel":"")} onClick={()=>setSel(a.id)}
-                  style={{display:"grid",gridTemplateColumns:"70px 1fr 90px 80px 55px",padding:"7px 12px",borderBottom:i<inc.siem.alerts.length-1?"1px solid var(--bd)":"none",alignItems:"center",borderLeft:"2px solid "+(sel===a.id?"var(--ac)":"transparent")}}>
+                  style={{display:"grid",gridTemplateColumns:"70px 1fr 90px 80px 55px",
+                    padding:a.sev==="Critical"?"11px 12px":"7px 12px",
+                    borderBottom:i<inc.siem.alerts.length-1?"1px solid var(--bd)":"none",
+                    alignItems:"center",
+                    background:sel===a.id?"rgba(59,130,246,0.08)":a.sev==="Critical"?"rgba(220,38,38,0.06)":"transparent",
+                    borderLeft:"3px solid "+(sel===a.id?"#3b82f6":a.sev==="Critical"?"#dc2626":a.sev==="High"?"#ea580c":"transparent"),
+                    transition:"all 0.15s"}}>
                   <span style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{a.time}</span>
                   <span style={{fontSize:12,color:sel===a.id?"var(--tx)":"var(--tx2)",fontWeight:sel===a.id?600:400,paddingRight:8}}>{a.msg.slice(0,52)+(a.msg.length>52?"...":"")}</span>
                   <span style={{fontSize:9.5,color:"var(--ac)",fontFamily:"var(--mo)"}}>{a.rule.slice(0,14)}</span>
@@ -3712,8 +3698,12 @@ function BlueTraceSIEM({inc,activeStep}){
             {/* selected alert detail */}
             {selAlert&&(
               <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px 14px",animation:"slideIn 0.2s ease"}}>
-                <div style={{fontSize:9,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase"}}>Alert Detail — {selAlert.id}</div>
-                <div style={{fontSize:12.5,color:"var(--tx2)",lineHeight:1.75,fontFamily:"var(--mo)",marginBottom:10}}>{selAlert.msg}</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{fontSize:9,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase"}}>Alert Detail — {selAlert.id}</div>
+                  {selAlert.sev==="Critical"&&<div style={{fontSize:8,background:"rgba(220,38,38,0.15)",color:"#f87171",border:"1px solid rgba(220,38,38,0.3)",borderRadius:4,padding:"1px 6px",fontWeight:700,fontFamily:"var(--mo)",animation:"pulse 2s infinite"}}>⚠ NEEDS ACTION</div>}
+                </div>
+                <div style={{fontSize:13,color:"var(--tx1)",lineHeight:1.8,fontFamily:"var(--mo)",marginBottom:12,background:"rgba(255,255,255,0.02)",borderRadius:6,padding:"8px 10px",borderLeft:"2px solid "+(selAlert.sev==="Critical"?"#dc2626":selAlert.sev==="High"?"#ea580c":"var(--bd)")}}>{selAlert.msg}</div>
+                {selAlert.sev==="Critical"&&<div style={{fontSize:11,color:"#fbbf24",marginBottom:10,lineHeight:1.6,fontStyle:"italic"}}>{"This is a high-confidence indicator of active compromise. Read the full message, note the process chain and IP address."}</div>}
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                   <Badge color="gray">Rule: {selAlert.rule}</Badge>
                   <Badge color="blue">Source: {selAlert.src}</Badge>
