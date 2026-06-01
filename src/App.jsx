@@ -2772,10 +2772,17 @@ function CoachPopup({step, onClose, onHint, hintUsed, stepsDone, totalSteps}) {
           {step.title}
         </div>
 
-        {/* Objective — single clear sentence */}
-        <div style={{fontSize:13,color:"#9ca3af",lineHeight:1.6,marginBottom:16}}>
-          {step.objective}
+        {/* Objective — single clear sentence, bolded key action */}
+        <div style={{fontSize:14,color:"#e8ecf4",lineHeight:1.6,marginBottom:16,fontWeight:500}}>
+          {step.objective?.split(".")[0]}.
         </div>
+        {/* Mentor tip — only the first sentence, shorter */}
+        {step.mentor?.tip&&(
+          <div style={{fontSize:12,color:"#6b7280",lineHeight:1.5,marginBottom:16,
+            paddingLeft:10,borderLeft:"2px solid rgba(255,255,255,0.1)"}}>
+            {step.mentor.tip.split(".")[0]}.
+          </div>
+        )}
 
         {/* Hint */}
         {showHint&&(
@@ -4246,7 +4253,16 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
                 </div>
                 <div style={{padding:"16px 18px"}}>
                   <IncidentAnimation incId={inc.id}/>
-                  <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:14,marginTop:8}}>{inc.title}</div>
+                  <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:8,marginTop:8}}>{inc.title}</div>
+                  <div style={{fontSize:13,color:"#9ca3af",lineHeight:1.6,marginBottom:16}}>{inc.brief}</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                    {[["Risk Score","97/100","#dc2626"],["Severity","Critical","#dc2626"],["SLA","60 min","#f59e0b"],["Status","New","#3b82f6"]].map(([l,v,c])=>(
+                      <div key={l} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:"6px 12px",textAlign:"center"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:c,fontFamily:"var(--mo)"}}>{v}</div>
+                        <div style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)",textTransform:"uppercase",letterSpacing:"0.1em"}}>{l}</div>
+                      </div>
+                    ))}
+                  </div>
                   <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
                     {[
                       {time:"08:17",icon:"📧",text:"Analyst opened an invoice email attachment from an unknown sender.",c:"#fbbf24"},
@@ -5220,7 +5236,15 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
               </div>
               <div style={{marginBottom:8}}><Pill color={s.difficulty==="Easy"?"green":"amber"} sm>{s.difficulty}</Pill></div>
               <div style={{fontSize:16,fontWeight:700,color:"var(--tx)",marginBottom:4,paddingRight:70,lineHeight:1.3}}>{s.title}</div>
-              <div style={{fontSize:12.5,color:"var(--tx3)",lineHeight:1.6,marginBottom:12}}>{s.brief.slice(0,80)}...</div>
+              <div style={{fontSize:12.5,color:"var(--tx3)",lineHeight:1.6,marginBottom:10}}>{s.brief.slice(0,80)}...</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+                {s.tags?.slice(0,3).map(t=>(
+                  <span key={t} style={{fontSize:10,color:"var(--tx4)",background:"var(--bg3)",
+                    border:"1px solid var(--bd)",borderRadius:4,padding:"1px 7px",fontFamily:"var(--mo)"}}>
+                    {t}
+                  </span>
+                ))}
+              </div>
               <div style={{display:"flex",gap:14,fontSize:11.5,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:10}}>
                 <span>⏱ {s.duration}m</span><span>⭐ {s.xpReward} XP</span>
               </div>
