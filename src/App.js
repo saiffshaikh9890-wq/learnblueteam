@@ -3605,7 +3605,7 @@ function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
           <div style={{width:28,height:28,borderRadius:6,background:"linear-gradient(135deg,#3b82f6,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>LearnThreatOps</div>
           <div>
             <span style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>LEARN</span>
-            <span style={{fontSize:14,fontWeight:700,color:"#60a5fa"}}>LEARNTHREATOPS</span>
+            <span style={{fontSize:14,fontWeight:700,background:"linear-gradient(90deg,#5b7fe8,#2a3bbd)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>LEARNTHREATOPS</span>
             <span style={{fontSize:9,color:"var(--tx4)",marginLeft:8,fontFamily:"var(--mo)"}}>SOC Operations Center</span>
           </div>
         </div>
@@ -4747,26 +4747,26 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac)}
 function Logo({size=32}) {
   const s = size;
   return (
-    <svg width={s} height={Math.round(s*0.85)} viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={s} height={s} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="ltg1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6b8ef5"/>
-          <stop offset="60%" stopColor="#3b5ef8"/>
-          <stop offset="100%" stopColor="#1a3ed4"/>
-        </linearGradient>
-        <linearGradient id="ltg2" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#4f7ef8"/>
-          <stop offset="100%" stopColor="#1a3ed4"/>
+        <linearGradient id="tGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#5b7fe8"/>
+          <stop offset="50%" stopColor="#4060d4"/>
+          <stop offset="100%" stopColor="#2a3bbd"/>
         </linearGradient>
       </defs>
-      <path d="M5 8 L5 92 L48 92 L48 80 L18 80 L18 8 Z" fill="#2d3142"/>
-      <path d="M28 8 L115 8 L115 24 L28 24 Z" fill="url(#ltg1)"/>
-      <path d="M58 24 L58 92 L74 92 L74 24 Z" fill="url(#ltg2)"/>
-      <path d="M74 24 L82 8 L90 8 L82 24 Z" fill="rgba(255,255,255,0.15)"/>
-      <path d="M54 88 L78 88 L78 96 L54 96 Z" fill="url(#ltg2)" opacity="0.6"/>
+      {/* L — dark charcoal exactly like brand */}
+      <path d="M8 10 L8 88 L46 88 L46 76 L20 76 L20 10 Z" fill="#2d3142"/>
+      {/* T crossbar — parallelogram: left edge vertical, right edge angled */}
+      <path d="M30 10 L88 10 L82 24 L30 24 Z" fill="url(#tGrad)"/>
+      {/* T stem */}
+      <path d="M55 24 L55 85 L67 85 L67 24 Z" fill="url(#tGrad)"/>
+      {/* Small foot/tab at bottom of T stem */}
+      <path d="M51 81 L71 81 L71 90 L51 90 Z" fill="url(#tGrad)" opacity="0.65"/>
     </svg>
   );
 }
+
 
 
 // ── policy page data (replaces 7 separate components) ────────────────────────
@@ -5477,7 +5477,9 @@ export default function App() {
         <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:54,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"var(--sh)"}}>
           <div onClick={()=>nav("landing")} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
             <Logo size={28}/>
-            <div><span style={{fontSize:13,fontWeight:800,color:"var(--tx)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,color:"var(--ac)"}}>THREATOPS</span></div>
+            <div><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",color:"#2d3142",fontFamily:"var(--mo)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",fontFamily:"var(--mo)",background:"linear-gradient(90deg,#5b7fe8,#2a3bbd)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>THREATOPS</span>
+              <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>DEFENSIVE · SECURITY · REIMAGINED</div>
+            </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             {user?(
