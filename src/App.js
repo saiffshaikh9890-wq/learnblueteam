@@ -4118,24 +4118,24 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac)}
 function Logo({size=32}) {
   const s = size;
   return (
-    <svg width={s} height={s} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={s} height={Math.round(s*1.1)} viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="tGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6b8cee"/>
-          <stop offset="45%" stopColor="#4060d4"/>
-          <stop offset="100%" stopColor="#2835b0"/>
+        <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#7b9cf4"/>
+          <stop offset="100%" stopColor="#2832b5"/>
         </linearGradient>
       </defs>
-      {/* L — dark charcoal #2d3142 */}
-      {/* Vertical stroke */}
-      <path d="M6 8 L6 92 L44 92 L44 80 L18 80 L18 8 Z" fill="#2d3142"/>
-      {/* T crossbar — wide, italic angled right end */}
-      <path d="M25 8 L94 8 L88 22 L25 22 Z" fill="url(#tGrad)"/>
-      {/* T vertical stem */}
-      <path d="M54 22 L54 92 L68 92 L68 22 Z" fill="url(#tGrad)"/>
+      {/* L — medium grey, italic */}
+      <path d="M14 8 L24 8 L24 88 L14 88 Z" fill="#9ca3af" transform="skewX(-8)"/>
+      <path d="M14 78 L50 78 L50 88 L14 88 Z" fill="#9ca3af" transform="skewX(-8)"/>
+      {/* T — blue gradient */}
+      <path d="M22 8 L88 8 L82 22 L22 22 Z" fill="url(#tg)"/>
+      <path d="M49 22 L49 88 L61 88 L61 22 Z" fill="url(#tg)"/>
+      <path d="M49 82 L55 100 L61 82 Z" fill="url(#tg)" opacity="0.85"/>
     </svg>
   );
 }
+
 
 
 
@@ -4848,7 +4848,7 @@ export default function App() {
         <nav style={{position:"sticky",top:0,zIndex:100,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:54,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"var(--sh)"}}>
           <div onClick={()=>nav("landing")} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
             <Logo size={28}/>
-            <div><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",color:"#2d3142",fontFamily:"var(--mo)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",fontFamily:"var(--mo)",background:"linear-gradient(90deg,#5b7fe8,#2a3bbd)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>THREATOPS</span>
+            <div><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",color:"#374151",fontFamily:"var(--mo)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",fontFamily:"var(--mo)",background:"linear-gradient(90deg,#6b7fe8,#2832b5)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>THREATOPS</span>
               <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>DEFENSIVE · SECURITY · REIMAGINED</div>
             </div>
           </div>
