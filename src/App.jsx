@@ -2741,150 +2741,97 @@ function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
 // NEW COACH POPUP — Socratic method, never gives answers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function CoachPopup({step,onClose,onHint,hintUsed,stepsDone,totalSteps,mode}){
-  const pc=phaseColor(step.phase);
-  const [showHint,setShowHint]=useState(false);
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:500,
-      display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:"20px 20px 32px",
-        maxWidth:520,width:"100%",animation:"fadeUp 0.3s ease"}}>
-        <div style={{display:"flex",gap:4,marginBottom:16,justifyContent:"center"}}>
+function CoachPopup({step, onClose, onHint, hintUsed, stepsDone, totalSteps}) {
+  const pc = phaseColor(step.phase);
+  const [showHint, setShowHint] = useState(false);
+
+  // Tool icon map
+  const toolIcon = {
+    "BlueTrace SIEM": "📊",
+    "LearnThreatOpsEDR": "🖥",
+    "ThreatLens": "🔍",
+    "IncidentDesk": "📋",
+  }[step.tool] || "🛠";
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:500,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 90px"}}>
+      <div style={{background:"#111827",border:"1px solid rgba(255,255,255,0.1)",
+        borderRadius:16,padding:"20px",maxWidth:480,width:"100%",
+        boxShadow:"0 -4px 40px rgba(0,0,0,0.5)"}}>
+
+        {/* Step progress */}
+        <div style={{display:"flex",gap:6,marginBottom:14,alignItems:"center"}}>
           {Array.from({length:totalSteps}).map((_,i)=>(
-            <div key={i} style={{width:i===step.id?20:6,height:6,borderRadius:3,
-              background:i<stepsDone?"#22c55e":i===step.id?pc:"#e1e4ed",transition:"all 0.3s"}}/>
+            <div key={i} style={{height:3,flex:1,borderRadius:2,
+              background:i<stepsDone?"#22c55e":i===stepsDone?pc:"rgba(255,255,255,0.1)",
+              transition:"all 0.3s"}}/>
           ))}
+          <span style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)",
+            whiteSpace:"nowrap",marginLeft:4}}>
+            {stepsDone}/{totalSteps}
+          </span>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-          <div style={{fontSize:22,flexShrink:0}}>{step.toolIcon}</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:9,fontWeight:700,color:pc,letterSpacing:"0.15em",
-              fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:2}}>{step.phase}</div>
-            <div style={{fontSize:17,fontWeight:800,color:"#111318",lineHeight:1.2}}>{step.title}</div>
+
+        {/* Phase + tool */}
+        <div style={{display:"flex",gap:8,marginBottom:12,alignItems:"center"}}>
+          <div style={{background:pc+"20",border:"1px solid "+pc+"40",borderRadius:20,
+            padding:"3px 10px",fontSize:9,fontWeight:700,color:pc,
+            fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>
+            {step.phase}
           </div>
-          <div style={{background:pc+"15",borderRadius:8,padding:"6px 10px",textAlign:"center",flexShrink:0}}>
-            <div style={{fontSize:16,fontWeight:800,color:pc,fontFamily:"var(--mo)"}}>+{step.xp}</div>
-            <div style={{fontSize:8,color:pc,fontFamily:"var(--mo)"}}>XP</div>
+          <div style={{fontSize:12,color:"#9ca3af",display:"flex",
+            alignItems:"center",gap:4}}>
+            <span>{toolIcon}</span>
+            <span>{step.tool}</span>
           </div>
         </div>
-        <div style={{background:"#f7f8fa",borderRadius:10,padding:"13px 15px",
-          marginBottom:12,borderLeft:"3px solid "+pc}}>
-          <div style={{fontSize:14,color:"#111318",lineHeight:1.75}}>{step.objective}</div>
+
+        {/* Title — what the step is */}
+        <div style={{fontSize:16,fontWeight:700,color:"#f9fafb",
+          marginBottom:8,lineHeight:1.3}}>
+          {step.title}
         </div>
-        {mode==="beginner"&&step.mentor?.message&&(
-          <div style={{display:"flex",gap:10,marginBottom:12,background:"#fffbeb",
-            borderRadius:9,padding:"10px 12px",border:"1px solid #fde68a"}}>
-            <span style={{fontSize:20,flexShrink:0}}>👩‍💻</span>
-            <div style={{fontSize:12,color:"#78350f",lineHeight:1.7,fontStyle:"italic"}}>
-              "{step.mentor.message}"
+
+        {/* Objective — single clear sentence */}
+        <div style={{fontSize:13,color:"#9ca3af",lineHeight:1.6,marginBottom:16}}>
+          {step.objective}
+        </div>
+
+        {/* Hint */}
+        {showHint&&(
+          <div style={{background:"rgba(251,191,36,0.08)",border:"1px solid rgba(251,191,36,0.2)",
+            borderRadius:8,padding:"10px 12px",marginBottom:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#fbbf24",fontFamily:"var(--mo)",
+              letterSpacing:"0.1em",marginBottom:4}}>MENTOR HINT</div>
+            <div style={{fontSize:12,color:"#d1d5db",lineHeight:1.6}}>
+              {step.hint||step.analyst_note}
             </div>
           </div>
         )}
-        {step.hint&&!showHint&&(
-          <button onClick={()=>{setShowHint(true);onHint();}}
-            style={{width:"100%",background:"none",border:"1px dashed #d1d5db",
-              borderRadius:8,padding:"8px",fontSize:12,color:"#9ca3af",
-              cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>
-            💡 Show hint (costs 5 XP)
+
+        {/* Actions */}
+        <div style={{display:"flex",gap:8}}>
+          {!showHint&&(
+            <button onClick={()=>{setShowHint(true);onHint();}}
+              style={{flex:1,background:"rgba(251,191,36,0.08)",
+                border:"1px solid rgba(251,191,36,0.2)",borderRadius:8,
+                padding:"9px",fontSize:12,color:"#fbbf24",cursor:"pointer",fontWeight:600}}>
+              Hint (−5 XP)
+            </button>
+          )}
+          <button onClick={onClose}
+            style={{flex:2,background:pc,border:"none",borderRadius:8,
+              padding:"10px",fontSize:13,color:"#fff",cursor:"pointer",
+              fontWeight:700,boxShadow:"0 4px 14px "+pc+"40"}}>
+            Open {step.tool} →
           </button>
-        )}
-        {step.hint&&showHint&&(
-          <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:8,
-            padding:"10px 12px",fontSize:12,color:"#166534",lineHeight:1.7,marginBottom:12}}>
-            💡 {step.hint}
-          </div>
-        )}
-        <button onClick={onClose}
-          style={{width:"100%",background:pc,color:"#fff",padding:"14px",
-            borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>
-          Open {step.tool} →
-        </button>
+        </div>
       </div>
     </div>
   );
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ACTION CONFIRMATION OVERLAY
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DECISION QUESTION — analyst must answer before action unlocks
-// ─────────────────────────────────────────────────────────────────────────────
-
-function DecisionQuestion({step,onDecide}) {
-  const [chosen,setChosen] = useState(null);
-  const [revealed,setRevealed] = useState(false);
-  const d = step.decision;
-  if(!d) { onDecide(true); return null; }
-
-  const choose = (i) => {
-    if(chosen!==null) return;
-    setChosen(i);
-    setRevealed(true);
-    // Show explanation for 2.5 seconds then advance
-    setTimeout(() => onDecide(d.options[i]?.correct === true), 2500);
-  };
-
-  const proceed = () => onDecide(d.options[chosen]?.correct);
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(17,19,24,0.65)",backdropFilter:"blur(4px)",zIndex:450,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}}>
-      <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:20,maxWidth:560,width:"100%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 -8px 32px rgba(17,19,24,0.15)",animation:"fadeUp 0.3s ease"}}>
-        <div style={{fontSize:9,fontWeight:700,color:"#1a56db",letterSpacing:"0.15em",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
-          <span>🤔</span> Analyst Decision Required
-        </div>
-        <div style={{fontSize:15,fontWeight:700,color:"#111318",lineHeight:1.4,marginBottom:14}}>{d.question}</div>
-
-        {/* Evidence summary before decision */}
-        {step.evidence_bullets&&!revealed&&(
-          <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,padding:"12px",marginBottom:14}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:"0.1em",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Evidence Summary</div>
-            {step.evidence_bullets.map((b,i)=>(
-              <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:4}}>
-                <span style={{color:"#1a56db",flexShrink:0,marginTop:1,fontSize:11}}>▸</span>
-                <span style={{fontSize:12.5,color:"#2d3241",lineHeight:1.5}}>{b}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:revealed?12:0}}>
-          {d.options.map((opt,i)=>{
-            const isChosen=chosen===i;
-            const isCorrect=opt.correct;
-            let bg="#f7f8fa",border="#e1e4ed",tc="#2d3241";
-            if(revealed&&isChosen&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
-            else if(revealed&&isChosen&&!isCorrect){bg="#fef2f2";border="#fca5a5";tc="#991b1b";}
-            else if(revealed&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
-            return(
-              <div key={i}>
-                <button onClick={()=>choose(i)} style={{width:"100%",background:bg,border:"1px solid "+border,borderRadius:9,padding:"11px 13px",cursor:chosen!==null?"default":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s"}}>
-                  <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:tc,flexShrink:0,background:"#fff"}}>
-                    {revealed&&isChosen?(isCorrect?"✓":"✗"):String.fromCharCode(65+i)}
-                  </div>
-                  <span style={{fontSize:13.5,color:tc,fontWeight:isChosen?600:400,lineHeight:1.35}}>{opt.text}</span>
-                </button>
-                {revealed&&isChosen&&(
-                  <div style={{margin:"5px 0 2px 0",padding:"10px 13px",background:isCorrect?"#f0fdf4":"#fef2f2",border:"1px solid "+(isCorrect?"#86efac":"#fca5a5"),borderRadius:8,fontSize:12.5,color:isCorrect?"#166534":"#991b1b",lineHeight:1.65}}>
-                    {isCorrect?"✓ ":"✗ "}{opt.why}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {revealed&&(
-          <button onClick={proceed} style={{width:"100%",background:d.options[chosen]?.correct?"#1a56db":"#dc2626",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginTop:4,animation:"fadeUp 0.3s ease"}}>
-            {d.options[chosen]?.correct?"Continue →":"Understood — Continue Anyway →"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTION OVERLAY — after decision, shows action button
@@ -4436,6 +4383,37 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
           })}
         </div>
       </div>
+
+      {/* MISSION STRIP — always visible, tells user exactly what to do */}
+      {status!=="ticket_review"&&status!=="coach"&&step&&(
+        <div style={{background:"#0d1117",borderBottom:"1px solid rgba(255,255,255,0.06)",
+          padding:"8px 16px",flexShrink:0,display:"flex",alignItems:"center",
+          gap:12,flexWrap:"wrap"}}>
+          {/* Phase badge */}
+          <div style={{background:phaseColor(step.phase)+"20",border:"1px solid "+phaseColor(step.phase)+"50",
+            borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:700,
+            color:phaseColor(step.phase),fontFamily:"var(--mo)",letterSpacing:"0.1em",
+            whiteSpace:"nowrap",flexShrink:0}}>
+            {step.phase}
+          </div>
+          {/* Step counter */}
+          <div style={{fontSize:10,color:"#6b7280",fontFamily:"var(--mo)",flexShrink:0}}>
+            {"Step "+(si+1)+"/"+inc.steps.length}
+          </div>
+          {/* Divider */}
+          <div style={{width:1,height:14,background:"rgba(255,255,255,0.1)",flexShrink:0}}/>
+          {/* Objective — the most important thing */}
+          <div style={{fontSize:12,fontWeight:600,color:"#e8ecf4",flex:1,minWidth:0,
+            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            {step.objective}
+          </div>
+          {/* Tool name */}
+          <div style={{fontSize:9,color:"#4b5563",fontFamily:"var(--mo)",
+            flexShrink:0,whiteSpace:"nowrap"}}>
+            {step.tool}
+          </div>
+        </div>
+      )}
 
       {/* TOOL CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",paddingBottom:(status==="action_idle"||status==="action_running"||status==="action_done")?90:0}}>
