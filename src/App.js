@@ -4750,22 +4750,22 @@ function Logo({size=32}) {
     <svg width={s} height={s} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="tGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#5b7fe8"/>
-          <stop offset="50%" stopColor="#4060d4"/>
-          <stop offset="100%" stopColor="#2a3bbd"/>
+          <stop offset="0%" stopColor="#6b8cee"/>
+          <stop offset="45%" stopColor="#4060d4"/>
+          <stop offset="100%" stopColor="#2835b0"/>
         </linearGradient>
       </defs>
-      {/* L — dark charcoal exactly like brand */}
-      <path d="M8 10 L8 88 L46 88 L46 76 L20 76 L20 10 Z" fill="#2d3142"/>
-      {/* T crossbar — parallelogram: left edge vertical, right edge angled */}
-      <path d="M30 10 L88 10 L82 24 L30 24 Z" fill="url(#tGrad)"/>
-      {/* T stem */}
-      <path d="M55 24 L55 85 L67 85 L67 24 Z" fill="url(#tGrad)"/>
-      {/* Small foot/tab at bottom of T stem */}
-      <path d="M51 81 L71 81 L71 90 L51 90 Z" fill="url(#tGrad)" opacity="0.65"/>
+      {/* L — dark charcoal #2d3142 */}
+      {/* Vertical stroke */}
+      <path d="M6 8 L6 92 L44 92 L44 80 L18 80 L18 8 Z" fill="#2d3142"/>
+      {/* T crossbar — wide, italic angled right end */}
+      <path d="M25 8 L94 8 L88 22 L25 22 Z" fill="url(#tGrad)"/>
+      {/* T vertical stem */}
+      <path d="M54 22 L54 92 L68 92 L68 22 Z" fill="url(#tGrad)"/>
     </svg>
   );
 }
+
 
 
 
