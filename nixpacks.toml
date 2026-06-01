@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "npm-9_x"]
+nixPkgs = ["nodejs_18"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps"]
 
 [phases.build]
-cmds = ["npm install --legacy-peer-deps", "CI=false npm run build"]
+cmds = ["CI=false GENERATE_SOURCEMAP=false npm run build"]
 
 [start]
 cmd = "npx serve -s build -l $PORT"
