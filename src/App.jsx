@@ -1294,7 +1294,7 @@ earliest=-30m
     },
     {
       id:2,phase:"INVESTIGATION",xp:20,
-      tool:"ThreatLens",toolIcon:"🔍",toolIcon:"🔍",toolAnalogy:"like a criminal database for IPs and files",
+      tool:"ThreatLens",toolIcon:"🔍",toolAnalogy:"like a criminal database for IPs and files",
       title:"Profile the Attacker Infrastructure",
       objective:"Look up the Amsterdam IP in ThreatLens. You are looking for: what type of infrastructure is this (VPN? Tor? Residential proxy?)? Has this IP been used in other ATO attacks? Understanding the attacker helps you assess: is priya.sharma targeted, or is this mass credential stuffing?",
       lookFor:["The IP type — residential proxy means the attacker is hiding behind real users' IPs","Has this IP been seen in other Microsoft 365 ATO campaigns?","What does the campaign description tell you about attacker sophistication?","Is this likely targeted or opportunistic?"],
@@ -3816,7 +3816,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
                     </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-                    {[{icon:"📊",n:"SIEM",d:"What alerts fired"},{icon:"🖥",n:"EDR",d:"What ran on the machine"},{icon:"🔍",n:"Threat Intel",d:"Who is behind the IP"},{icon:"🎫",n:"Desk",d:"Ticket and SLA"}].map(t=>(
+                    {[{icon:"📊",d:"What alerts fired"},{icon:"🖥",d:"What ran on the machine"},{icon:"🔍",d:"Who is behind the IP"},{icon:"🎫",d:"Ticket and SLA"}].map(t=>(
                       <div key={t.n} style={{background:"rgba(255,255,255,0.04)",border:"1px solid #1f2937",borderRadius:8,padding:"8px 10px",display:"flex",gap:8,alignItems:"center"}}>
                         <span style={{fontSize:15,flexShrink:0}}>{t.icon}</span>
                         <div><div style={{fontSize:11,fontWeight:700,color:"#f9fafb",fontFamily:"var(--mo)"}}>{t.n}</div><div style={{fontSize:9.5,color:"#6b7280"}}>{t.d}</div></div>
@@ -3835,7 +3835,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
           </div>
         </div>
       )}}
-      {false&&<ModeSelector inc={inc} onSelect={selectMode}/>}
+        {false&&<ModeSelector inc={inc} onSelect={selectMode}/>}
       {status==="decision"&&step?.decision&&<DecisionQuestion step={step} onDecide={handleDecision}/>}
       {status==="decision"&&!step?.decision&&(handleDecision(true),null)}
       {status==="coach"&&<CoachPopup step={step} onClose={handleCoachClose} onHint={()=>setHintCount(h=>h+1)} hintUsed={false} stepsDone={doneSteps.length} totalSteps={inc.steps.length} mode={mode}/>}
@@ -4490,7 +4490,7 @@ function Landing({nav=()=>{},appUser=null}) {
               {i<arr.length-1&&<div style={{position:"absolute",left:27,top:56,width:2,height:"calc(100% - 20px)",background:"#e1e4ed",zIndex:0}}/>}
               <div style={{display:"flex",gap:14,alignItems:"flex-start",padding:"0 0 28px 0",flex:1}}>
                 {/* Circle */}
-                <div style={{width:56,height:56,borderRadius:"50%",background:s.color+"15",border:"2px solid "+s.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,position:"relative",zIndex:1,background:"#fff",boxShadow:"0 2px 8px "+s.color+"20"}}>
+                <div style={{width:56,height:56,borderRadius:"50%",border:"2px solid "+s.color,background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,position:"relative",zIndex:1,boxShadow:"0 2px 8px "+s.color+"20"}}>
                   {s.icon}
                 </div>
                 <div style={{flex:1,background:"#fff",border:"1px solid #e1e4ed",borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(17,19,24,0.04)"}}>
