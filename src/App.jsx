@@ -4150,6 +4150,80 @@ function IncidentDesk({inc,activeStep,stepsDone,analyst,elapsed}){
     </div>
   );
 }
+
+
+function DecisionQuestion({step,onDecide}) {
+  const [chosen,setChosen] = useState(null);
+  const [revealed,setRevealed] = useState(false);
+  const d = step.decision;
+  if(!d) { onDecide(true); return null; }
+
+  const choose = (i) => {
+    if(chosen!==null) return;
+    setChosen(i);
+    setRevealed(true);
+    // Show explanation for 2.5 seconds then advance
+    setTimeout(() => onDecide(d.options[i]?.correct === true), 2500);
+  };
+
+  const proceed = () => onDecide(d.options[chosen]?.correct);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(17,19,24,0.65)",backdropFilter:"blur(4px)",zIndex:450,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}}>
+      <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:20,maxWidth:560,width:"100%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 -8px 32px rgba(17,19,24,0.15)",animation:"fadeUp 0.3s ease"}}>
+        <div style={{fontSize:9,fontWeight:700,color:"#1a56db",letterSpacing:"0.15em",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
+          <span>🤔</span> Analyst Decision Required
+        </div>
+        <div style={{fontSize:15,fontWeight:700,color:"#111318",lineHeight:1.4,marginBottom:14}}>{d.question}</div>
+
+        {/* Evidence summary before decision */}
+        {step.evidence_bullets&&!revealed&&(
+          <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,padding:"12px",marginBottom:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:"0.1em",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Evidence Summary</div>
+            {step.evidence_bullets.map((b,i)=>(
+              <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:4}}>
+                <span style={{color:"#1a56db",flexShrink:0,marginTop:1,fontSize:11}}>▸</span>
+                <span style={{fontSize:12.5,color:"#2d3241",lineHeight:1.5}}>{b}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:revealed?12:0}}>
+          {d.options.map((opt,i)=>{
+            const isChosen=chosen===i;
+            const isCorrect=opt.correct;
+            let bg="#f7f8fa",border="#e1e4ed",tc="#2d3241";
+            if(revealed&&isChosen&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
+            else if(revealed&&isChosen&&!isCorrect){bg="#fef2f2";border="#fca5a5";tc="#991b1b";}
+            else if(revealed&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
+            return(
+              <div key={i}>
+                <button onClick={()=>choose(i)} style={{width:"100%",background:bg,border:"1px solid "+border,borderRadius:9,padding:"11px 13px",cursor:chosen!==null?"default":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s"}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:tc,flexShrink:0,background:"#fff"}}>
+                    {revealed&&isChosen?(isCorrect?"✓":"✗"):String.fromCharCode(65+i)}
+                  </div>
+                  <span style={{fontSize:13.5,color:tc,fontWeight:isChosen?600:400,lineHeight:1.35}}>{opt.text}</span>
+                </button>
+                {revealed&&isChosen&&(
+                  <div style={{margin:"5px 0 2px 0",padding:"10px 13px",background:isCorrect?"#f0fdf4":"#fef2f2",border:"1px solid "+(isCorrect?"#86efac":"#fca5a5"),borderRadius:8,fontSize:12.5,color:isCorrect?"#166534":"#991b1b",lineHeight:1.65}}>
+                    {isCorrect?"✓ ":"✗ "}{opt.why}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {revealed&&(
+          <button onClick={proceed} style={{width:"100%",background:d.options[chosen]?.correct?"#1a56db":"#dc2626",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginTop:4,animation:"fadeUp 0.3s ease"}}>
+            {d.options[chosen]?.correct?"Continue →":"Understood — Continue Anyway →"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp}){
   const inc=INCIDENTS[incId]||INCIDENTS["INC-2026-0441"];
   if(!inc){return(<div style={{padding:40,color:"red",fontFamily:"monospace"}}>Incident {incId} not found</div>);}
