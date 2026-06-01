@@ -2,280 +2,60 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#1a56db" />
 
-    <!-- ═══════════════════════════════════════════════════════
-         PRIMARY SEO — What Google, Bing, and AI crawlers read
-    ════════════════════════════════════════════════════════════ -->
+    <!-- SEO -->
     <title>LearnThreatOps — Free SOC Analyst Training | Blue Team Investigations</title>
-
     <meta name="description" content="LearnThreatOps is a free SOC analyst training platform with 10 real-world incident investigations. Practice SIEM, EDR, and Threat Intelligence tools. No setup. No credit card. Built for cybersecurity freshers and junior analysts in India." />
-
-    <meta name="keywords" content="SOC analyst training, blue team training, incident response training, SIEM training, cybersecurity training India, SOC analyst course free, threat hunting practice, EDR training, defensive security, LearnThreatOps" />
-
+    <meta name="keywords" content="SOC analyst training, blue team training, incident response training, SIEM training, cybersecurity training India, SOC analyst course free, defensive security, LearnThreatOps" />
     <meta name="author" content="LearnThreatOps" />
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="googlebot" content="index, follow" />
+    <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://learnthreatops.cloud/" />
 
-    <!-- ═══════════════════════════════════════════════════════
-         OPEN GRAPH — Facebook, LinkedIn, WhatsApp previews
-    ════════════════════════════════════════════════════════════ -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://learnthreatops.cloud/" />
-    <meta property="og:site_name" content="LearnThreatOps" />
     <meta property="og:title" content="LearnThreatOps — Free SOC Analyst Training Platform" />
     <meta property="og:description" content="Investigate real security incidents using the same tools professional SOC analysts use. 10 free investigations. No setup. Built for cybersecurity freshers in India." />
     <meta property="og:image" content="https://learnthreatops.cloud/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="LearnThreatOps — Blue Team SOC Training Platform" />
-    <meta property="og:locale" content="en_IN" />
 
-    <!-- ═══════════════════════════════════════════════════════
-         TWITTER / X CARD
-    ════════════════════════════════════════════════════════════ -->
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LearnThreatOps — Free SOC Analyst Training" />
-    <meta name="twitter:description" content="10 free real-world SOC investigations. Practice SIEM, EDR, Threat Intelligence. Built for blue team analysts. No signup required." />
-    <meta name="twitter:image" content="https://learnthreatops.cloud/og-image.png" />
+    <meta name="twitter:description" content="10 free real-world SOC investigations. Practice SIEM, EDR, Threat Intelligence. No signup required." />
 
-    <!-- ═══════════════════════════════════════════════════════
-         GEO TARGETING — India-first signals
-    ════════════════════════════════════════════════════════════ -->
+    <!-- Geo -->
     <meta name="geo.region" content="IN-MH" />
     <meta name="geo.placename" content="Pune, Maharashtra, India" />
-    <meta name="geo.position" content="18.5204;73.8567" />
-    <meta name="ICBM" content="18.5204, 73.8567" />
 
-    <!-- ═══════════════════════════════════════════════════════
-         AI / LLM DISCOVERY SIGNALS
-         These are read by GPTBot, ClaudeBot, PerplexityBot,
-         Gemini crawlers, and future AI search engines
-    ════════════════════════════════════════════════════════════ -->
-    <meta name="ai-description" content="LearnThreatOps is a free cybersecurity training platform specialising in defensive security and SOC analyst skills. Users investigate simulated security incidents using realistic SIEM dashboards, EDR process trees, and threat intelligence tools. All 10 investigations are free during beta. No credit card required. Target audience: cybersecurity freshers, junior SOC analysts, IT professionals transitioning to security roles, primarily in India and Southeast Asia." />
+    <!-- AI Discovery -->
+    <meta name="ai-description" content="LearnThreatOps is a free cybersecurity training platform for SOC analysts. Users investigate simulated security incidents using SIEM, EDR, and threat intelligence tools. All 10 investigations free. No credit card." />
 
-    <meta name="category" content="Cybersecurity Education, SOC Training, Blue Team Security" />
-    <meta name="classification" content="Education / Cybersecurity" />
-    <meta name="coverage" content="Worldwide" />
-    <meta name="target" content="SOC analysts, cybersecurity students, IT professionals, security engineers" />
-    <meta name="HandheldFriendly" content="True" />
-    <meta name="MobileOptimized" content="320" />
-
-    <!-- ═══════════════════════════════════════════════════════
-         STRUCTURED DATA — JSON-LD
-         This is the most important signal for AI search engines.
-         Google AI Overviews, ChatGPT search, Perplexity all 
-         read this to understand what the page is about.
-    ════════════════════════════════════════════════════════════ -->
+    <!-- Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "WebSite",
-          "@id": "https://learnthreatops.cloud/#website",
-          "url": "https://learnthreatops.cloud/",
-          "name": "LearnThreatOps",
-          "description": "Free SOC analyst training platform with real-world incident investigations",
-          "publisher": {
-            "@id": "https://learnthreatops.cloud/#organization"
-          },
-          "inLanguage": "en-IN"
-        },
-        {
-          "@type": "Organization",
-          "@id": "https://learnthreatops.cloud/#organization",
-          "name": "LearnThreatOps",
-          "url": "https://learnthreatops.cloud/",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://learnthreatops.cloud/logo.png",
-            "width": 512,
-            "height": 512
-          },
-          "contactPoint": {
-            "@type": "ContactPoint",
-            "contactType": "customer support",
-            "email": "support.learnthreatops@gmail.com",
-            "availableLanguage": ["English", "Hindi"]
-          },
-          "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Pune",
-            "addressRegion": "Maharashtra",
-            "addressCountry": "IN"
-          },
-          "foundingDate": "2026",
-          "knowsAbout": [
-            "SOC Analysis",
-            "Incident Response",
-            "Threat Intelligence",
-            "SIEM",
-            "EDR",
-            "Blue Team Security",
-            "Cybersecurity Training"
-          ]
-        },
-        {
-          "@type": "EducationalOrganization",
-          "@id": "https://learnthreatops.cloud/#edu",
-          "name": "LearnThreatOps",
-          "url": "https://learnthreatops.cloud/",
-          "description": "LearnThreatOps provides hands-on SOC analyst training through realistic incident investigation simulations. Students use professional security tools including SIEM, EDR, and threat intelligence platforms to investigate phishing attacks, malware infections, insider threats, and cloud security incidents.",
-          "hasOfferCatalog": {
-            "@type": "OfferCatalog",
-            "name": "SOC Analyst Training Investigations",
-            "itemListElement": [
-              {
-                "@type": "Course",
-                "name": "Spear-Phishing to C2 Beacon Investigation",
-                "description": "Investigate a phishing attack where a finance analyst opened a malicious invoice. Trace the attack chain from email to C2 beacon using SIEM and EDR.",
-                "provider": {"@id": "https://learnthreatops.cloud/#organization"},
-                "educationalLevel": "Beginner",
-                "teaches": ["Phishing analysis", "C2 detection", "SIEM alert triage", "EDR investigation"],
-                "isAccessibleForFree": true,
-                "courseMode": "online"
-              },
-              {
-                "@type": "Course",
-                "name": "False Positive — PowerShell Execution",
-                "description": "Analyse a suspicious PowerShell execution alert and determine whether it is a genuine attack or legitimate IT activity. Critical false positive training.",
-                "provider": {"@id": "https://learnthreatops.cloud/#organization"},
-                "educationalLevel": "Beginner",
-                "teaches": ["False positive identification", "PowerShell analysis", "IT vs attacker behaviour"],
-                "isAccessibleForFree": true,
-                "courseMode": "online"
-              },
-              {
-                "@type": "Course",
-                "name": "Impossible Travel — Account Takeover",
-                "description": "Investigate an Azure AD account that logged in from Mumbai and London within 5 minutes. Determine if this is a credential compromise.",
-                "provider": {"@id": "https://learnthreatops.cloud/#organization"},
-                "educationalLevel": "Beginner",
-                "teaches": ["Identity threat detection", "Azure AD investigation", "Account takeover response"],
-                "isAccessibleForFree": true,
-                "courseMode": "online"
-              },
-              {
-                "@type": "Course",
-                "name": "DNS Beaconing — C2 Over DNS",
-                "description": "Detect and investigate DNS-based command and control communication. Analyse domain generation algorithm patterns and entropy scores.",
-                "provider": {"@id": "https://learnthreatops.cloud/#organization"},
-                "educationalLevel": "Intermediate",
-                "teaches": ["DNS analysis", "C2 detection", "DGA patterns", "Network forensics"],
-                "isAccessibleForFree": true,
-                "courseMode": "online"
-              }
-            ]
-          }
-        },
-        {
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "Is LearnThreatOps free?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes. LearnThreatOps is completely free during beta. All 10 SOC analyst investigations are available with no credit card required and no paywall."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "What is LearnThreatOps?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "LearnThreatOps is a free SOC analyst training platform where you investigate real-world security incidents using professional tools including SIEM dashboards, EDR process trees, and threat intelligence platforms. It is designed for cybersecurity freshers and junior SOC analysts who need hands-on experience before their first job."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Do I need experience to use LearnThreatOps?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "No prior experience is needed. LearnThreatOps is designed for beginners with Security+ or CEH certifications who have never worked a real SOC incident. Each investigation guides you through the exact steps a professional analyst would take."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "How is LearnThreatOps different from TryHackMe or LetsDefend?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "LearnThreatOps focuses exclusively on defensive blue team investigation — not offensive hacking. 40% of scenarios are false positives, which is what real SOC work actually looks like. Every investigation uses four professional tools simultaneously: SIEM, EDR, Threat Intelligence, and Incident Desk."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Is LearnThreatOps available in India?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes. LearnThreatOps is built specifically for the Indian cybersecurity job market, with India-relevant contexts and compliance with DPDPA 2023 and IT Act 2000."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "What tools do I learn on LearnThreatOps?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Each investigation uses BlueTrace SIEM for alert analysis, LearnThreatOps EDR for endpoint investigation, ThreatLens for threat intelligence lookups, and IncidentDesk for ticket management — the same workflow categories used in professional SOC environments."
-              }
-            }
-          ]
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "LearnThreatOps",
-          "applicationCategory": "EducationalApplication",
-          "applicationSubCategory": "Cybersecurity Training",
-          "operatingSystem": "Web Browser",
-          "url": "https://learnthreatops.cloud/",
-          "description": "Browser-based SOC analyst training platform with simulated security incident investigations",
-          "featureList": [
-            "10 real-world SOC incident investigations",
-            "SIEM alert analysis",
-            "EDR process tree investigation",
-            "Threat intelligence lookups",
-            "False positive vs true positive training",
-            "Beginner to advanced difficulty levels",
-            "No setup or installation required"
-          ],
-          "screenshot": "https://learnthreatops.cloud/og-image.png",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "INR",
-            "description": "Free during beta — all 10 investigations included"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "ratingCount": "12",
-            "bestRating": "5"
-          }
-        },
-        {
-          "@type": "BreadcrumbList",
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Home",
-              "item": "https://learnthreatops.cloud/"
-            }
-          ]
-        }
-      ]
+      "@type": "EducationalOrganization",
+      "name": "LearnThreatOps",
+      "url": "https://learnthreatops.cloud/",
+      "description": "Free SOC analyst training platform with hands-on incident investigations",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Pune",
+        "addressRegion": "Maharashtra",
+        "addressCountry": "IN"
+      }
     }
     </script>
 
-    <!-- ═══════════════════════════════════════════════════════
-         FONTS
-    ════════════════════════════════════════════════════════════ -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -284,24 +64,11 @@
     </style>
   </head>
   <body>
-    <!-- AI-readable content summary — visible to crawlers -->
     <div id="root"></div>
-
-    <!-- Fallback content for crawlers that don't execute JavaScript -->
     <noscript>
       <div style="padding:40px;max-width:800px;margin:0 auto;font-family:sans-serif">
         <h1>LearnThreatOps — Free SOC Analyst Training</h1>
         <p>LearnThreatOps is a free cybersecurity training platform for SOC analysts and blue team professionals. Investigate real-world security incidents using SIEM, EDR, and Threat Intelligence tools.</p>
-        <h2>What You Learn</h2>
-        <ul>
-          <li>How to triage and investigate phishing attacks and C2 beacons</li>
-          <li>How to identify false positives vs true positive alerts</li>
-          <li>How to investigate impossible travel and account takeover incidents</li>
-          <li>How to analyse DNS beaconing and insider threat scenarios</li>
-          <li>How to use SIEM dashboards, EDR tools, and threat intelligence platforms</li>
-        </ul>
-        <h2>Who It Is For</h2>
-        <p>Cybersecurity freshers, junior SOC analysts, IT professionals transitioning to security roles, and anyone preparing for a SOC analyst job interview. Completely free. No credit card. No setup required.</p>
         <p>Visit: <a href="https://learnthreatops.cloud">learnthreatops.cloud</a></p>
       </div>
     </noscript>
