@@ -2728,7 +2728,7 @@ function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
 
         {/* Stats */}
         <div style={{padding:"20px 24px"}}>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,gap:12,marginBottom:20}}>
             {[
               ["Grade", grade, gradeColor],
               ["XP Earned", "+"+xpEarned, "#22c55e"],
@@ -3740,7 +3740,7 @@ function BlueTraceSIEM({inc,activeStep}){
 
             {/* alert table */}
             <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,overflow:"hidden"}}>
-              <div style={{display:"grid",gridTemplateColumns:"70px 1fr 90px 80px 55px",background:"var(--bg3)",padding:"6px 12px",borderBottom:"1px solid var(--bd)"}}>
+              <div style={{display:"grid",gridTemplateColumns:"70px 1fr 90px 80px 55px",minWidth:360,background:"var(--bg3)",padding:"6px 12px",borderBottom:"1px solid var(--bd)"}}>
                 {["TIME","ALERT NAME","RULE","SOURCE","SEV"].map(h=>(
                   <span key={h} style={{fontSize:8.5,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>{h}</span>
                 ))}
