@@ -5021,6 +5021,117 @@ function OnboardingModal({onStart}) {
 }
 
 
+
+function CyberCanvas() {
+  useEffect(()=>{
+    const canvas = document.getElementById('cyber-canvas');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W = canvas.offsetWidth;
+    let H = canvas.offsetHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    // Particles
+    const N = 80;
+    const particles = Array.from({length:N},()=>({
+      x: Math.random()*W,
+      y: Math.random()*H,
+      z: Math.random()*400+100,
+      vx: (Math.random()-0.5)*0.4,
+      vy: (Math.random()-0.5)*0.4,
+      vz: (Math.random()-0.5)*0.8,
+      size: Math.random()*2+0.5,
+    }));
+
+    let frame = 0;
+    let raf;
+
+    function project(x,y,z){
+      const fov = 500;
+      const scale = fov/(fov+z);
+      return {
+        sx: (x-W/2)*scale + W/2,
+        sy: (y-H/2)*scale + H/2,
+        scale
+      };
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      frame++;
+
+      // Sort by z
+      particles.sort((a,b)=>b.z-a.z);
+
+      // Draw connections
+      for(let i=0;i<N;i++){
+        const p = particles[i];
+        const {sx,sy,scale} = project(p.x,p.y,p.z);
+        for(let j=i+1;j<N;j++){
+          const q = particles[j];
+          const {sx:qx,sy:qy,scale:qs} = project(q.x,q.y,q.z);
+          const dist = Math.hypot(sx-qx,sy-qy);
+          if(dist<120){
+            const alpha = (1-dist/120)*0.25*Math.min(scale,qs)*1.5;
+            ctx.beginPath();
+            ctx.moveTo(sx,sy);
+            ctx.lineTo(qx,qy);
+            ctx.strokeStyle = `rgba(59,130,246,${alpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw particles
+      for(const p of particles){
+        const {sx,sy,scale} = project(p.x,p.y,p.z);
+        const r = p.size*scale*1.5;
+        const alpha = scale*0.9;
+
+        // Glow
+        const grd = ctx.createRadialGradient(sx,sy,0,sx,sy,r*3);
+        grd.addColorStop(0,`rgba(99,130,246,${alpha*0.6})`);
+        grd.addColorStop(1,'rgba(99,130,246,0)');
+        ctx.beginPath();
+        ctx.arc(sx,sy,r*3,0,Math.PI*2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(sx,sy,r,0,Math.PI*2);
+        ctx.fillStyle = `rgba(148,163,250,${alpha})`;
+        ctx.fill();
+
+        // Move
+        p.x += p.vx;
+        p.y += p.vy;
+        p.z += p.vz;
+        if(p.x<0||p.x>W) p.vx*=-1;
+        if(p.y<0||p.y>H) p.vy*=-1;
+        if(p.z<50||p.z>600) p.vz*=-1;
+      }
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    const ro = new ResizeObserver(()=>{
+      W = canvas.offsetWidth;
+      H = canvas.offsetHeight;
+      canvas.width = W;
+      canvas.height = H;
+    });
+    ro.observe(canvas);
+
+    return ()=>{ cancelAnimationFrame(raf); ro.disconnect(); };
+  },[]);
+  return null;
+}
+
 function Landing({nav=()=>{},appUser=null}) {
   const [typed,setTyped] = useState("");
   const tRef = useRef();
@@ -5040,155 +5151,130 @@ function Landing({nav=()=>{},appUser=null}) {
   return (
     <div>
       {/* ── HERO ── */}
-      <div style={{minHeight:"92vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px 48px",textAlign:"center",background:"#f7f8fa",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(#e1e4ed 1px,transparent 1px),linear-gradient(90deg,#e1e4ed 1px,transparent 1px)",backgroundSize:"40px 40px",opacity:0.5,pointerEvents:"none"}}/>
-        {/* Logo */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginBottom:20,position:"relative",zIndex:1}}>
-          <Logo size={44}/>
-          <div style={{textAlign:"left"}}>
-            <div style={{fontSize:20,fontWeight:800,color:"#111318",letterSpacing:"0.01em",lineHeight:1}}>LEARN<span style={{color:"#1a56db"}}>THREATOPS</span></div>
-            <div style={{fontSize:9,color:"#8892a4",letterSpacing:"0.18em",fontFamily:"var(--mo)",textTransform:"uppercase"}}>Defensive · Security · Reimagined</div>
-          </div>
+      <div style={{minHeight:"92vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px 48px",textAlign:"center",background:"#050810",position:"relative",overflow:"hidden"}}>
+
+        {/* 3D Canvas Background */}
+        <canvas id="cyber-canvas" style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.7}}/>
+
+        {/* Animated grid lines */}
+        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(26,86,219,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(26,86,219,0.08) 1px,transparent 1px)",backgroundSize:"60px 60px",transform:"perspective(800px) rotateX(20deg)",transformOrigin:"center top",opacity:0.6}}/>
+
+        {/* Glow orbs */}
+        <div style={{position:"absolute",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(26,86,219,0.15) 0%,transparent 70%)",top:"50%",left:"50%",transform:"translate(-50%,-50%)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle,rgba(124,58,237,0.1) 0%,transparent 70%)",top:"20%",right:"10%",pointerEvents:"none"}}/>
+
+        {/* Floating threat cards */}
+        <div style={{position:"absolute",top:"15%",left:"5%",background:"rgba(26,86,219,0.1)",border:"1px solid rgba(26,86,219,0.3)",borderRadius:8,padding:"8px 12px",animation:"float1 6s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
+          <div style={{fontSize:9,color:"#60a5fa",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>SIEM ALERT</div>
+          <div style={{fontSize:11,color:"#dc2626",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>C2_BEACON · CRITICAL</div>
         </div>
-        {/* Beta badge */}
-        <div style={{display:"inline-flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid #e1e4ed",color:"#5a6272",padding:"5px 13px",borderRadius:100,fontSize:11,fontWeight:600,marginBottom:20,position:"relative",zIndex:1,fontFamily:"var(--mo)",boxShadow:"0 1px 3px rgba(17,19,24,0.06)"}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:"#16a34a",animation:"pulse 2s infinite"}}/>
-          Free · No experience needed · Start in 30 seconds
+
+        <div style={{position:"absolute",top:"25%",right:"5%",background:"rgba(220,38,38,0.08)",border:"1px solid rgba(220,38,38,0.25)",borderRadius:8,padding:"8px 12px",animation:"float2 8s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
+          <div style={{fontSize:9,color:"#f87171",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>EDR PROCESS</div>
+          <div style={{fontSize:11,color:"#fca5a5",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>WINWORD→cmd.exe</div>
         </div>
-        {/* Headline */}
-        <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
-          Learn to Think Like a<br/>
-          <span style={{color:"#1a56db"}}>{typed}</span>
-          <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
-        </h1>
-        <p style={{fontSize:"clamp(14px,3vw,17px)",color:"#5a6272",lineHeight:1.75,maxWidth:520,margin:"0 auto 28px",position:"relative",zIndex:1}}>
-          Step inside a real SOC. Investigate live security incidents using the same tools, alerts, and decisions that professional analysts use every day.<br/>
-          <strong style={{color:"#111318"}}>Practice cybersecurity skills through real investigation simulations. SIEM, EDR, Threat Intelligence — the tools used across every defensive security role. Free.</strong>
-        </p>
-        {/* CTAs */}
-        <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",position:"relative",zIndex:1,width:"100%",maxWidth:400}}>
-          {appUser
-            ?<button onClick={()=>nav("dash")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Go to Dashboard</button>
-            :<button onClick={()=>nav("signup")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Start Free Investigation</button>
+
+        <div style={{position:"absolute",bottom:"25%",left:"4%",background:"rgba(124,58,237,0.08)",border:"1px solid rgba(124,58,237,0.25)",borderRadius:8,padding:"8px 12px",animation:"float3 7s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
+          <div style={{fontSize:9,color:"#a78bfa",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>THREAT INTEL</div>
+          <div style={{fontSize:11,color:"#c4b5fd",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>203.0.113.47 · 100/100</div>
+        </div>
+
+        <div style={{position:"absolute",bottom:"30%",right:"4%",background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:8,padding:"8px 12px",animation:"float1 9s ease-in-out infinite reverse",backdropFilter:"blur(8px)"}}>
+          <div style={{fontSize:9,color:"#4ade80",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>INCIDENT CLOSED</div>
+          <div style={{fontSize:11,color:"#86efac",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>Threat Contained ✓</div>
+        </div>
+
+        {/* CSS Animations */}
+        <style>{`
+          @keyframes float1 {
+            0%,100%{transform:translateY(0px) translateX(0px)}
+            33%{transform:translateY(-12px) translateX(4px)}
+            66%{transform:translateY(-6px) translateX(-4px)}
           }
-          <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"#fff",color:"#1a56db",fontSize:14,fontWeight:600,padding:"13px 20px",borderRadius:10,border:"1px solid #bfdbfe",cursor:"pointer",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",minWidth:160}}>▶ Try Free — No Account Needed</button>
-        </div>
-        {/* Live challenge */}
-        <div style={{marginTop:24,maxWidth:480,width:"100%",position:"relative",zIndex:1}}>
-          <div style={{background:"#0f1117",borderRadius:12,padding:"16px",border:"1px solid rgba(220,38,38,0.35)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <div style={{width:7,height:7,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite",flexShrink:0}}/>
-              <span style={{fontSize:9,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)"}}>SIMULATED SCENARIO · INC-2026-0441 · TRAINING</span>
-            </div>
-            <div style={{fontSize:12.5,color:"#e8ecf4",lineHeight:1.75,marginBottom:10}}>Finance analyst opened an invoice at 08:17. SIEM fired 4 rules. EDR shows WINWORD.EXE spawning cmd.exe. Active beacon to Russia.</div>
-            <div style={{fontSize:11,color:"#9ca3af",marginBottom:12}}>Is this a real attack or a false positive?</div>
-            <button onClick={()=>nav("sim-phishing-c2")} style={{width:"100%",background:"#dc2626",color:"#fff",padding:"11px",borderRadius:8,fontSize:13,fontWeight:700,border:"none",cursor:"pointer"}}>Investigate This Incident</button>
-          </div>
-        </div>
-        {/* Disclaimer */}
-        <div style={{marginTop:14,fontSize:10,color:"#8892a4",position:"relative",zIndex:1,maxWidth:480}}>
-          ⚠ All scenarios, users, domains, and alerts are fictional and created for educational purposes only.
-        </div>
-      </div>
+          @keyframes float2 {
+            0%,100%{transform:translateY(0px) translateX(0px)}
+            50%{transform:translateY(-16px) translateX(-6px)}
+          }
+          @keyframes float3 {
+            0%,100%{transform:translateY(0px) translateX(0px)}
+            40%{transform:translateY(-10px) translateX(6px)}
+            80%{transform:translateY(-20px) translateX(-3px)}
+          }
+          @keyframes scanline {
+            0%{top:-5%} 100%{top:105%}
+          }
+          @keyframes pulse-ring {
+            0%{transform:translate(-50%,-50%) scale(0.8);opacity:0.8}
+            100%{transform:translate(-50%,-50%) scale(1.8);opacity:0}
+          }
+          @keyframes fadeInUp {
+            from{opacity:0;transform:translateY(30px)}
+            to{opacity:1;transform:translateY(0)}
+          }
+          @keyframes typewriter {
+            from{width:0} to{width:100%}
+          }
+          @keyframes blink {
+            0%,100%{opacity:1} 50%{opacity:0}
+          }
+        `}</style>
 
-      {/* ── LIVE SOC PREVIEW — Spline 3D placeholder ── */}
-      <div style={{background:"#111318",padding:"0",position:"relative",overflow:"hidden",borderTop:"1px solid #1f2937",borderBottom:"1px solid #1f2937"}}>
-        {/* Spline embed goes here — replace src with your Spline scene URL */}
-        {/* <iframe src="https://my.spline.design/YOUR-SCENE-ID/" frameBorder="0" width="100%" height="400px" style={{display:"block"}}/> */}
-        {/* Placeholder until Spline scene is ready */}
-        <div style={{padding:"28px 20px",maxWidth:900,margin:"0 auto"}}>
-          <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#3b82f6",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>SOC Operations Center</div>
-            <div style={{fontSize:"clamp(16px,4vw,22px)",fontWeight:700,color:"#f9fafb",lineHeight:1.3}}>What a real investigation looks like</div>
-          </div>
-          {/* Mini SOC console preview */}
-          <div style={{background:"#1f2937",border:"1px solid #374151",borderRadius:10,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}}>
-            <div style={{background:"#111827",borderBottom:"1px solid #374151",padding:"7px 12px",display:"flex",alignItems:"center",gap:6}}>
-              {["#ef4444","#fbbf24","#22c55e"].map(c=><div key={c} style={{width:9,height:9,borderRadius:"50%",background:c}}/>)}
-              <span style={{fontSize:10,color:"#6b7280",fontFamily:"var(--mo)",marginLeft:6}}>BlueTrace SIEM — INC-2026-0441 — P1 Critical</span>
-              <div style={{flex:1}}/>
-              <div style={{display:"flex",alignItems:"center",gap:5}}>
-                <div style={{width:6,height:6,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite"}}/>
-                <span style={{fontSize:9,color:"#dc2626",fontFamily:"var(--mo)",fontWeight:700}}>SIMULATED</span>
-              </div>
-            </div>
-            <div style={{padding:"12px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {/* Alert summary */}
-              <div style={{background:"rgba(220,38,38,0.08)",border:"1px solid rgba(220,38,38,0.25)",borderRadius:7,padding:"10px"}}>
-                <div style={{fontSize:8.5,fontWeight:700,color:"#6b7280",fontFamily:"var(--mo)",marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase"}}>Active Alerts</div>
-                {[["OUTBOUND_C2_BEACON","Critical","97"],["LSASS_MEMORY_ACCESS","Critical","99"],["ENCODED_POWERSHELL","High","85"]].map(([rule,sev,score])=>(
-                  <div key={rule} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                    <div>
-                      <div style={{fontSize:9.5,color:"#f9fafb",fontFamily:"var(--mo)",fontWeight:600}}>{sev==="Critical"?"🔴":"🟠"} {rule}</div>
-                    </div>
-                    <div style={{fontSize:9,fontWeight:700,color:sev==="Critical"?"#fca5a5":"#fdba74",fontFamily:"var(--mo)"}}>{score}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Process tree preview */}
-              <div style={{background:"rgba(0,0,0,0.3)",border:"1px solid #374151",borderRadius:7,padding:"10px"}}>
-                <div style={{fontSize:8.5,fontWeight:700,color:"#6b7280",fontFamily:"var(--mo)",marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase"}}>Process Tree</div>
-                {[["OUTLOOK.EXE","",false],["└─ WINWORD.EXE","  ",false],["  └─ cmd.exe","    ",true],["    └─ powershell.exe","      ",true],["      └─ svchost32.exe","        ",true]].map(([proc,indent,bad],i)=>(
-                  <div key={i} style={{fontSize:9.5,fontFamily:"var(--mo)",color:bad?"#fca5a5":"#9ca3af",padding:"2px 0",letterSpacing:0}}>{proc}{bad&&<span style={{fontSize:8,background:"rgba(220,38,38,0.2)",color:"#fca5a5",padding:"0 4px",borderRadius:2,marginLeft:4}}>MALICIOUS</span>}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div style={{textAlign:"center",marginTop:16}}>
-            <button onClick={()=>nav("sim-phishing-c2")} style={{background:"#3b82f6",color:"#fff",fontSize:14,fontWeight:700,padding:"12px 28px",borderRadius:8,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(59,130,246,0.4)"}}>
-              Investigate This Incident →
-            </button>
-          </div>
-        </div>
-      </div>
+        {/* Scanline effect */}
+        <div style={{position:"absolute",left:0,right:0,height:"2px",background:"linear-gradient(90deg,transparent,rgba(26,86,219,0.4),transparent)",animation:"scanline 4s linear infinite",pointerEvents:"none"}}/>
 
-      {/* ── MARQUEE — removed company names per compliance ── */}
-      <div style={{overflow:"hidden",borderTop:"1px solid #e1e4ed",borderBottom:"1px solid #e1e4ed",background:"#fff",padding:"12px 0"}}>
-        <div style={{textAlign:"center",fontSize:9,fontWeight:700,letterSpacing:"0.2em",color:"#8892a4",fontFamily:"var(--mo)",marginBottom:10,textTransform:"uppercase"}}>
-          Analysts training for roles in
-        </div>
-        <div style={{display:"flex",width:"max-content",animation:"ticker 30s linear infinite"}}>
-          {["SOC Operations","Incident Response","Threat Hunting","Digital Forensics","Cloud Security","Email Security","Malware Analysis","Identity Security","Detection Engineering","Security Operations",
-            "SOC Operations","Incident Response","Threat Hunting","Digital Forensics","Cloud Security","Email Security","Malware Analysis","Identity Security","Detection Engineering","Security Operations"
-          ].map((c,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"0 24px",fontSize:12.5,fontWeight:500,color:"#8892a4",whiteSpace:"nowrap",fontFamily:"var(--mo)"}}>
-              {c}<div style={{width:3,height:3,borderRadius:"50%",background:"#dde0e9"}}/>
-            </div>
-          ))}
-        </div>
-      </div>
+        {/* Main content */}
+        <div style={{position:"relative",zIndex:10,maxWidth:720,animation:"fadeInUp 0.8s ease forwards"}}>
 
-      {/* ── CHOOSE YOUR PATH ── */}
-      <div style={{padding:"48px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}>
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Defensive Security Paths</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,30px)",fontWeight:800,color:"#111318",marginBottom:8,lineHeight:1.2}}>Choose Your Defensive Security Path</h2>
-          <p style={{fontSize:14,color:"#5a6272",maxWidth:480,margin:"0 auto"}}>LearnThreatOps covers the full spectrum of defensive security careers.</p>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,maxWidth:1060,margin:"0 auto"}}>
-          {[
-            {icon:"🔵",title:"SOC Analyst",desc:"Investigate alerts, triage incidents, and respond to threats using SIEM and EDR tools.",status:"Available Now",available:true,cta:"Start Learning"},
-            {icon:"🔴",title:"Incident Responder",desc:"Contain and recover from active security incidents including ransomware and breaches.",status:"Coming Soon",available:false},
-            {icon:"🟣",title:"Threat Hunter",desc:"Proactively search for hidden threats using behavioral analytics and threat intelligence.",status:"Coming Soon",available:false},
-            {icon:"☁️",title:"Cloud Security Analyst",desc:"Investigate cloud incidents, IAM abuse, and exposed credentials in AWS and Azure.",status:"Coming Soon",available:false},
-            {icon:"⚙️",title:"Detection Engineer",desc:"Build detection rules, tune alerts, and improve your organisation's security posture.",status:"Coming Soon",available:false},
-          ].map(p=>(
-            <div key={p.title} style={{background:p.available?"#fff":"#f7f8fa",border:"1px solid "+(p.available?"#1a56db":"#e1e4ed"),borderRadius:14,padding:"20px",opacity:p.available?1:0.7,boxShadow:p.available?"0 2px 12px rgba(26,86,219,0.1)":"none"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                <span style={{fontSize:28}}>{p.icon}</span>
-                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:100,background:p.available?"rgba(26,86,219,0.08)":"rgba(107,114,128,0.08)",color:p.available?"#1a56db":"#6b7280",fontFamily:"var(--mo)"}}>{p.status}</span>
-              </div>
-              <div style={{fontSize:15,fontWeight:700,color:"#111318",marginBottom:6}}>{p.title}</div>
-              <div style={{fontSize:13,color:"#5a6272",lineHeight:1.65,marginBottom:14}}>{p.desc}</div>
-              {p.available
-                ?<button onClick={()=>nav("signup")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"10px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer"}}>
-                  {p.cta} →
+          {/* Status badge */}
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(26,86,219,0.1)",border:"1px solid rgba(26,86,219,0.25)",borderRadius:20,padding:"6px 14px",marginBottom:28}}>
+            <div style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",boxShadow:"0 0 6px #22c55e",animation:"blink 2s infinite"}}/>
+            <span style={{fontSize:11,fontWeight:700,color:"#60a5fa",fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.12em"}}>DEFENSIVE CYBERSECURITY TRAINING</span>
+          </div>
+
+          {/* Headline */}
+          <h1 style={{fontSize:"clamp(32px,6vw,68px)",fontWeight:800,lineHeight:1.05,letterSpacing:"-0.03em",marginBottom:6,color:"#f0f4ff"}}>
+            Learn to Think Like a<br/>
+            <span style={{background:"linear-gradient(135deg,#3b82f6,#818cf8,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>
+              {typed}
+            </span>
+            <span style={{display:"inline-block",width:3,height:"0.8em",background:"#3b82f6",borderRadius:2,verticalAlign:"text-bottom",marginLeft:3,animation:"blink 1s infinite"}}/>
+          </h1>
+
+          {/* Disclaimer */}
+          <div style={{fontSize:10,color:"rgba(148,163,184,0.6)",letterSpacing:"0.05em",marginBottom:16,fontFamily:"'IBM Plex Mono',monospace"}}>
+            ⚠ Fictional simulation · No real systems or companies involved
+          </div>
+
+          {/* Sub */}
+          <p style={{fontSize:"clamp(14px,2vw,17px)",color:"#94a3b8",lineHeight:1.7,marginBottom:32,maxWidth:560,margin:"0 auto 32px"}}>
+            <strong style={{color:"#cbd5e1"}}>Practice cybersecurity skills through real investigation simulations.</strong> SIEM, EDR, Threat Intelligence — the tools used across every defensive security role. Free.
+          </p>
+
+          {/* CTAs */}
+          <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",position:"relative",zIndex:1,width:"100%",maxWidth:400,margin:"0 auto"}}>
+            {appUser
+              ?<button onClick={()=>nav("dash")} style={{flex:1,background:"linear-gradient(135deg,#1a56db,#3b82f6)",color:"#fff",fontSize:14,fontWeight:700,padding:"14px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 24px rgba(59,130,246,0.4)"}}>
+                Go to Dashboard →
+              </button>
+              :<>
+                <button onClick={()=>nav("signup")} style={{flex:1,background:"linear-gradient(135deg,#1a56db,#3b82f6)",color:"#fff",fontSize:14,fontWeight:700,padding:"14px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 24px rgba(59,130,246,0.35)"}}>
+                  Start Free Investigation
                 </button>
-                :<div style={{fontSize:12,color:"#8892a4",textAlign:"center",padding:"8px",border:"1px dashed #e1e4ed",borderRadius:6}}>Notify me when available</div>
-              }
-            </div>
-          ))}
+                <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"rgba(255,255,255,0.05)",color:"#94a3b8",fontSize:13,fontWeight:600,padding:"14px 20px",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",cursor:"pointer",backdropFilter:"blur(4px)"}}>
+                  ▶ Try Free — No Account Needed
+                </button>
+              </>
+            }
+          </div>
+
+          {/* Free badge */}
+          <div style={{marginTop:20,fontSize:11,color:"#475569",fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.08em"}}>
+            Free · No account needed · Start in 30 seconds
+          </div>
         </div>
+
+        {/* Canvas init */}
+        <CyberCanvas/>
       </div>
 
       {/* ── CAREER ROADMAP ── */}
