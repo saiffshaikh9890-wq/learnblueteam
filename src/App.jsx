@@ -4454,10 +4454,10 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
                     {[
-                      {time:"08:17",icon:"📧",text:"Analyst opened an invoice email attachment from an unknown sender.",c:"#fbbf24"},
-                      {time:"08:17",icon:"⚡",text:"SIEM fired 4 correlated alerts simultaneously. Risk score: 97/100.",c:"#f87171"},
-                      {time:"08:18",icon:"🖥",text:"EDR detected an unusual process chain starting from Word.",c:"#f87171"},
-                      {time:"08:23",icon:"🚨",text:"Active outbound connection to an IP in Russia. Live right now.",c:"#dc2626"},
+                      {time:"08:17",icon:"📧",text:"Meera in Finance opened an email — subject: Invoice_Final.docm. Looked legitimate.",c:"#fbbf24"},
+                      {time:"08:17",icon:"⚡",text:"SIEM exploded. 4 alerts at once. Risk score 97/100. LSASS access. C2 beacon. Live.",c:"#f87171"},
+                      {time:"08:18",icon:"🖥",text:"EDR: WINWORD.EXE spawned cmd.exe spawned powershell.exe. Classic kill chain.",c:"#f87171"},
+                      {time:"08:23",icon:"🚨",text:"Right now: svchost32.exe is calling 203.0.113.47 every 30 seconds. Russia.",c:"#dc2626"},
                     ].map((ev,i)=>(
                       <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                         <div style={{flexShrink:0,width:44,textAlign:"right"}}>
@@ -5019,13 +5019,13 @@ function Landing({nav=()=>{},appUser=null}) {
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
-          Investigate Real<br/>
+          A hacker is inside<br/>
           <span style={{color:"#1a56db"}}>{typed}</span>
           <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
         <p style={{fontSize:"clamp(14px,3vw,17px)",color:"#5a6272",lineHeight:1.75,maxWidth:520,margin:"0 auto 28px",position:"relative",zIndex:1}}>
           Step inside a real SOC. Investigate live security incidents using the same tools, alerts, and decisions that professional analysts use every day.<br/>
-          <strong style={{color:"#111318"}}>No experience needed. No software to install. Start your first investigation in 30 seconds.</strong>
+          <strong style={{color:"#111318"}}>No experience needed. No software. Your first investigation starts in 30 seconds.</strong>
         </p>
         {/* CTAs */}
         <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",position:"relative",zIndex:1,width:"100%",maxWidth:400}}>
@@ -5157,7 +5157,7 @@ function Landing({nav=()=>{},appUser=null}) {
       <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Career Roadmap</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>Free SOC analyst training. 10 real investigations. No setup.</h2>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>10 real incident investigations. No software. No experience needed. Just open and start.</h2>
           <p style={{fontSize:14,color:"#5a6272"}}>Every level unlocks new scenarios and skills.</p>
         </div>
         <div style={{maxWidth:700,margin:"0 auto",display:"flex",flexDirection:"column",gap:0}}>
