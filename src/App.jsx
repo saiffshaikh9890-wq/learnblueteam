@@ -4250,6 +4250,74 @@ function DecisionQuestion({step,onDecide}) {
 function ModeSelector(){return null;}
 function InvestigationZero({onComplete,addXP}){return null;}
 
+function GuestSignupModal({onSignup, onContinue, nav}) {
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:999,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#111827",border:"1px solid rgba(255,255,255,0.1)",
+        borderRadius:20,maxWidth:420,width:"100%",overflow:"hidden",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}>
+
+        {/* Header */}
+        <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",
+          padding:"24px 24px 20px",textAlign:"center"}}>
+          <div style={{fontSize:36,marginBottom:8}}>🎯</div>
+          <div style={{fontSize:20,fontWeight:800,color:"#fff",marginBottom:6}}>
+            You completed Step 1
+          </div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>
+            You just triaged a real phishing attack like a SOC analyst.
+            5 more steps to fully contain it.
+          </div>
+        </div>
+
+        <div style={{padding:"20px 24px"}}>
+          {/* What they get */}
+          <div style={{marginBottom:20}}>
+            {[
+              ["🔓","5 more steps — EDR, Threat Intel, Containment, Eradication, Close"],
+              ["📊","9 more free investigations after this one"],
+              ["🏆","XP, grades, and completion certificates"],
+              ["💾","Your progress saved — pick up where you left off"],
+            ].map(([icon,text])=>(
+              <div key={text} style={{display:"flex",gap:10,alignItems:"flex-start",
+                marginBottom:10}}>
+                <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
+                <span style={{fontSize:12.5,color:"#d1d5db",lineHeight:1.5}}>{text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* FREE badge */}
+          <div style={{textAlign:"center",marginBottom:16}}>
+            <span style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.3)",
+              color:"#4ade80",fontSize:11,fontWeight:700,padding:"4px 12px",
+              borderRadius:20,fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>
+              100% FREE · NO CREDIT CARD · TAKES 30 SECONDS
+            </span>
+          </div>
+
+          {/* CTA */}
+          <button onClick={()=>nav("signup")}
+            style={{width:"100%",background:"#1a56db",border:"none",
+              borderRadius:10,padding:"14px",fontSize:15,color:"#fff",
+              cursor:"pointer",fontWeight:700,marginBottom:10,
+              boxShadow:"0 4px 20px rgba(26,86,219,0.4)"}}>
+            Create Free Account → Continue
+          </button>
+
+          <button onClick={onContinue}
+            style={{width:"100%",background:"transparent",
+              border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,
+              padding:"10px",fontSize:12,color:"#6b7280",cursor:"pointer"}}>
+            Continue without saving (progress will be lost)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp}){
   const inc=INCIDENTS[incId]||INCIDENTS["INC-2026-0441"];
   const scenarioData=Object.values(SCENARIOS).find(s=>s.incId===incId)||{};
@@ -4280,6 +4348,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
   const [contained,setContained]=useState(false);
   const [elapsed,setElapsed]=useState(0);
   const [showScore,setShowScore]=useState(false);
+  const [showGuestModal,setShowGuestModal]=useState(false);
   const [xpBurstAmt,setXpBurstAmt]=useState(null);
 
   useEffect(()=>{const t=setInterval(()=>setElapsed(s=>s+1),1000);return()=>clearInterval(t);},[]);
@@ -4327,6 +4396,11 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
 
   const handleNext=()=>{
     if(si<inc.steps.length-1){
+      // Guest users: show signup prompt after step 1
+      if(isGuest && si===0){
+        setShowGuestModal(true);
+        return;
+      }
       setSi(s=>s+1);
       setStatus("coach");
     } else {
@@ -4341,6 +4415,11 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
 
   return(
     <div className="soc-root" style={{height:"100vh",display:"flex",flexDirection:"column",background:"var(--bg)",overflow:"hidden"}}>
+      {showGuestModal&&<GuestSignupModal
+        nav={nav||onBack}
+        onContinue={()=>{setShowGuestModal(false);setSi(s=>s+1);setStatus("coach");}}
+        onSignup={()=>{if(nav)nav("signup");}}
+      />}
       {showScore&&<ScoreModal inc={inc} steps={inc.steps} elapsed={elapsed} hintCount={hintCount} onBack={onBack}/>}
       {/* Ticket Review Overlay — first thing analyst sees */}
       {status==="ticket_review"&&(
@@ -5484,7 +5563,7 @@ export default function App() {
       )}
       {page==="inv-zero"     && <InvestigationZero onComplete={completeInvZero} addXP={addXP}/>}
       {page==="landing"      && <Landing nav={nav} appUser={user}/>}
-      {page==="sim"          && <SOCConsole incId={simId} prog={prog} addXP={addXP} finishSim={finishSim} onBack={()=>nav("dash")} submitFeedback={submitFeedback} analyst={{name:user?.name||"Analyst",tier:"SOC Analyst I",id:"ANLST-"+(user?.email?.slice(0,3).toUpperCase()||"047"),team:"Threat Ops Alpha"}}/>}
+      {page==="sim"          && <SOCConsole incId={simId} prog={prog} addXP={addXP} finishSim={finishSim} onBack={()=>nav("dash")} nav={nav} isGuest={!user} submitFeedback={submitFeedback} analyst={{name:user?.name||"Analyst",tier:"SOC Analyst I",id:"ANLST-"+(user?.email?.slice(0,3).toUpperCase()||"047"),team:"Threat Ops Alpha"}}/>}
       {page==="dash"         && (user?<Dashboard nav={nav} appUser={user} prog={prog} lvlPct={lvlPct} logout={logout} invZeroDone={invZeroDone}/>:<AuthPage nav={nav} mode="signup" saveUser={saveUser}/>)}
       {page==="login"        && <AuthPage nav={nav} mode="login" login={login} signup={signup} authError={authError} loading={loading}/>}
       {page==="signup"       && <AuthPage nav={nav} mode="signup" login={login} signup={signup} authError={authError} loading={loading}/>}
