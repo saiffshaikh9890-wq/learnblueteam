@@ -4454,10 +4454,10 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
                     {[
-                      {time:"08:17",icon:"📧",text:"Meera in Finance opened an email — subject: Invoice_Final.docm. Looked legitimate.",c:"#fbbf24"},
-                      {time:"08:17",icon:"⚡",text:"SIEM exploded. 4 alerts at once. Risk score 97/100. LSASS access. C2 beacon. Live.",c:"#f87171"},
-                      {time:"08:18",icon:"🖥",text:"EDR: WINWORD.EXE spawned cmd.exe spawned powershell.exe. Classic kill chain.",c:"#f87171"},
-                      {time:"08:23",icon:"🚨",text:"Right now: svchost32.exe is calling 203.0.113.47 every 30 seconds. Russia.",c:"#dc2626"},
+                      {time:"08:17",icon:"📧",text:"Finance workstation WS-CORP-FIN-044: user opened Invoice_Final.docm from unknown sender.",c:"#fbbf24"},
+                      {time:"08:17",icon:"⚡",text:"SIEM: 4 correlated alerts. Risk 97/100. Rules fired: C2_BEACON + LSASS_MEMORY_ACCESS.",c:"#f87171"},
+                      {time:"08:18",icon:"🖥",text:"EDR: WINWORD.EXE → cmd.exe → powershell.exe → svchost32.exe process chain detected.",c:"#f87171"},
+                      {time:"08:23",icon:"🚨",text:"Active: svchost32.exe beaconing to 203.0.113.47:443 every 30 seconds.",c:"#dc2626"},
                     ].map((ev,i)=>(
                       <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                         <div style={{flexShrink:0,width:44,textAlign:"right"}}>
@@ -5015,11 +5015,11 @@ function Landing({nav=()=>{},appUser=null}) {
         {/* Beta badge */}
         <div style={{display:"inline-flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid #e1e4ed",color:"#5a6272",padding:"5px 13px",borderRadius:100,fontSize:11,fontWeight:600,marginBottom:20,position:"relative",zIndex:1,fontFamily:"var(--mo)",boxShadow:"0 1px 3px rgba(17,19,24,0.06)"}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:"#16a34a",animation:"pulse 2s infinite"}}/>
-          Free Beta · No signup required to explore
+          Free · No signup needed · Start in 30 seconds
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
-          A hacker is inside<br/>
+          Think Like a<br/>
           <span style={{color:"#1a56db"}}>{typed}</span>
           <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
@@ -5544,7 +5544,7 @@ export default function App() {
           <div onClick={()=>nav("landing")} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
             <Logo size={28}/>
             <div><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",color:"#374151",fontFamily:"var(--mo)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",fontFamily:"var(--mo)",background:"linear-gradient(90deg,#6b7fe8,#2832b5)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>THREATOPS</span>
-              <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>DEFENSIVE · SECURITY · REIMAGINED</div>
+              <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>SOC ANALYST TRAINING</div>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
