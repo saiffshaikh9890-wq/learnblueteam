@@ -4301,11 +4301,11 @@ function GuestSignupModal({onSignup, onContinue, nav}) {
           padding:"24px 24px 20px",textAlign:"center"}}>
           <div style={{fontSize:36,marginBottom:8}}>🎯</div>
           <div style={{fontSize:20,fontWeight:800,color:"#fff",marginBottom:6}}>
-            You completed Step 1
+            You found the attacker.
           </div>
           <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>
-            You just triaged a real phishing attack like a SOC analyst.
-            5 more steps to fully contain it.
+            Passwords are being stolen from the server right now.
+            Sign up free to investigate 5 more steps and stop them.
           </div>
         </div>
 
@@ -5071,7 +5071,7 @@ function Landing({nav=()=>{},appUser=null}) {
             ?<button onClick={()=>nav("dash")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Go to Dashboard</button>
             :<button onClick={()=>nav("signup")} style={{flex:1,background:"#1a56db",color:"#fff",fontSize:14,fontWeight:700,padding:"13px 20px",borderRadius:10,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(26,86,219,0.3)",minWidth:160}}>Start Free Investigation</button>
           }
-          <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"#fff",color:"#1a56db",fontSize:14,fontWeight:600,padding:"13px 20px",borderRadius:10,border:"1px solid #bfdbfe",cursor:"pointer",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",minWidth:160}}>Try First Scenario →</button>
+          <button onClick={()=>nav("sim-phishing-c2")} style={{flex:1,background:"#fff",color:"#1a56db",fontSize:14,fontWeight:600,padding:"13px 20px",borderRadius:10,border:"1px solid #bfdbfe",cursor:"pointer",boxShadow:"0 1px 3px rgba(17,19,24,0.06)",minWidth:160}}>▶ Try Free — No Account Needed</button>
         </div>
         {/* Live challenge */}
         <div style={{marginTop:24,maxWidth:480,width:"100%",position:"relative",zIndex:1}}>
