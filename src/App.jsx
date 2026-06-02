@@ -5157,7 +5157,7 @@ function Landing({nav=()=>{},appUser=null}) {
       <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Career Roadmap</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>10 real incident investigations. No software. No experience needed. Just open and start.</h2>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>10 simulated incident investigations. No software. No experience needed. Just open and start.</h2>
           <p style={{fontSize:14,color:"#5a6272"}}>Every level unlocks new scenarios and skills.</p>
         </div>
         <div style={{maxWidth:700,margin:"0 auto",display:"flex",flexDirection:"column",gap:0}}>
