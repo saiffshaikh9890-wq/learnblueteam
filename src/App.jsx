@@ -4989,7 +4989,7 @@ function Landing({nav=()=>{},appUser=null}) {
   const [ti,setTi] = useState(0);
   const [ci,setCi] = useState(0);
   const [del,setDel] = useState(false);
-  const titles = ["Defensive Security Professional","SOC Analyst","Incident Responder","Threat Hunter","Blue Team Specialist"];
+  const titles = ["Cybersecurity Analyst","Incident Responder","Threat Hunter","Security Engineer","Cloud Security Analyst","Blue Team Specialist","DevSecOps Engineer","Security Operations Lead"];
   useEffect(()=>{
     const cur=titles[ti];
     tRef.current=setTimeout(()=>{
