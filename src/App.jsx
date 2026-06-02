@@ -5015,7 +5015,7 @@ function Landing({nav=()=>{},appUser=null}) {
         {/* Beta badge */}
         <div style={{display:"inline-flex",alignItems:"center",gap:7,background:"#fff",border:"1px solid #e1e4ed",color:"#5a6272",padding:"5px 13px",borderRadius:100,fontSize:11,fontWeight:600,marginBottom:20,position:"relative",zIndex:1,fontFamily:"var(--mo)",boxShadow:"0 1px 3px rgba(17,19,24,0.06)"}}>
           <div style={{width:6,height:6,borderRadius:"50%",background:"#16a34a",animation:"pulse 2s infinite"}}/>
-          Free · No signup needed · Start in 30 seconds
+          Free · No experience needed · Start in 30 seconds
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
@@ -5235,7 +5235,7 @@ function Landing({nav=()=>{},appUser=null}) {
       <div style={{padding:"28px 20px",background:"var(--w)",borderBottom:"1px solid var(--bd)"}}>
         <div style={{maxWidth:600,margin:"0 auto",textAlign:"center"}}>
           <h2 style={{fontSize:"clamp(15px,3.5vw,21px)",fontWeight:800,color:"var(--tx)",marginBottom:8,lineHeight:1.4}}>
-            After completing the investigations you will be able to triage, investigate, and close real SOC incidents independently
+            After completing the investigations you will be able to detect, investigate, and respond to cybersecurity incidents — the core skill every defensive security role requires
           </h2>
           <div style={{fontSize:12.5,color:"var(--tx4)",lineHeight:1.9}}>
             Phishing &nbsp;·&nbsp; False Positives &nbsp;·&nbsp; Account Takeover &nbsp;·&nbsp; Insider Threat &nbsp;·&nbsp; DNS Beaconing &nbsp;·&nbsp; BEC Fraud &nbsp;·&nbsp; Cloud Exposure
@@ -5250,12 +5250,12 @@ function Landing({nav=()=>{},appUser=null}) {
             <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"var(--ac)",
               fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why LearnThreatOps</div>
             <h2 style={{fontSize:"clamp(16px,3.5vw,22px)",fontWeight:800,color:"var(--tx)"}}>
-              Built specifically for blue team analysts
+              Built for anyone entering defensive cybersecurity
             </h2>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {[
-              ["🛡️","100% Defensive Security","Every investigation is about detecting and stopping attacks — never launching them."],
+              ["🛡️","100% Defensive Security","Every investigation is about detecting, investigating, and stopping attacks — the skills needed for blue team, SOC, IR, and security operations roles."],
               ["⚠️","False Positive Training","40% of our scenarios are false alarms — because that is what real SOC work looks like."],
               ["🧰","Four Real Tools Per Case","SIEM, EDR, Threat Intelligence, and Incident Desk — the same workflow professionals use daily."],
               ["🆓","Completely Free in Beta","No credit card. No paywall. All 10 investigations, full access, free."],
@@ -5338,7 +5338,7 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
   const [showUpgrade,setShowUpgrade]=useState(false);
   return (
     <div style={{padding:"20px"}}>
-      <div style={{display:"none"}}><span style={{fontSize:18}}>{"🎉"}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Beta — All 10 Investigations Free</div><div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>No credit card. No catch. Full access during beta.</div></div></div>
+      <div style={{display:"none"}}><span style={{fontSize:18}}>{"🎉"}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>Beta — All 10 Cybersecurity Investigations Free</div><div style={{fontSize:11,color:"rgba(255,255,255,0.75)"}}>No credit card. No catch. Full access during beta.</div></div></div>
       {/* Beta free banner */}
       <div style={{display:"none"}}/>
       {showUpgrade&&(
@@ -5468,7 +5468,7 @@ function AuthPage({nav,mode,login=()=>({}),signup=()=>({}),authError=null,loadin
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{margin:"0 auto 14px",width:48,height:48,display:"flex",alignItems:"center",justifyContent:"center"}}><Logo size={48}/></div>
           <div style={{fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:5}}>{mode==="login"?"Welcome back":"Create your account"}</div>
-          <div style={{color:"var(--tx3)",fontSize:14}}>{mode==="login"?"Continue your training":"Free access during Beta"}</div>
+          <div style={{color:"var(--tx3)",fontSize:14}}>{mode==="login"?"Continue your cybersecurity training":"Free access to all 10 investigations"}</div>
         </div>
         <div style={{background:"var(--w)",border:"1px solid var(--bd)",borderRadius:16,padding:24,boxShadow:"var(--sh2)"}}>
           <form onSubmit={handle}>
@@ -5544,7 +5544,7 @@ export default function App() {
           <div onClick={()=>nav("landing")} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
             <Logo size={28}/>
             <div><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",color:"#374151",fontFamily:"var(--mo)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",fontFamily:"var(--mo)",background:"linear-gradient(90deg,#6b7fe8,#2832b5)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>THREATOPS</span>
-              <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>DEFENSIVE · SECURITY · REIMAGINED</div>
+              <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>DEFENSIVE CYBERSECURITY TRAINING</div>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
