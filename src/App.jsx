@@ -4515,9 +4515,9 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
             flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             {step.objective?.split(".")[0]}
           </div>
-          <div style={{fontSize:9,color:"#374151",fontFamily:"var(--mo)",
-            flexShrink:0,fontSize:9}}>
-            Step {(si||0)+1}/{inc.steps.length}
+          <div style={{fontSize:10,fontWeight:600,color:"#6b7280",
+            fontFamily:"var(--mo)",flexShrink:0,whiteSpace:"nowrap"}}>
+            {(si||0)+1}/{inc.steps.length}
           </div>
         </div>
       )}
