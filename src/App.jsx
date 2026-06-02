@@ -4315,7 +4315,7 @@ function GuestSignupModal({onSignup, onContinue, nav}) {
             {[
               ["🔓","5 more steps — EDR, Threat Intel, Containment, Eradication, Close"],
               ["📊","9 more free investigations after this one"],
-              ["🏆","XP, grades, and completion certificates"],
+              ["🏆","XP, grades, and completion records"],
               ["💾","Your progress saved — pick up where you left off"],
             ].map(([icon,text])=>(
               <div key={text} style={{display:"flex",gap:10,alignItems:"flex-start",
@@ -4869,7 +4869,7 @@ function Logo({size=32}) {
 const POLICIES = {
   privacy:{title:"Privacy Policy",sections:[
     ["Information We Collect","We collect name, email, and password when you register. We collect usage data: simulations completed, XP earned, scores, time spent. No payment info is stored directly — handled by third-party processors."],
-    ["How We Use Your Data","To operate the platform, personalise your experience, track progress, issue certificates, send service updates, and respond to support. We never sell your data."],
+    ["How We Use Your Data","To operate the platform, personalise your experience, track progress, track completion, send service updates, and respond to support. We never sell your data."],
     ["Data Storage & Security","Stored securely with HTTPS encryption in transit and encryption at rest. Progress also saved in localStorage for offline access."],
     ["Cookies","Essential cookies only — login state and preferences. No advertising or tracking cookies."],
     ["Your Rights","You can request access, correction, or deletion of your data anytime. Email support.learnthreatops@gmail.com. We process within 30 days."],
@@ -4886,7 +4886,7 @@ const POLICIES = {
     ["Limitation of Liability","Platform is provided as-is. We are not liable for indirect or consequential damages. Total liability shall not exceed amounts paid in the prior 12 months."],
     ["Governing Law","Governed by the laws of India. Disputes resolved in courts of Mumbai, Maharashtra."],
     ["Grievance Officer","In accordance with the Information Technology Act 2000 and Intermediary Guidelines 2021, the Grievance Officer for LearnThreatOps is: Saif Shaikh | Email: support.learnthreatops@gmail.com | Phone: +91 9284837848 | Address: Shivajinagar, Pune, Maharashtra, India. Complaints will be acknowledged within 24 hours and resolved within 15 days."],
-    ["CERT-In Compliance","LearnThreatOps complies with CERT-In guidelines. Security incidents on our platform can be reported to support.learnthreatops@gmail.com. We maintain server logs as required by applicable law."],
+    ["CERT-In Aligned","LearnThreatOps follows CERT-In guidelines. Security incidents on our platform can be reported to support.learnthreatops@gmail.com. We maintain server logs as required by applicable law."],
   ]},
   refund:{title:"Refund Policy",sections:[
     ["Beta / Free Access","The platform is currently free during beta. No payment is collected. When paid plans are introduced, a separate refund policy will apply."],
@@ -4904,7 +4904,7 @@ const POLICIES = {
     ["Data for AI","Anonymised usage data may improve our AI coaching models. No PII used for AI training without consent."],
   ]},
   "data-policy":{title:"Data Policy",sections:[
-    ["What We Store","Account: name, email, hashed password. Progress: XP, level, scores, grades, time. Certificates: completion records with unique IDs. Sessions: login timestamps."],
+    ["What We Store","Account: name, email, hashed password. Progress: XP, level, scores, grades, time. Completion records with unique IDs. Sessions: login timestamps."],
     ["Local Storage","Progress also saved in browser localStorage. Creating an account backs up your progress to our servers."],
     ["Data Retention","Active account data retained for account lifetime. On deletion, all personal data removed within 30 days."],
     ["Security","Passwords handled by Supabase Auth which uses bcrypt server-side — your password never touches our application code. HTTPS for all data in transit. Regular security reviews."],
@@ -5391,7 +5391,7 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
               {["Malicious USB — Insider Threat","DNS Beaconing C2","Business Email Compromise","AWS S3 Exposure","Auth Failure Storm","Pentest FP","More added monthly"].map((item,i)=>(<div key={i} style={{display:"flex",gap:8,marginBottom:6}}><span style={{color:"#1a56db",fontWeight:700}}>{"✓"}</span><span style={{fontSize:13,color:"#374151"}}>{item}</span></div>))}
               <div style={{background:"#eff6ff",borderRadius:10,padding:"12px",margin:"14px 0",textAlign:"center",border:"1px solid #bfdbfe"}}>
                 <div style={{fontSize:26,fontWeight:800,color:"#1a56db",fontFamily:"var(--mo)"}}>{"Coming Soon"}</div>
-                <div style={{fontSize:12,color:"#6b7280"}}>30-day money-back guarantee</div>
+                <div style={{fontSize:12,color:"#6b7280"}}>Free during beta</div>
               </div>
               <button onClick={()=>window.open("mailto:support.learnthreatops@gmail.com?subject=Early Pro Access - LearnThreatOps","_blank")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginBottom:8}}>Join Pro Waitlist →</button>
               <button onClick={()=>setShowUpgrade(false)} style={{width:"100%",background:"#f7f8fa",color:"#6b7280",padding:"10px",borderRadius:9,border:"1px solid #e1e4ed",fontSize:13,cursor:"pointer"}}>Continue free</button>
