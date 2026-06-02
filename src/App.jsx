@@ -5019,7 +5019,7 @@ function Landing({nav=()=>{},appUser=null}) {
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
-          Think Like a<br/>
+          Train Like a<br/>
           <span style={{color:"#1a56db"}}>{typed}</span>
           <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
@@ -5544,7 +5544,7 @@ export default function App() {
           <div onClick={()=>nav("landing")} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
             <Logo size={28}/>
             <div><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",color:"#374151",fontFamily:"var(--mo)"}}>LEARN</span><span style={{fontSize:13,fontWeight:800,letterSpacing:"0.04em",fontFamily:"var(--mo)",background:"linear-gradient(90deg,#6b7fe8,#2832b5)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>THREATOPS</span>
-              <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>SOC ANALYST TRAINING</div>
+              <div style={{fontSize:7,letterSpacing:"0.2em",color:"#b0b7c3",fontFamily:"var(--mo)",marginTop:1,lineHeight:1}}>DEFENSIVE · SECURITY · REIMAGINED</div>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
