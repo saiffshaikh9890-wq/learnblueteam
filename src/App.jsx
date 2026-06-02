@@ -5019,13 +5019,13 @@ function Landing({nav=()=>{},appUser=null}) {
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
-          Train Like a<br/>
+          Learn to Think Like a<br/>
           <span style={{color:"#1a56db"}}>{typed}</span>
           <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
         <p style={{fontSize:"clamp(14px,3vw,17px)",color:"#5a6272",lineHeight:1.75,maxWidth:520,margin:"0 auto 28px",position:"relative",zIndex:1}}>
           Step inside a real SOC. Investigate live security incidents using the same tools, alerts, and decisions that professional analysts use every day.<br/>
-          <strong style={{color:"#111318"}}>No experience needed. No software. Your first investigation starts in 30 seconds.</strong>
+          <strong style={{color:"#111318"}}>Practice cybersecurity skills through real investigation simulations. SIEM, EDR, Threat Intelligence — the tools used across every defensive security role. Free.</strong>
         </p>
         {/* CTAs */}
         <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",position:"relative",zIndex:1,width:"100%",maxWidth:400}}>
@@ -5235,10 +5235,10 @@ function Landing({nav=()=>{},appUser=null}) {
       <div style={{padding:"28px 20px",background:"var(--w)",borderBottom:"1px solid var(--bd)"}}>
         <div style={{maxWidth:600,margin:"0 auto",textAlign:"center"}}>
           <h2 style={{fontSize:"clamp(15px,3.5vw,21px)",fontWeight:800,color:"var(--tx)",marginBottom:8,lineHeight:1.4}}>
-            After completing the investigations you will be able to detect, investigate, and respond to cybersecurity incidents — the core skill every defensive security role requires
+            After completing the investigations you will be able to detect, investigate, and respond to security incidents — a skill required in every cybersecurity role, from analyst to engineer
           </h2>
           <div style={{fontSize:12.5,color:"var(--tx4)",lineHeight:1.9}}>
-            Phishing &nbsp;·&nbsp; False Positives &nbsp;·&nbsp; Account Takeover &nbsp;·&nbsp; Insider Threat &nbsp;·&nbsp; DNS Beaconing &nbsp;·&nbsp; BEC Fraud &nbsp;·&nbsp; Cloud Exposure
+            Phishing &nbsp;·&nbsp; Account Takeover &nbsp;·&nbsp; Insider Threat &nbsp;·&nbsp; Cloud Security &nbsp;·&nbsp; DNS Beaconing &nbsp;·&nbsp; Identity Attacks &nbsp;·&nbsp; BEC Fraud &nbsp;·&nbsp; False Positive Triage
           </div>
         </div>
       </div>
@@ -5250,7 +5250,7 @@ function Landing({nav=()=>{},appUser=null}) {
             <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"var(--ac)",
               fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why LearnThreatOps</div>
             <h2 style={{fontSize:"clamp(16px,3.5vw,22px)",fontWeight:800,color:"var(--tx)"}}>
-              Built for anyone entering defensive cybersecurity
+              Built for anyone entering cybersecurity — analyst, engineer, or operator
             </h2>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
