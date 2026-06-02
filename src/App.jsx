@@ -2722,95 +2722,62 @@ function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
 
 function CoachPopup({step, onClose, onHint, hintUsed, stepsDone, totalSteps}) {
   const pc = phaseColor(step.phase);
-  const [showHint, setShowHint] = useState(false);
-
-  // Tool icon map
-  const toolIcon = {
-    "BlueTrace SIEM": "📊",
-    "LearnThreatOpsEDR": "🖥",
-    "ThreatLens": "🔍",
-    "IncidentDesk": "📋",
-  }[step.tool] || "🛠";
+  const toolIcons = {"BlueTrace SIEM":"📊","LearnThreatOpsEDR":"🖥","ThreatLens":"🔍","IncidentDesk":"📋"};
+  const icon = toolIcons[step.tool]||"🛠";
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:500,
-      display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 90px"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:600,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",
+      padding:"0 16px 24px"}}>
       <div style={{background:"#111827",border:"1px solid rgba(255,255,255,0.1)",
-        borderRadius:16,padding:"20px",maxWidth:480,width:"100%",
-        boxShadow:"0 -4px 40px rgba(0,0,0,0.5)"}}>
+        borderTop:"3px solid "+pc,borderRadius:16,padding:"20px",
+        maxWidth:480,width:"100%",boxShadow:"0 -8px 40px rgba(0,0,0,0.6)"}}>
 
-        {/* Step progress */}
-        <div style={{display:"flex",gap:6,marginBottom:14,alignItems:"center"}}>
+        {/* Progress bar */}
+        <div style={{display:"flex",gap:4,marginBottom:16}}>
           {Array.from({length:totalSteps}).map((_,i)=>(
-            <div key={i} style={{height:3,flex:1,borderRadius:2,
-              background:i<stepsDone?"#22c55e":i===stepsDone?pc:"rgba(255,255,255,0.1)",
-              transition:"all 0.3s"}}/>
+            <div key={i} style={{flex:1,height:3,borderRadius:2,
+              background:i<stepsDone?"#22c55e":i===stepsDone?pc:"rgba(255,255,255,0.08)",
+              transition:"all 0.4s"}}/>
           ))}
-          <span style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)",
-            whiteSpace:"nowrap",marginLeft:4}}>
-            {stepsDone}/{totalSteps}
-          </span>
         </div>
 
-        {/* Phase + tool */}
-        <div style={{display:"flex",gap:8,marginBottom:12,alignItems:"center"}}>
-          <div style={{background:pc+"20",border:"1px solid "+pc+"40",borderRadius:20,
-            padding:"3px 10px",fontSize:9,fontWeight:700,color:pc,
-            fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>
+        {/* Step number + phase */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:pc,fontFamily:"var(--mo)",
+            background:pc+"15",border:"1px solid "+pc+"30",borderRadius:20,
+            padding:"3px 10px",letterSpacing:"0.1em"}}>
             {step.phase}
           </div>
-          <div style={{fontSize:12,color:"#9ca3af",display:"flex",
-            alignItems:"center",gap:4}}>
-            <span>{toolIcon}</span>
-            <span>{step.tool}</span>
+          <div style={{fontSize:11,color:"#6b7280",fontFamily:"var(--mo)"}}>
+            Step {stepsDone+1} of {totalSteps}
           </div>
         </div>
 
-        {/* Title — what the step is */}
+        {/* THE ONE THING TO DO — big and clear */}
         <div style={{fontSize:16,fontWeight:700,color:"#f9fafb",
-          marginBottom:8,lineHeight:1.3}}>
-          {step.title}
-        </div>
-
-        {/* Objective — single clear sentence, bolded key action */}
-        <div style={{fontSize:14,color:"#e8ecf4",lineHeight:1.6,marginBottom:16,fontWeight:500}}>
+          lineHeight:1.4,marginBottom:6}}>
           {step.objective?.split(".")[0]}.
         </div>
-        {/* Mentor tip — only the first sentence, shorter */}
-        {step.mentor?.tip&&(
-          <div style={{fontSize:12,color:"#6b7280",lineHeight:1.5,marginBottom:16,
-            paddingLeft:10,borderLeft:"2px solid rgba(255,255,255,0.1)"}}>
-            {step.mentor.tip.split(".")[0]}.
-          </div>
-        )}
 
-        {/* Hint */}
-        {showHint&&(
-          <div style={{background:"rgba(251,191,36,0.08)",border:"1px solid rgba(251,191,36,0.2)",
-            borderRadius:8,padding:"10px 12px",marginBottom:14}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#fbbf24",fontFamily:"var(--mo)",
-              letterSpacing:"0.1em",marginBottom:4}}>MENTOR HINT</div>
-            <div style={{fontSize:12,color:"#d1d5db",lineHeight:1.6}}>
-              {step.hint||step.analyst_note}
-            </div>
-          </div>
-        )}
+        {/* Hint — only first sentence */}
+        <div style={{fontSize:12,color:"#6b7280",lineHeight:1.5,marginBottom:16}}>
+          {step.mentor?.tip ? step.mentor.tip.split(".")[0]+"." : step.analyst_note?.split(".")[0]+"."}
+        </div>
 
-        {/* Actions */}
+        {/* Buttons */}
         <div style={{display:"flex",gap:8}}>
-          {!showHint&&(
-            <button onClick={()=>{setShowHint(true);onHint();}}
-              style={{flex:1,background:"rgba(251,191,36,0.08)",
-                border:"1px solid rgba(251,191,36,0.2)",borderRadius:8,
-                padding:"9px",fontSize:12,color:"#fbbf24",cursor:"pointer",fontWeight:600}}>
-              Hint (−5 XP)
-            </button>
-          )}
+          <button onClick={()=>{onHint();}}
+            style={{padding:"10px 14px",background:"rgba(251,191,36,0.08)",
+              border:"1px solid rgba(251,191,36,0.2)",borderRadius:8,
+              fontSize:11,color:"#fbbf24",cursor:"pointer",fontWeight:600,flexShrink:0}}>
+            Hint −5XP
+          </button>
           <button onClick={onClose}
-            style={{flex:2,background:pc,border:"none",borderRadius:8,
-              padding:"12px",fontSize:13,color:"#fff",cursor:"pointer",
-              fontWeight:700,boxShadow:"0 4px 14px "+pc+"40",letterSpacing:"0.02em"}}>
-            {"Step "+(stepsDone+1)+" → Open "}{step.tool}
+            style={{flex:1,background:pc,border:"none",borderRadius:8,
+              padding:"11px",fontSize:14,color:"#fff",cursor:"pointer",
+              fontWeight:700,boxShadow:"0 4px 14px "+pc+"40"}}>
+            {icon} Open {step.tool} →
           </button>
         </div>
       </div>
@@ -2819,58 +2786,70 @@ function CoachPopup({step, onClose, onHint, hintUsed, stepsDone, totalSteps}) {
 }
 
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTION OVERLAY — after decision, shows action button
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ActionOverlay({step, onConfirm, isRunning, isDone, xpBurst}) {
-  const pc = phaseColor(step.phase);
+  const pc = phaseColor(step?.phase||"TRIAGE");
   const hasDecision = !!(step&&step.decision);
 
   const btnLabel = isDone
     ? "Next Step →"
     : isRunning
-      ? "Working..."
+      ? "Executing..."
       : hasDecision
-        ? "I have reviewed the evidence — make my call →"
-        : "Execute " + ((step&&step.action&&step.action.type)||"Action") + " →";
+        ? "I have reviewed — make my call →"
+        : "Mark Step Complete →";
 
   return (
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:300,
-      background:"linear-gradient(to top,rgba(10,13,20,0.98) 0%,rgba(10,13,20,0.85) 70%,transparent 100%)",
-      padding:"16px 16px 24px",pointerEvents:"none"}}>
-      <div style={{maxWidth:580,margin:"0 auto",pointerEvents:"all"}}>
-        {!isDone&&!isRunning&&step&&step.analyst_note&&(
-          <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",
-            borderLeft:"3px solid "+pc,borderRadius:8,padding:"10px 14px",marginBottom:10}}>
-            <div style={{fontSize:9,fontWeight:700,color:pc,fontFamily:"var(--mo)",
-              letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>
-              {hasDecision ? "What to look for" : "What this action does"}
+      background:"linear-gradient(to top,rgba(8,10,16,0.98) 0%,rgba(8,10,16,0.7) 80%,transparent 100%)",
+      padding:"12px 16px 20px",pointerEvents:"none"}}>
+      <div style={{maxWidth:600,margin:"0 auto",pointerEvents:"all"}}>
+
+        {/* Analyst note — what to look for */}
+        {!isDone&&!isRunning&&step?.analyst_note&&(
+          <div style={{background:"rgba(255,255,255,0.04)",
+            borderLeft:"2px solid "+pc,borderRadius:6,
+            padding:"8px 12px",marginBottom:10,display:"flex",gap:8,alignItems:"flex-start"}}>
+            <span style={{fontSize:14,flexShrink:0}}>{"🎯"}</span>
+            <div style={{fontSize:12,color:"#c8cdd8",lineHeight:1.6}}>
+              {step.analyst_note.split(".")[0]}.
             </div>
-            <div style={{fontSize:12.5,color:"#c8cdd8",lineHeight:1.7}}>{step.analyst_note}</div>
           </div>
         )}
-        {isDone&&step&&step.seniorThinking&&(
-          <div style={{background:"rgba(34,197,94,0.08)",border:"1px solid rgba(34,197,94,0.2)",
-            borderRadius:8,padding:"8px 14px",marginBottom:10,display:"flex",gap:8,alignItems:"flex-start"}}>
+
+        {/* Done — what was learned */}
+        {isDone&&step?.seniorThinking&&(
+          <div style={{background:"rgba(34,197,94,0.08)",
+            borderLeft:"2px solid #22c55e",borderRadius:6,
+            padding:"8px 12px",marginBottom:10,display:"flex",gap:8,alignItems:"flex-start"}}>
             <span style={{fontSize:14,flexShrink:0}}>{"✅"}</span>
-            <div style={{fontSize:12,color:"#4ade80",lineHeight:1.65}}>{step.seniorThinking}</div>
+            <div style={{fontSize:12,color:"#4ade80",lineHeight:1.6}}>
+              {step.seniorThinking}
+            </div>
           </div>
         )}
-        <button onClick={isRunning?undefined:onConfirm} disabled={isRunning}
+
+        {/* Action button */}
+        <button onClick={isRunning?undefined:onConfirm}
+          disabled={isRunning}
           style={{width:"100%",
             background:isDone?"#22c55e":isRunning?"#374151":pc,
             color:"#fff",padding:"14px",borderRadius:10,
-            fontSize:hasDecision&&!isDone?12.5:14,
-            fontWeight:700,border:"none",cursor:isRunning?"default":"pointer",
-            boxShadow:isDone?"0 4px 14px rgba(34,197,94,0.3)":"0 4px 14px "+pc+"40",
-            transition:"all 0.2s",opacity:isRunning?0.7:1}}>
-          {isRunning ? "Working..." : btnLabel}
+            fontSize:14,fontWeight:700,border:"none",
+            cursor:isRunning?"default":"pointer",
+            boxShadow:isDone?"0 4px 20px rgba(34,197,94,0.4)":`0 4px 20px ${pc}40`,
+            transition:"all 0.2s",letterSpacing:"0.02em"}}>
+          {btnLabel}
         </button>
       </div>
     </div>
   );
 }
+
 
 
 
@@ -4233,6 +4212,8 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
   const [mode,setMode]=useState(null); // "beginner" | "analyst"
   const [decisionCorrect,setDecisionCorrect]=useState(null);
   const selectMode=(m)=>{setMode(m);setStatus("coach");};
+  const [showStory,setShowStory]=useState(false);
+  const [storyText,setStoryText]=useState("");
   const handleDecision=(correct)=>{
     setDecisionCorrect(correct);
     const capturedPhase = step?.phase;
@@ -4269,6 +4250,13 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
     setActiveTool(toolMap[step.tool]||"siem");
     setStatus("action_idle");
   };
+  // Auto-advance steps that have no decision question
+  useEffect(()=>{
+    if(status==="decision" && step && !step.decision){
+      handleDecision(true);
+    }
+  },[status]);
+
   const handleBack=()=>{
     if(si>0){
       // Remove last done step
@@ -4384,7 +4372,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
       )}}
         {false&&<ModeSelector inc={inc} onSelect={selectMode}/>}
       {status==="decision"&&step?.decision&&<DecisionQuestion step={step} onDecide={handleDecision}/>}
-      {status==="decision"&&!step?.decision&&(handleDecision(true),null)}
+      {/* auto-advance handled in useEffect below */}
       {status==="coach"&&<CoachPopup step={step} onClose={handleCoachClose} onHint={()=>setHintCount(h=>h+1)} hintUsed={false} stepsDone={doneSteps.length} totalSteps={inc.steps.length} mode={mode}/>}
       {(status==="action_idle"||status==="action_running"||status==="action_done")&&(
         <ActionOverlay
@@ -4464,37 +4452,27 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
         </div>
       </div>
 
-      {/* MISSION STRIP — always visible, tells user exactly what to do */}
+      {/* MISSION STRIP — always visible */}
       {status!=="ticket_review"&&status!=="coach"&&step&&(
-        <div style={{background:"#0d1117",borderBottom:"1px solid rgba(255,255,255,0.06)",
-          padding:"8px 16px",flexShrink:0,display:"flex",alignItems:"center",
-          gap:12,flexWrap:"wrap"}}>
-          {/* Phase badge */}
-          <div style={{background:phaseColor(step.phase)+"20",border:"1px solid "+phaseColor(step.phase)+"50",
-            borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:700,
-            color:phaseColor(step.phase),fontFamily:"var(--mo)",letterSpacing:"0.1em",
-            whiteSpace:"nowrap",flexShrink:0}}>
+        <div style={{background:"#0a0d14",borderBottom:"1px solid rgba(255,255,255,0.06)",
+          padding:"8px 16px",flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+          <div style={{background:phaseColor(step.phase)+"20",border:"1px solid "+phaseColor(step.phase)+"40",
+            borderRadius:20,padding:"2px 9px",fontSize:9,fontWeight:700,
+            color:phaseColor(step.phase),fontFamily:"var(--mo)",
+            letterSpacing:"0.1em",whiteSpace:"nowrap",flexShrink:0}}>
             {step.phase}
           </div>
-          {/* Step counter */}
-          <div style={{fontSize:10,color:"#6b7280",fontFamily:"var(--mo)",flexShrink:0}}>
-            {"Step "+(si+1)+"/"+inc.steps.length}
+          <div style={{width:1,height:12,background:"rgba(255,255,255,0.1)",flexShrink:0}}/>
+          <div style={{fontSize:12,fontWeight:600,color:"#e8ecf4",
+            flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            {step.objective?.split(".")[0]}
           </div>
-          {/* Divider */}
-          <div style={{width:1,height:14,background:"rgba(255,255,255,0.1)",flexShrink:0}}/>
-          {/* Objective — the most important thing */}
-          <div style={{fontSize:12,fontWeight:600,color:"#e8ecf4",flex:1,minWidth:0,
-            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-            {step.objective}
-          </div>
-          {/* Tool name */}
-          <div style={{fontSize:9,color:"#4b5563",fontFamily:"var(--mo)",
-            flexShrink:0,whiteSpace:"nowrap"}}>
-            {step.tool}
+          <div style={{fontSize:9,color:"#374151",fontFamily:"var(--mo)",
+            flexShrink:0,fontSize:9}}>
+            Step {(si||0)+1}/{inc.steps.length}
           </div>
         </div>
       )}
-
       {/* TOOL CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex",paddingBottom:(status==="action_idle"||status==="action_running"||status==="action_done")?90:0}}>
         {activeTool==="siem"&&<BlueTraceSIEM inc={inc} activeStep={status!=="coach"?step:null}/>}
