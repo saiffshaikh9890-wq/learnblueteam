@@ -2503,7 +2503,43 @@ requestParameters.bucketName=corp-data-backup-prod
       action_label:"Close FALSE POSITIVE — Raise Process + Detection Improvement",
       action_result:"INC-2026-0651 — FALSE POSITIVE — CLOSED\n\nROOT CAUSE: Password policy change without SOC pre-notification\nDETECTION GAP: Real attacks could hide in operational noise\n\nRECOMMENDATIONS:\n[1] IT Operations: notify SOC 30 min before any change that affects authentication\n[2] Detection: during active change windows, alert on auth SUCCESSES not failures\n[3] Process: add SOC notification requirement to all change tickets affecting AD auth\n[4] Monitoring: post-change window — scan for any success/failure mix pattern\n\n+15 XP for identifying both the FP and the detection gap",
     },
-  ],
+  ,
+    {
+      id:2,phase:"INVESTIGATION",xp:30,
+      tool:"ThreatLens",toolIcon:"🔍",
+      title:"Check if any IPs are malicious",
+      objective:"Look up the top source IPs in ThreatLens. Are these known bad actors or an internal tool?",
+      analyst_note:"All 847 attempts came from 192.0.2.88. This is an RFC 5737 documentation IP — internal infrastructure.",
+      seniorThinking:"Internal IP, no malicious history. This is a misconfigured scanner, not an attacker.",
+      lookFor:["IP reputation score","Known malicious flag","Country of origin"],
+      mentor:{tip:"Internal IPs doing bulk auth = misconfigured tool, not an attacker."},
+      decision:{
+        question:"The source IP 192.0.2.88 has no malicious history. What does this mean?",
+        options:[
+          {text:"This confirms a false positive — internal tool",correct:true,why:"Correct. Internal IP, no malicious history = misconfigured internal service."},
+          {text:"The attacker is hiding behind an internal IP",correct:false,why:"Unlikely without prior access to internal network."},
+          {text:"We need more data before deciding",correct:false,why:"You have enough. Internal IP + no malicious history = FP."}
+        ]
+      }
+    },
+    {
+      id:3,phase:"CLOSE",xp:20,
+      tool:"IncidentDesk",toolIcon:"📋",
+      title:"Document and close the false positive",
+      objective:"Write the incident report. Document what triggered the alert and why this is a false positive.",
+      analyst_note:"A good FP report prevents the same alert from wasting time next week.",
+      seniorThinking:"Well done. You correctly identified a false positive. The team will whitelist this scanner.",
+      lookFor:["Document the source IP","Note it is internal","Recommend whitelisting"],
+      mentor:{tip:"Document FPs properly — saves 30 minutes next time."},
+      decision:{
+        question:"How do you classify this incident?",
+        options:[
+          {text:"False Positive — close the alert",correct:true,why:"Correct. 847 failed auth attempts from an internal IP = misconfigured internal scanner."},
+          {text:"True Positive — escalate to senior",correct:false,why:"All indicators point to a legitimate internal tool."},
+          {text:"Escalate to threat intelligence",correct:false,why:"No external threat — nothing for threat intel here."}
+        ]
+      }
+    }],
 },
 
 
@@ -4203,6 +4239,9 @@ function DecisionQuestion({step,onDecide}) {
     </div>
   );
 }
+function ModeSelector(){return null;}
+function InvestigationZero({onComplete,addXP}){return null;}
+
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp}){
   const inc=INCIDENTS[incId]||INCIDENTS["INC-2026-0441"];
   if(!inc){return(<div style={{padding:40,color:"red",fontFamily:"monospace"}}>Incident {incId} not found</div>);}
@@ -4318,7 +4357,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
                   <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:8,marginTop:8}}>{inc.title}</div>
                   <div style={{fontSize:13,color:"#9ca3af",lineHeight:1.6,marginBottom:16}}>{inc.brief}</div>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-                    {[["Risk Score","97/100","#dc2626"],["Severity","Critical","#dc2626"],["SLA","60 min","#f59e0b"],["Status","New","#3b82f6"]].map(([l,v,c])=>(
+                    {[["Risk Score",inc.severity==="Critical"?"97/100":inc.severity==="High"?"78/100":"52/100",inc.severity==="Critical"?"#dc2626":"#f59e0b"],["Severity",inc.severity||"High",inc.severity==="Critical"?"#dc2626":"#f59e0b"],["Type",inc.type==="TP"?"True Positive":"Investigate",inc.type==="TP"?"#dc2626":"#22c55e"],["SLA","60 min","#f59e0b"]].map(([l,v,c])=>(
                       <div key={l} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:"6px 12px",textAlign:"center"}}>
                         <div style={{fontSize:13,fontWeight:700,color:c,fontFamily:"var(--mo)"}}>{v}</div>
                         <div style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)",textTransform:"uppercase",letterSpacing:"0.1em"}}>{l}</div>
