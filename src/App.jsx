@@ -499,6 +499,45 @@ const SCENARIOS = {
   "bec-fraud":{id:"bec-fraud",incId:"INC-2026-0612",title:"Business Email Compromise — CFO Fraud",difficulty:"Intermediate",duration:25,xpReward:180,category:"SOC L1",tags:["BEC","Wire Transfer","Email Fraud","Social Engineering"],brief:"Email from 'CFO Rajesh Mehta' requesting ₹47L wire transfer. From rajesh.mehta@corp-example.com — not corp.internal. Payment not yet processed.",type:"TP",concept:"BEC investigation"},
   "s3-exposure":{id:"s3-exposure",incId:"INC-2026-0634",title:"Public AWS S3 Bucket — Data Exposed",difficulty:"Advanced",duration:35,xpReward:200,category:"SOC L1",tags:["AWS","S3","Cloud","PII","Misconfiguration"],brief:"127,000 customer records in a public S3 bucket for 3 days. Security researcher reported it. CloudTrail shows 2,847 external access requests.",type:"TP",concept:"Cloud security incident response"},
   "fp-auth-storm":{id:"fp-auth-storm",incId:"INC-2026-0651",title:"Auth Failure Storm — Brute Force or System Change?",difficulty:"Advanced",duration:25,xpReward:110,category:"SOC L1",tags:["Authentication","Brute Force","False Positive","AD"],brief:"3,847 auth failures across 1,247 accounts in 10 minutes. All internal IPs. Zero successful logins. Brute force — or something operational?",type:"FP",concept:"Operational noise vs real attacks"},
+  "upi-fraud":{
+    id:"upi-fraud",
+    incId:"INC-2026-0701",
+    title:"UPI Fraud — ₹2.4 Lakh transferred. Was it the user or an attacker?",
+    difficulty:"Intermediate",
+    duration:25,
+    xpReward:130,
+    category:"Fraud Investigation",
+    tags:["UPI","Fraud","Identity","India"],
+    brief:"A customer of FinSecure Bank called to report ₹2.4 lakh transferred without their knowledge. SIEM shows the transaction came from their registered device. Investigate whether this is account compromise or an inside job.",
+    type:"TP",
+    concept:"Financial fraud investigation"
+  },
+  "aadhaar-breach":{
+    id:"aadhaar-breach",
+    incId:"INC-2026-0702",
+    title:"Aadhaar Data Leak — 50,000 records found on dark web. Where did they come from?",
+    difficulty:"Advanced",
+    duration:30,
+    xpReward:150,
+    category:"Data Breach",
+    tags:["Aadhaar","Data Breach","DPDPA","India"],
+    brief:"A threat intelligence feed flagged 50,000 Aadhaar numbers on a dark web forum. The data matches your company's customer database. Investigate the source of the breach and the attack vector.",
+    type:"TP",
+    concept:"Data breach investigation"
+  },
+  "it-vendor-compromise":{
+    id:"it-vendor-compromise",
+    incId:"INC-2026-0703",
+    title:"Supply Chain Attack — A trusted vendor's credentials are being used at 2AM.",
+    difficulty:"Advanced",
+    duration:30,
+    xpReward:150,
+    category:"Supply Chain",
+    tags:["Supply Chain","Vendor","Lateral Movement","India"],
+    brief:"A major IT vendor who has VPN access to your network is showing login activity at 2:17 AM from an IP in Eastern Europe. The vendor's office is in Bengaluru. Investigate whether their credentials have been compromised.",
+    type:"TP",
+    concept:"Supply chain and vendor compromise"
+  }
 };
 
 
@@ -523,8 +562,8 @@ const INCIDENTS = {
   severity:"Critical",
   status:"New",
   created: tsNow(0),
-  host:"WS-CORP-FIN-044",
-  user:"analyst.user@corp.internal",
+  host:"WS-FINSEC-MUM-044",
+  user:"priya.sharma@finsecure.in",
   srcIp:"10.10.44.112",
   c2Ip:"203.0.113.47",
   assignee:null,
@@ -2503,7 +2542,6 @@ requestParameters.bucketName=corp-data-backup-prod
       action_label:"Close FALSE POSITIVE — Raise Process + Detection Improvement",
       action_result:"INC-2026-0651 — FALSE POSITIVE — CLOSED\n\nROOT CAUSE: Password policy change without SOC pre-notification\nDETECTION GAP: Real attacks could hide in operational noise\n\nRECOMMENDATIONS:\n[1] IT Operations: notify SOC 30 min before any change that affects authentication\n[2] Detection: during active change windows, alert on auth SUCCESSES not failures\n[3] Process: add SOC notification requirement to all change tickets affecting AD auth\n[4] Monitoring: post-change window — scan for any success/failure mix pattern\n\n+15 XP for identifying both the FP and the detection gap",
     },
-  ,
     {
       id:2,phase:"INVESTIGATION",xp:30,
       tool:"ThreatLens",toolIcon:"🔍",
@@ -5520,6 +5558,114 @@ function AuthPage({nav,mode,login=()=>({}),signup=()=>({}),authError=null,loadin
 }
 
 // ── app shell ─────────────────────────────────────────────────────────────────
+function AnalystProfile({prog, appUser, nav}) {
+  const completedIds = Object.keys(prog?.done||{});
+  const completedScenarios = Object.values(SCENARIOS).filter(s=>
+    completedIds.includes(s.id) || completedIds.includes(s.incId)
+  );
+  const totalXP = prog?.xp || 0;
+  const level = prog?.level || 1;
+  const grade = completedScenarios.length >= 8 ? "Expert" :
+                completedScenarios.length >= 5 ? "Analyst" :
+                completedScenarios.length >= 2 ? "Junior Analyst" : "Trainee";
+
+  const shareText = `I completed ${completedScenarios.length} cybersecurity investigations on LearnThreatOps — India's hands-on defensive security training platform. Grade: ${grade}. Free at learnthreatops.cloud`;
+
+  return (
+    <div style={{maxWidth:600,margin:"0 auto",padding:"24px 16px"}}>
+      {/* Header */}
+      <div style={{background:"linear-gradient(135deg,#0d1117,#1a1c2e)",
+        border:"1px solid rgba(99,102,241,0.3)",borderRadius:16,
+        padding:"24px",marginBottom:16,textAlign:"center"}}>
+        <div style={{width:64,height:64,borderRadius:"50%",
+          background:"linear-gradient(135deg,#1a56db,#7c3aed)",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          margin:"0 auto 12px",fontSize:24,fontWeight:800,color:"#fff",
+          fontFamily:"var(--mo)"}}>
+          {appUser?.name?.charAt(0)?.toUpperCase()||"A"}
+        </div>
+        <div style={{fontSize:20,fontWeight:700,color:"#f9fafb",marginBottom:4}}>
+          {appUser?.name||"Analyst"}
+        </div>
+        <div style={{fontSize:13,color:"#818cf8",fontWeight:600,marginBottom:12}}>
+          {grade} · Level {level} · {totalXP} XP
+        </div>
+        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+          {[
+            [completedScenarios.length.toString(), "Investigations"],
+            [completedScenarios.filter(s=>INCIDENTS[s.incId]?.type==="TP").length.toString(),"Attacks Detected"],
+            [completedScenarios.filter(s=>INCIDENTS[s.incId]?.type==="FP").length.toString(),"FPs Identified"],
+          ].map(([val,label])=>(
+            <div key={label} style={{background:"rgba(255,255,255,0.05)",
+              borderRadius:8,padding:"8px 16px",textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:700,color:"#f9fafb",fontFamily:"var(--mo)"}}>{val}</div>
+              <div style={{fontSize:9,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.1em"}}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Completed investigations */}
+      <div style={{background:"var(--w)",border:"1px solid var(--bd)",
+        borderRadius:12,padding:"16px",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--tx4)",
+          letterSpacing:"0.1em",textTransform:"uppercase",
+          fontFamily:"var(--mo)",marginBottom:12}}>
+          Completed Investigations ({completedScenarios.length}/10)
+        </div>
+        {completedScenarios.length === 0 ? (
+          <div style={{fontSize:13,color:"var(--tx4)",textAlign:"center",padding:"20px 0"}}>
+            No investigations completed yet.
+            <span onClick={()=>nav("dash")} style={{color:"var(--ac)",cursor:"pointer",marginLeft:4}}>Start now →</span>
+          </div>
+        ) : completedScenarios.map(s=>{
+          const entry = prog.done[s.id]||prog.done[s.incId]||{};
+          const inc = INCIDENTS[s.incId]||{};
+          return (
+            <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,
+              padding:"8px 0",borderBottom:"1px solid var(--bd)"}}>
+              <div style={{width:28,height:28,borderRadius:"50%",
+                background:inc.type==="TP"?"rgba(220,38,38,0.1)":"rgba(34,197,94,0.1)",
+                border:"1px solid "+(inc.type==="TP"?"rgba(220,38,38,0.3)":"rgba(34,197,94,0.3)"),
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontSize:12,flexShrink:0}}>
+                {inc.type==="TP"?"🚨":"✅"}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:600,color:"var(--tx)",
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {s.title}
+                </div>
+                <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>
+                  {s.category} · Grade: {entry.grade||"A"} · {entry.score||100} pts
+                </div>
+              </div>
+              <div style={{fontSize:11,fontWeight:700,color:"#22c55e",
+                fontFamily:"var(--mo)",flexShrink:0}}>
+                ✓
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Share button */}
+      <button onClick={()=>navigator.clipboard?.writeText(shareText).then(()=>alert("Copied! Paste on LinkedIn."))}
+        style={{width:"100%",background:"#0a66c2",border:"none",borderRadius:10,
+          padding:"13px",fontSize:14,color:"#fff",cursor:"pointer",fontWeight:700,
+          marginBottom:10}}>
+        Share on LinkedIn 📤
+      </button>
+      <button onClick={()=>nav("dash")}
+        style={{width:"100%",background:"var(--bg2)",border:"1px solid var(--bd)",
+          borderRadius:10,padding:"11px",fontSize:13,color:"var(--tx2)",
+          cursor:"pointer",fontWeight:500}}>
+        ← Back to Dashboard
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [page,setPage]=useState("landing");
   const [simId,setSimId]=useState("phishing-c2");
@@ -5553,6 +5699,7 @@ export default function App() {
               <button onClick={()=>nav("dash")} style={{display:"flex",alignItems:"center",gap:6,background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"7px 12px",cursor:"pointer"}}>
                 <div style={{width:22,height:22,borderRadius:"50%",background:"var(--acl)",border:"1.5px solid var(--ac)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"var(--ac)",fontFamily:"var(--mo)"}}>{prog.level}</div>
                 <span style={{fontSize:13,color:"var(--tx2)",fontWeight:500}}>{user.name.split(" ")[0]}</span>
+              <span style={{fontSize:10,color:"var(--ac)",cursor:"pointer",marginLeft:2}} onClick={(e)=>{e.stopPropagation();nav("profile");}}>Profile</span>
               </button></>
             ):(
               <button onClick={()=>nav("login")} style={{background:"none",border:"1px solid var(--bd)",color:"var(--tx2)",fontSize:13,fontWeight:500,padding:"7px 12px",borderRadius:8,cursor:"pointer"}}>Login</button>
