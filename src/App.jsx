@@ -1506,7 +1506,7 @@ earliest=-30m
           {text:"Likely False Positive — looks like scheduled backup activity",correct:true,why:"Good instinct. A 62/100 score, service account, overnight timing, and two previous identical closed incidents all point to legitimate activity. You still need to verify in the EDR — but your prior is correct."},
           {text:"Definitely malicious — encoded PowerShell is always bad",correct:false,why:"Not always. Encoded PowerShell is a technique attackers USE, but many legitimate tools also use it to pass complex commands. Always check context before concluding malicious."},
           {text:"Escalate immediately to P1",correct:false,why:"Premature. A P3 High with no network beaconing, a service account, overnight timing, and previous false positives on this host does not warrant P1 escalation without investigation."},
-          {text:"Not enough information — need to see the EDR",correct:true,why:"Also correct. You cannot confirm without checking the process tree. Good analysts form a hypothesis from the SIEM and then verify in the EDR."},
+          {text:"Not enough information — need to see the EDR",correct:false,why:"Also correct. You cannot confirm without checking the process tree. Good analysts form a hypothesis from the SIEM and then verify in the EDR."},
         ]
       },
       evidence_bullets:["Risk Score: 62/100 — Medium confidence, not high","User: svc_backup (service account, not a human user)","Time: 02:30 IST — typical overnight maintenance window","Previous: 2 identical incidents closed as backup jobs in 14 days","No network beaconing alerts in correlated events"],
@@ -1881,7 +1881,7 @@ earliest=-30m
           {text:"Close as False Positive — add exception rule for this scanner",correct:true,why:"Correct. Two independent sources confirm this is an authorized scanner. Close as FP and add a tuning rule so this scanner does not keep generating noise every week."},
           {text:"Still suspicious — keep investigating",correct:false,why:"There is nothing left to investigate. CMDB, ThreatLens, previous incident history, scan pattern, and timing all confirm this is the authorized scanner. More investigation is wasted time."},
           {text:"Close as True Positive — the scan still happened",correct:false,why:"Incorrect classification. True Positive means the alert correctly identified malicious activity. This was authorized security activity — the alert misfired. That is a False Positive."},
-          {text:"Notify the IT Security team that their scanner is alerting",correct:true,why:"Also correct and good practice. Let the scanner owner know their tool is generating SOC noise. They may be able to add source IP exclusions or notify SOC before scheduled scans."},
+          {text:"Notify the IT Security team that their scanner is alerting",correct:false,why:"Also correct and good practice. Let the scanner owner know their tool is generating SOC noise. They may be able to add source IP exclusions or notify SOC before scheduled scans."},
         ]
       },
       evidence_bullets:["ThreatLens: 10.10.5.20 = VULN-SCAN-01 (confirmed)","AbuseIPDB: N/A — internal RFC1918 IP","VirusTotal: N/A — internal asset","CMDB match: VULN-SCAN-01 — IT Security — Authorized","Scan schedule: Tuesdays and Thursdays 10:00 — matches alert time"],
