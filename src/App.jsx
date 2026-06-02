@@ -3679,6 +3679,14 @@ function BlueTraceSIEM({inc,activeStep}){
       </div>
 
       <div style={{flex:1,overflow:"auto",padding:"14px",display:"flex",flexDirection:"column",gap:10}}>
+              {/* Guidance strip — tells user what to do */}
+              {stepTool&&<div style={{padding:"8px 12px",background:"rgba(59,130,246,0.1)",
+                borderBottom:"1px solid rgba(59,130,246,0.2)",display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16}}>{"👆"}</span>
+                <span style={{fontSize:12,fontWeight:600,color:"#60a5fa"}}>
+                  {"Click the CRITICAL alert row below — it is highlighted in red"}
+                </span>
+              </div>}
 
         {tab==="alerts"&&(
           <>
@@ -4244,6 +4252,7 @@ function InvestigationZero({onComplete,addXP}){return null;}
 
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp}){
   const inc=INCIDENTS[incId]||INCIDENTS["INC-2026-0441"];
+  const scenarioData=Object.values(SCENARIOS).find(s=>s.incId===incId)||{};
   if(!inc){return(<div style={{padding:40,color:"red",fontFamily:"monospace"}}>Incident {incId} not found</div>);}
   const [activeTool,setActiveTool]=useState("siem");
   const [si,setSi]=useState(0);
@@ -4355,7 +4364,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
                 <div style={{padding:"16px 18px"}}>
                   <IncidentAnimation incId={inc.id}/>
                   <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:8,marginTop:8}}>{inc.title}</div>
-                  <div style={{fontSize:13,color:"#9ca3af",lineHeight:1.6,marginBottom:16}}>{inc.brief}</div>
+                  <div style={{fontSize:13,color:"#9ca3af",lineHeight:1.6,marginBottom:16}}>{inc.brief||scenarioData.brief||"Investigate this incident and determine: real attack or false positive?"}</div>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
                     {[["Risk Score",inc.severity==="Critical"?"97/100":inc.severity==="High"?"78/100":"52/100",inc.severity==="Critical"?"#dc2626":"#f59e0b"],["Severity",inc.severity||"High",inc.severity==="Critical"?"#dc2626":"#f59e0b"],["Type",inc.type==="TP"?"True Positive":"Investigate",inc.type==="TP"?"#dc2626":"#22c55e"],["SLA","60 min","#f59e0b"]].map(([l,v,c])=>(
                       <div key={l} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:"6px 12px",textAlign:"center"}}>
@@ -4931,7 +4940,7 @@ function Landing({nav=()=>{},appUser=null}) {
         </div>
         {/* Headline */}
         <h1 style={{fontSize:"clamp(26px,5vw,54px)",fontWeight:800,lineHeight:1.1,letterSpacing:"-0.03em",marginBottom:14,color:"#111318",position:"relative",zIndex:1}}>
-          Become an<br/>
+          Investigate Real<br/>
           <span style={{color:"#1a56db"}}>{typed}</span>
           <span style={{display:"inline-block",width:2,height:"0.85em",background:"#1a56db",borderRadius:1,verticalAlign:"text-bottom",marginLeft:2,animation:"blink 1s infinite"}}/>
         </h1>
@@ -5069,7 +5078,7 @@ function Landing({nav=()=>{},appUser=null}) {
       <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Career Roadmap</div>
-          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>Your Journey from Beginner to Specialist</h2>
+          <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318",marginBottom:8}}>Free SOC analyst training. 10 real investigations. No setup.</h2>
           <p style={{fontSize:14,color:"#5a6272"}}>Every level unlocks new scenarios and skills.</p>
         </div>
         <div style={{maxWidth:700,margin:"0 auto",display:"flex",flexDirection:"column",gap:0}}>
