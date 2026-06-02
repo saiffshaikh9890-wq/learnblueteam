@@ -36,7 +36,7 @@ const INVESTIGATION_ZERO = {
       title:"What is a Security Alert?",
       icon:"🚨",
       analogy:"Think of a security alert like a smoke detector going off in a building. The detector doesn't know if it's a real fire, burnt toast, or a candle — it just knows something triggered it. Your job as an analyst is to investigate and find out.",
-      concept:"A security alert is an automated notification that something suspicious has been detected. It could be a real attack (True Positive) or a harmless event that looks suspicious (False Positive).",
+      concept:"A security alert is an automated notification that something suspicious has been detected. It could be a simulated attack (True Positive) or a harmless event that looks suspicious (False Positive).",
       example:{
         label:"Real Alert Example",
         content:"ALERT: Unusual outbound connection from WS-CORP-FIN-044\nDestination: 203.0.113.47 (Russia)\nTime: 08:17:33\nProcess: svchost32.exe\nRisk Score: 97/100"
@@ -498,30 +498,30 @@ const SCENARIOS = {
   "fp-pentest":{id:"fp-pentest",incId:"INC-2026-0591",title:"Security Team Pentest — False Positive?",difficulty:"Intermediate",duration:20,xpReward:90,category:"SOC L1",tags:["Nmap","PentestKit","False Positive","Pentest"],brief:"Nmap and PentestKit detected on an internal workstation. Scanning the entire internal subnet. No Change Ticket. Attack or authorized test?",type:"FP",concept:"Authorized security activity recognition"},
   "bec-fraud":{id:"bec-fraud",incId:"INC-2026-0612",title:"Business Email Compromise — CFO Fraud",difficulty:"Intermediate",duration:25,xpReward:180,category:"SOC L1",tags:["BEC","Wire Transfer","Email Fraud","Social Engineering"],brief:"Email from 'CFO Rajesh Mehta' requesting ₹47L wire transfer. From rajesh.mehta@corp-example.com — not corp.internal. Payment not yet processed.",type:"TP",concept:"BEC investigation"},
   "s3-exposure":{id:"s3-exposure",incId:"INC-2026-0634",title:"Public AWS S3 Bucket — Data Exposed",difficulty:"Advanced",duration:35,xpReward:200,category:"SOC L1",tags:["AWS","S3","Cloud","PII","Misconfiguration"],brief:"127,000 customer records in a public S3 bucket for 3 days. Security researcher reported it. CloudTrail shows 2,847 external access requests.",type:"TP",concept:"Cloud security incident response"},
-  "fp-auth-storm":{id:"fp-auth-storm",incId:"INC-2026-0651",title:"Auth Failure Storm — Brute Force or System Change?",difficulty:"Advanced",duration:25,xpReward:110,category:"SOC L1",tags:["Authentication","Brute Force","False Positive","AD"],brief:"3,847 auth failures across 1,247 accounts in 10 minutes. All internal IPs. Zero successful logins. Brute force — or something operational?",type:"FP",concept:"Operational noise vs real attacks"},
-  "upi-fraud":{
-    id:"upi-fraud",
+  "fp-auth-storm":{id:"fp-auth-storm",incId:"INC-2026-0651",title:"Auth Failure Storm — Brute Force or System Change?",difficulty:"Advanced",duration:25,xpReward:110,category:"SOC L1",tags:["Authentication","Brute Force","False Positive","AD"],brief:"3,847 auth failures across 1,247 accounts in 10 minutes. All internal IPs. Zero successful logins. Brute force — or something operational?",type:"FP",concept:"Operational noise vs simulated attacks"},
+  "payment-fraud":{
+    id:"payment-fraud",
     incId:"INC-2026-0701",
-    title:"UPI Fraud — ₹2.4 Lakh transferred. Was it the user or an attacker?",
+    title:"Digital Payment Fraud — ₹2.4 Lakh transferred without authorisation. Account compromise or social engineering?",
     difficulty:"Intermediate",
     duration:25,
     xpReward:130,
     category:"Fraud Investigation",
-    tags:["UPI","Fraud","Identity","India"],
-    brief:"A customer of FinSecure Bank called to report ₹2.4 lakh transferred without their knowledge. SIEM shows the transaction came from their registered device. Investigate whether this is account compromise or an inside job.",
+    tags:["Payment Fraud","Social Engineering","Identity","India"],
+    brief:"A customer of FinSecure Bank (fictional) reported ₹2.4 lakh transferred without their knowledge. SIEM shows the transaction originated from their registered mobile device. Simulated scenario — investigate whether this is account compromise or social engineering.",
     type:"TP",
     concept:"Financial fraud investigation"
   },
-  "aadhaar-breach":{
-    id:"aadhaar-breach",
+  "nationalid-breach":{
+    id:"nationalid-breach",
     incId:"INC-2026-0702",
-    title:"Aadhaar Data Leak — 50,000 records found on dark web. Where did they come from?",
+    title:"National ID Data Leak — 50,000 citizen records found on dark web. Where did they come from?",
     difficulty:"Advanced",
     duration:30,
     xpReward:150,
     category:"Data Breach",
-    tags:["Aadhaar","Data Breach","DPDPA","India"],
-    brief:"A threat intelligence feed flagged 50,000 Aadhaar numbers on a dark web forum. The data matches your company's customer database. Investigate the source of the breach and the attack vector.",
+    tags:["Data Breach","DPDPA","PII","India"],
+    brief:"A threat intelligence feed flagged 50,000 national ID numbers on a dark web forum. The data appears to match your company's customer database. Investigate the source of the breach and the attack vector. Simulated scenario — no real data involved.",
     type:"TP",
     concept:"Data breach investigation"
   },
@@ -710,7 +710,7 @@ const INCIDENTS = {
       instruction:"Your shift just started. BlueTrace SIEM has a new Critical alert. Read it completely. Check: what rules fired, what host, what user, what time. Then decide: True Positive or False Positive?",
       analyst_note:"A Critical with 97/100 risk score + C2 beacon rule + LSASS rule firing together at 08:17 — this is not a false positive. Open the incident. You have 60 minutes SLA.",
       decision:{
-        question:"You have read the SIEM alert. Risk score 97/100, two correlated rules fired at 08:17. Is this a real attack or a false positive?",
+        question:"You have read the SIEM alert. Risk score 97/100, two correlated rules fired at 08:17. Is this a simulated attack or a false positive?",
         options:[
           {text:"Open incident — classify True Positive",correct:true,why:"Correct. A 97/100 score with multiple correlated rules is a confirmed True Positive. Open the incident and investigate."},
           {text:"Close alert — probably a false positive",correct:false,why:"Incorrect. Multiple correlated rules with a 97/100 score is not noise. Closing this lets an active C2 beacon run undetected."},
@@ -5390,7 +5390,7 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
             <div style={{padding:"20px 24px"}}>
               {["Malicious USB — Insider Threat","DNS Beaconing C2","Business Email Compromise","AWS S3 Exposure","Auth Failure Storm","Pentest FP","More added monthly"].map((item,i)=>(<div key={i} style={{display:"flex",gap:8,marginBottom:6}}><span style={{color:"#1a56db",fontWeight:700}}>{"✓"}</span><span style={{fontSize:13,color:"#374151"}}>{item}</span></div>))}
               <div style={{background:"#eff6ff",borderRadius:10,padding:"12px",margin:"14px 0",textAlign:"center",border:"1px solid #bfdbfe"}}>
-                <div style={{fontSize:26,fontWeight:800,color:"#1a56db",fontFamily:"var(--mo)"}}>{"₹499/month"}</div>
+                <div style={{fontSize:26,fontWeight:800,color:"#1a56db",fontFamily:"var(--mo)"}}>{"Coming Soon"}</div>
                 <div style={{fontSize:12,color:"#6b7280"}}>30-day money-back guarantee</div>
               </div>
               <button onClick={()=>window.open("mailto:support.learnthreatops@gmail.com?subject=Early Pro Access - LearnThreatOps","_blank")} style={{width:"100%",background:"#1a56db",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginBottom:8}}>Join Pro Waitlist →</button>
@@ -5720,7 +5720,6 @@ export default function App() {
     </div>
   );
 }      {/* ── VS COMPETITION ── */}
-      <div style={{padding:"40px 20px",background:"#fff",borderBottom:"1px solid #e1e4ed"}}><div style={{maxWidth:860,margin:"0 auto"}}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase"}}>Why Us</div><h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#111318"}}>Built Different</h2></div><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:500}}><thead><tr>{[["Feature","#374151"],["LearnThreatOps","#1a56db"],["Platform A","#374151"],["Platform B","#374151"],["Platform C","#374151"]].map(([h,c],i)=>(<th key={h} style={{padding:"10px 14px",textAlign:"left",fontWeight:700,color:c,borderBottom:"2px solid "+(i===1?"#1a56db":"#e1e4ed"),fontSize:12,background:i===1?"rgba(26,86,219,0.03)":"#f7f8fa"}}>{h}</th>))}</tr></thead><tbody>{[["100% Blue Team","YES","Red team focus","Partial","No"],["Real SIEM+EDR","YES","No real tools","Basic only","Video only"],["False Positive 40%","YES","No","No","No"],["Free no card","YES","Yes","Yes","No"],["India context","YES","No","No","No"]].map((row,i)=>(<tr key={i} style={{borderBottom:"1px solid #e1e4ed",background:i%2===0?"#fff":"#fafafa"}}>{row.map((cell,j)=>(<td key={j} style={{padding:"10px 14px",color:j===0?"#374151":j===1?"#16a34a":"#6b7280",fontWeight:j===1?700:400,background:j===1?"rgba(26,86,219,0.03)":"transparent"}}>{cell}</td>))}</tr>))}</tbody></table></div></div></div>
       {/* ── CAREER ── */}
       <div style={{padding:"48px 20px",background:"#111318"}}><div style={{maxWidth:760,margin:"0 auto",textAlign:"center"}}><div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#3b82f6",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>For Your Career</div><h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#f9fafb",marginBottom:8}}>The Skill Gap Costing You the Job</h2><p style={{fontSize:14,color:"#6b7280",lineHeight:1.8,maxWidth:500,margin:"0 auto 28px"}}>Every cybersecurity job asks for hands-on experience. Every fresher has certificates and zero real experience. LearnThreatOps closes that gap.</p><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:28}}>{[{s:"4.7M",l:"unfilled cyber jobs",c:"#3b82f6"},{s:"60%",l:"of SOC work is alert triage",c:"#22c55e"},{s:"0",l:"platforms teaching real blue team",c:"#ef4444"}].map(x=>(<div key={x.s} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"18px",textAlign:"center"}}><div style={{fontSize:30,fontWeight:800,color:x.c,fontFamily:"var(--mo)",marginBottom:4}}>{x.s}</div><div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{x.l}</div></div>))}</div><button onClick={()=>nav("signup")} style={{background:"#1a56db",color:"#fff",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>Start Building Real Experience</button></div></div>
 
