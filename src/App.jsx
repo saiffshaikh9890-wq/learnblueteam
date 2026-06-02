@@ -4587,7 +4587,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
       </div>
 
       {/* TOOL SWITCHER */}
-      <div style={{background:"#0a0d14",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:40,display:"flex",alignItems:"center",gap:0,flexShrink:0}}>
+      <div style={{background:"#0a0d14",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:40,display:"flex",alignItems:"center",gap:0,flexShrink:0,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
         <span style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginRight:12,letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Tools</span>
         {[
           {id:"siem",label:"BlueTrace SIEM",color:"#3b82f6",shortLabel:"SIEM"},
