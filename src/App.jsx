@@ -2893,7 +2893,7 @@ function ActionOverlay({step, onConfirm, isRunning, isDone, xpBurst}) {
         : "Mark Step Complete →";
 
   return (
-    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:300,
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:400,
       background:"linear-gradient(to top,rgba(8,10,16,0.98) 0%,rgba(8,10,16,0.7) 80%,transparent 100%)",
       padding:"12px 16px 20px",pointerEvents:"none"}}>
       <div style={{maxWidth:600,margin:"0 auto",pointerEvents:"all"}}>
@@ -2923,7 +2923,9 @@ function ActionOverlay({step, onConfirm, isRunning, isDone, xpBurst}) {
         )}
 
         {/* Action button */}
-        <button onClick={isRunning?undefined:onConfirm}
+        <button 
+          onClick={isRunning?undefined:onConfirm}
+          onTouchEnd={isRunning?undefined:(e)=>{e.preventDefault();onConfirm && onConfirm();}}
           disabled={isRunning}
           style={{width:"100%",
             background:isDone?"#22c55e":isRunning?"#374151":pc,
@@ -2931,7 +2933,9 @@ function ActionOverlay({step, onConfirm, isRunning, isDone, xpBurst}) {
             fontSize:14,fontWeight:700,border:"none",
             cursor:isRunning?"default":"pointer",
             boxShadow:isDone?"0 4px 20px rgba(34,197,94,0.4)":`0 4px 20px ${pc}40`,
-            transition:"all 0.2s",letterSpacing:"0.02em"}}>
+            transition:"all 0.2s",letterSpacing:"0.02em",
+            WebkitTapHighlightColor:"transparent",
+            touchAction:"manipulation"}}>
           {btnLabel}
         </button>
       </div>
