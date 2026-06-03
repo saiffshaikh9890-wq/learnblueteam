@@ -4375,7 +4375,7 @@ function GuestSignupModal({onSignup, onContinue, nav}) {
   );
 }
 
-function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp}){
+function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp,nav=()=>{},isGuest=false}){
   const inc=INCIDENTS[incId]||INCIDENTS["INC-2026-0441"];
   const scenarioData=Object.values(SCENARIOS).find(s=>s.incId===incId)||{};
   if(!inc){return(<div style={{padding:40,color:"red",fontFamily:"monospace"}}>Incident {incId} not found</div>);}
