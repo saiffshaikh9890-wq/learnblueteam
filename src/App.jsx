@@ -704,26 +704,41 @@ const INCIDENTS = {
       id:0,phase:"TRIAGE",xp:25,
       tool:"BlueTrace SIEM",toolIcon:"📊",toolAnalogy:"like a security camera control room",
       title:"Read the SIEM Alert",
-      objective:"A new alert has landed in your queue. Before clicking anything — read the full alert. Think: What rules fired? Which host? Which user? What time? Once you have read it, decide whether this is worth investigating.",
+      objective:"Click the CRITICAL alert row highlighted in red. Read the full detail panel — risk score, both rules that fired, the hostname, and the timeline. Use what you see in the SIEM to answer the question below.",
       lookFor:["The risk score — higher means more suspicious","Multiple rules firing on the same host confirms each other","The hostname and username — who is affected?","The timestamp — during business hours or at suspicious timing?"],
       seniorThinking:"When I see multiple rules firing together on the same host within minutes, I treat it as a True Positive until proven otherwise. A 97/100 score with a C2 beacon rule AND an LSASS rule is not a coincidence — that is a pattern.",
-      instruction:"Your shift just started. BlueTrace SIEM has a new Critical alert. Read it completely. Check: what rules fired, what host, what user, what time. Then decide: True Positive or False Positive?",
+      instruction:"Your shift just started. A Critical alert is in your queue. Click the red CRITICAL alert row in BlueTrace SIEM below. In the detail panel, read every field — rules fired, risk score, hostname, user, and timeline. Then answer the question.",
       analyst_note:"A Critical with 97/100 risk score + C2 beacon rule + LSASS rule firing together at 08:17 — this is not a false positive. Open the incident. You have 60 minutes SLA.",
-      decision:{
-        question:"You have read the SIEM alert. Risk score 97/100, two correlated rules fired at 08:17. Is this a simulated attack or a false positive?",
-        options:[
-          {text:"Open incident — classify True Positive",correct:true,why:"Correct. A 97/100 score with multiple correlated rules is a confirmed True Positive. Open the incident and investigate."},
-          {text:"Close alert — probably a false positive",correct:false,why:"Incorrect. Multiple correlated rules with a 97/100 score is not noise. Closing this lets an active C2 beacon run undetected."},
-          {text:"Wait for more alerts before deciding",correct:false,why:"Incorrect. Waiting costs response time. P1 alerts require immediate action."},
-          {text:"Assign to another analyst",correct:false,why:"Incorrect. The alert is assigned to you. You investigate first, escalate later if needed."},
-        ]
-      },
+      
       evidence_bullets:["Risk Score: 97/100 — High Confidence","Rules: OUTBOUND_C2_BEACON + LSASS_MEMORY_ACCESS","Host: WS-CORP-FIN-044 (Finance workstation)","User: analyst.user@corp.internal","Time: 08:17 IST — business hours"],
-      action_label:"Classify TRUE POSITIVE — Open Incident",
-      action_result:"INC-2026-0441 opened\nAssigned: "+ANALYST.name+"\nSLA timer: 60:00 started\nStatus: In Progress\nNext: Pivot to LearnThreatOpsEDR",
+      action_label:"Alert Read — I have reviewed all fields",
+      action_result:"INC-2026-0441 opened\nAssigned: You\nSLA timer: 60:00 started\nStatus: In Progress\nNext: Pivot to LearnThreatOpsEDR",
     },
     {
-      id:1,phase:"INVESTIGATION",xp:30,
+      id:1,phase:"TRIAGE",xp:20,
+      tool:"BlueTrace SIEM",toolIcon:"📊",toolAnalogy:"like a security camera control room",
+      title:"Classify the Alert",
+      objective:"You have read the SIEM alert. Now make your call. Two rules fired on the same host within minutes — C2 beacon AND LSASS access. Risk score is 97/100. Based on what you read, classify this alert.",
+      lookFor:["Two correlated rules on the same host = pattern, not coincidence","97/100 score = high confidence from the detection engine","C2 beacon = active malware calling home","LSASS access = credential theft in progress","Together these confirm an active compromise"],
+      seniorThinking:"When I see multiple rules firing together on the same host within minutes, I treat it as a True Positive until proven otherwise. A 97/100 score with a C2 beacon rule AND an LSASS rule is not a coincidence — that is a pattern.",
+      instruction:"Based on the SIEM alert you just read — the risk score, the two correlated rules, the hostname and user — classify this alert. Open an incident or close it.",
+      analyst_note:"97/100 + C2 beacon + LSASS access = confirmed True Positive. Open the incident immediately. You have 60 minutes SLA.",
+      decision:{
+        question:"Risk score 97/100. Two rules on the same host at 08:17: OUTBOUND_C2_BEACON and LSASS_MEMORY_ACCESS. What is your classification?",
+        options:[
+          {text:"True Positive — open incident and investigate",correct:true,why:"Correct. Two correlated rules on the same host with 97/100 confidence is a confirmed True Positive. C2 beacon + LSASS access together = active malware stealing credentials."},
+          {text:"False Positive — close the alert",correct:false,why:"Incorrect. Two correlated rules with 97/100 score is not noise. Closing this alert lets an active attacker keep stealing credentials undetected."},
+          {text:"Needs more data — wait before deciding",correct:false,why:"Incorrect. You have a risk score, two correlated rules, an affected host, and a timeline. That is enough data. P1 alerts require immediate action."},
+          {text:"Escalate — too complex to decide alone",correct:false,why:"Incorrect here. A 97/100 score with two correlated rules is a standard True Positive classification. You have enough information to act."},
+        ]
+      },
+      evidence_bullets:["Risk Score: 97/100 — High Confidence","Rule 1: OUTBOUND_C2_BEACON fired","Rule 2: LSASS_MEMORY_ACCESS fired","Both rules: same host, same minute","Host: WS-CORP-FIN-044 · User: analyst.user"],
+      action_label:"Open Incident — TRUE POSITIVE confirmed",
+      action_result:"INC-2026-0441 opened\nClassification: True Positive\nSLA timer: 60:00 started\nStatus: In Progress\nNext: Switch to LearnThreatOpsEDR — read the process tree",
+    },
+
+    {
+      id:3,phase:"INVESTIGATION",xp:30,
       tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Read the Process Tree",
       objective:"Switch to LearnThreatOpsEDR. Look at the process tree for WS-CORP-FIN-044. It shows every program that ran and what started it. Think: does this chain make sense for a normal Finance workstation?",
@@ -767,7 +782,7 @@ const INCIDENTS = {
       action_result:"IOC actions applied:\n[IP] 203.0.113.47 — BLOCKED estate-wide\n[Hash] a3f19c2d — BLOCK+KILL on all endpoints\n[Domain] corp-example.com — DNS SINKHOLE\nAssessment: Targeted Cobalt Strike — Finance team",
     },
     {
-      id:3,phase:"CONTAINMENT",xp:30,
+      id:4,phase:"CONTAINMENT",xp:30,
       tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Contain the Endpoint",
       objective:"The C2 beacon is live right now. LSASS was accessed — the attacker may already have credentials. Every second increases risk. You must act — but think carefully about HOW you act. The wrong containment method loses forensic evidence.",
@@ -789,7 +804,7 @@ const INCIDENTS = {
       action_result:"WS-CORP-FIN-044 — Network Containment: ACTIVE\nEDR sensor: CONNECTED (forensics available)\nC2 sessions: TERMINATED\nSMB lateral: SEVERED\nMemory: PRESERVED for forensics\nNext: Check blast radius",
     },
     {
-      id:4,phase:"ERADICATION",xp:25,
+      id:5,phase:"ERADICATION",xp:25,
       tool:"BlueTrace SIEM",toolIcon:"📊",toolAnalogy:"like a security camera control room",
       title:"Check the Blast Radius",
       objective:"One host is contained. But what if the attacker already spread to a second machine in those 14 minutes? If you close this case now without checking, you could wake up tomorrow with a second active breach — and no idea it started here. Search every endpoint, every mailbox. Find out before you close.",
@@ -811,7 +826,7 @@ const INCIDENTS = {
       action_result:"Blast radius confirmed: 1 host compromised\nrahul.singh inbox: QUARANTINED\npriya.das: Already quarantined\n847 endpoints checked: CLEAN\nBlast radius: CONTAINED",
     },
     {
-      id:5,phase:"CLOSE",xp:20,
+      id:6,phase:"CLOSE",xp:20,
       tool:"IncidentDesk",toolIcon:"📋",toolAnalogy:"like a detective case file",
       title:"Write the Incident Report",
       objective:"Threat is contained. Document what happened. Your report goes to the CISO, SOC lead, and your ticket history. Think: what was the root cause — not just WHAT happened, but WHY the attack was able to succeed.",
