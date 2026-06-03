@@ -2824,6 +2824,11 @@ function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
 
           {/* Actions */}
           <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{window.location.reload();}}
+              style={{flex:1,background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.25)",
+                borderRadius:10,padding:"12px",fontSize:13,color:"#818cf8",cursor:"pointer",fontWeight:700}}>
+              🔄 Replay — Beat Score
+            </button>
             <button onClick={onBack}
               style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",
                 borderRadius:10,padding:"12px",fontSize:13,color:"#e8ecf4",cursor:"pointer",fontWeight:600}}>
@@ -5618,6 +5623,97 @@ function Dashboard({nav,appUser={name:"Analyst"},prog={xp:0,level:1,done:{}},lvl
           </button>
         </div>
       </div>
+
+
+      {/* ── RETENTION: STREAK + DAILY + RANK ── */}
+      <div style={{display:"flex",gap:10,marginBottom:20,flexWrap:"wrap"}}>
+
+        {/* 🔥 Streak */}
+        <div style={{minWidth:120,flex:1,background:"linear-gradient(135deg,rgba(124,58,237,0.12),rgba(79,70,229,0.08))",
+          border:"1px solid rgba(124,58,237,0.2)",borderRadius:14,padding:"14px 16px"}}>
+          <div style={{fontSize:22,lineHeight:1,marginBottom:2}}>
+            {(prog?.streak||0)>0?"🔥":"🌑"}
+          </div>
+          <div style={{fontSize:20,fontWeight:800,color:"#fff",lineHeight:1}}>
+            {prog?.streak||0} <span style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontWeight:400}}>days</span>
+          </div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",fontFamily:"var(--mo)",marginTop:2,letterSpacing:"0.08em"}}>
+            STREAK {(prog?.bestStreak||0)>0&&`· best ${prog.bestStreak}`}
+          </div>
+        </div>
+
+        {/* 📅 Daily Incident */}
+        {(()=>{
+          const dailyIds=["INC-2026-0441","INC-2026-0502","INC-2026-0521","INC-2026-0544","INC-2026-0561","INC-2026-0578","INC-2026-0591","INC-2026-0612","INC-2026-0634","INC-2026-0651"];
+          const allScens=Object.values(SCENARIOS);
+          const idx=Math.floor(Date.now()/86400000)%allScens.length;
+          const todayScen=allScens[idx]||allScens[0];
+          const done=prog?.done?.[todayScen?.incId];
+          return(
+            <div onClick={()=>!done&&nav("sim-"+todayScen?.id)}
+              style={{flex:2,minWidth:180,
+                background:done?"rgba(34,197,94,0.07)":"rgba(26,86,219,0.1)",
+                border:"1px solid "+(done?"rgba(34,197,94,0.2)":"rgba(26,86,219,0.25)"),
+                borderRadius:14,padding:"14px 16px",cursor:done?"default":"pointer",position:"relative",overflow:"hidden"}}>
+              {!done&&<div style={{position:"absolute",top:8,right:10,background:"rgba(251,191,36,0.15)",
+                border:"1px solid rgba(251,191,36,0.3)",borderRadius:100,padding:"2px 8px",
+                fontSize:9,fontWeight:700,color:"#fbbf24",fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>
+                +50 BONUS XP
+              </div>}
+              <div style={{fontSize:10,fontWeight:700,color:done?"#4ade80":"#60a5fa",
+                fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>
+                {done?"✓ TODAY DONE":"📅 TODAY'S INCIDENT"}
+              </div>
+              <div style={{fontSize:13,fontWeight:700,color:"#fff",lineHeight:1.3,marginBottom:3,paddingRight:done?0:60}}>
+                {todayScen?.title?.slice(0,55)||"Daily Investigation"}
+              </div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+                {done?"Come back tomorrow":"Solve it for bonus XP"}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 🏆 Rank */}
+        <div style={{minWidth:100,flex:1,background:"rgba(34,197,94,0.07)",
+          border:"1px solid rgba(34,197,94,0.15)",borderRadius:14,padding:"14px 16px"}}>
+          <div style={{fontSize:20,fontWeight:800,color:"#22c55e",lineHeight:1}}>
+            {prog?.rankPoints||0}
+          </div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",fontFamily:"var(--mo)",marginTop:2,letterSpacing:"0.08em"}}>
+            RANK PTS
+          </div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.2)",fontFamily:"var(--mo)",marginTop:2}}>
+            {prog?.totalSessions||0} sessions
+          </div>
+        </div>
+      </div>
+
+      {/* Badges */}
+      {(prog?.badges||[]).length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.25)",
+            fontFamily:"var(--mo)",letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>
+            Achievements Unlocked
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {(prog.badges).map(b=>{
+              const M={first_blood:{i:"🩸",l:"First Blood"},speed_demon:{i:"⚡",l:"Speed Demon"},
+                streak_3:{i:"🔥",l:"3-Day"},streak_7:{i:"🗓️",l:"Week Warrior"},
+                streak_30:{i:"💀",l:"Unstoppable"},india_defender:{i:"🇮🇳",l:"India"},
+                no_hints:{i:"🧠",l:"No Hints"},perfect_call:{i:"🎯",l:"Perfect"}};
+              const m=M[b]||{i:"🏅",l:b};
+              return(<div key={b} style={{display:"flex",alignItems:"center",gap:5,
+                background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",
+                borderRadius:100,padding:"4px 10px"}}>
+                <span style={{fontSize:13}}>{m.i}</span>
+                <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{m.l}</span>
+              </div>);
+            })}
+          </div>
+        </div>
+      )}
+
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
         {[["XP",prog.xp.toLocaleString(),"var(--ac)"],["Level",prog.level,"var(--ok)"],["Done",Object.keys(prog.done).length+"/"+allSims.length,"#7c3aed"],["Streak",(prog.streak||0)+"d","var(--warn)"]].map(([l,v,c])=>(
