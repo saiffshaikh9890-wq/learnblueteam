@@ -5164,22 +5164,22 @@ function Landing({nav=()=>{},appUser=null}) {
         <div style={{position:"absolute",width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle,rgba(124,58,237,0.1) 0%,transparent 70%)",top:"20%",right:"10%",pointerEvents:"none"}}/>
 
         {/* Floating threat cards */}
-        <div style={{position:"absolute",top:"15%",left:"5%",background:"rgba(26,86,219,0.1)",border:"1px solid rgba(26,86,219,0.3)",borderRadius:8,padding:"8px 12px",animation:"float1 6s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
+        <div className="float-card" style={{position:"absolute",top:"15%",left:"5%",background:"rgba(26,86,219,0.1)",border:"1px solid rgba(26,86,219,0.3)",borderRadius:8,padding:"8px 12px",animation:"float1 6s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
           <div style={{fontSize:9,color:"#60a5fa",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>SIEM ALERT</div>
           <div style={{fontSize:11,color:"#dc2626",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>C2_BEACON · CRITICAL</div>
         </div>
 
-        <div style={{position:"absolute",top:"25%",right:"5%",background:"rgba(220,38,38,0.08)",border:"1px solid rgba(220,38,38,0.25)",borderRadius:8,padding:"8px 12px",animation:"float2 8s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
+        <div className="float-card" style={{position:"absolute",top:"25%",right:"5%",background:"rgba(220,38,38,0.08)",border:"1px solid rgba(220,38,38,0.25)",borderRadius:8,padding:"8px 12px",animation:"float2 8s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
           <div style={{fontSize:9,color:"#f87171",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>EDR PROCESS</div>
           <div style={{fontSize:11,color:"#fca5a5",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>WINWORD→cmd.exe</div>
         </div>
 
-        <div style={{position:"absolute",bottom:"25%",left:"4%",background:"rgba(124,58,237,0.08)",border:"1px solid rgba(124,58,237,0.25)",borderRadius:8,padding:"8px 12px",animation:"float3 7s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
+        <div className="float-card" style={{position:"absolute",bottom:"25%",left:"4%",background:"rgba(124,58,237,0.08)",border:"1px solid rgba(124,58,237,0.25)",borderRadius:8,padding:"8px 12px",animation:"float3 7s ease-in-out infinite",backdropFilter:"blur(8px)"}}>
           <div style={{fontSize:9,color:"#a78bfa",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>THREAT INTEL</div>
           <div style={{fontSize:11,color:"#c4b5fd",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>203.0.113.47 · 100/100</div>
         </div>
 
-        <div style={{position:"absolute",bottom:"30%",right:"4%",background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:8,padding:"8px 12px",animation:"float1 9s ease-in-out infinite reverse",backdropFilter:"blur(8px)"}}>
+        <div className="float-card" style={{position:"absolute",bottom:"30%",right:"4%",background:"rgba(34,197,94,0.06)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:8,padding:"8px 12px",animation:"float1 9s ease-in-out infinite reverse",backdropFilter:"blur(8px)"}}>
           <div style={{fontSize:9,color:"#4ade80",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em"}}>INCIDENT CLOSED</div>
           <div style={{fontSize:11,color:"#86efac",fontFamily:"'IBM Plex Mono',monospace",marginTop:2}}>Threat Contained ✓</div>
         </div>
@@ -5217,6 +5217,8 @@ function Landing({nav=()=>{},appUser=null}) {
           @keyframes blink {
             0%,100%{opacity:1} 50%{opacity:0}
           }
+          .float-card{display:block}
+          @media(max-width:767px){.float-card{display:none!important}}
         `}</style>
 
         {/* Scanline effect */}
@@ -5277,7 +5279,27 @@ function Landing({nav=()=>{},appUser=null}) {
         <CyberCanvas/>
       </div>
 
-      {/* ── CAREER ROADMAP ── */}
+      
+      {/* ── INDIA STRIP ── */}
+      <div style={{background:"#0a0f1e",borderTop:"1px solid #1e2a4a",borderBottom:"1px solid #1e2a4a",padding:"14px 20px",overflowX:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:28,flexWrap:"wrap",maxWidth:700,margin:"0 auto"}}>
+          {[
+            {icon:"🇮🇳",text:"Built for India"},
+            {icon:"🛡️",text:"CERT-In Aligned"},
+            {icon:"🏦",text:"Payment fraud scenarios"},
+            {icon:"🔐",text:"Aadhaar-style breach scenarios"},
+            {icon:"☁️",text:"Cloud & SaaS incidents"},
+          ].map((item,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:7,flexShrink:0}}>
+              <span style={{fontSize:14}}>{item.icon}</span>
+              <span style={{fontSize:12,color:"rgba(255,255,255,0.45)",fontFamily:"var(--mo)",letterSpacing:"0.04em",whiteSpace:"nowrap"}}>{item.text}</span>
+              {i<4&&<span style={{color:"rgba(255,255,255,0.15)",fontSize:16,marginLeft:8}}>·</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+{/* ── CAREER ROADMAP ── */}
       <div style={{padding:"48px 20px",background:"#f7f8fa",borderBottom:"1px solid #e1e4ed"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Career Roadmap</div>
@@ -5396,13 +5418,40 @@ function Landing({nav=()=>{},appUser=null}) {
           </div>
         </div>
       </div>
+      {/* ── FAQ ── */}
+      <div style={{padding:"56px 20px",background:"#f7f8fa",borderTop:"1px solid #e1e4ed"}}>
+        <div style={{maxWidth:640,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:36}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#1a56db",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>FAQ</div>
+            <h2 style={{fontSize:"clamp(20px,4vw,28px)",fontWeight:800,color:"#111318"}}>Common questions</h2>
+          </div>
+          {[
+            {q:"Is this really free?",a:"Yes. All 10 investigations are completely free. No credit card, no hidden paywall. We are in beta and building our user base."},
+            {q:"Do I need prior experience?",a:"No. We have beginner investigations starting from Phishing Attack and False Positive PowerShell. If you know what a SIEM is, you can start today."},
+            {q:"Is this legal to use?",a:"Yes. All scenarios are fictional simulations. No real company, system, or data is involved. All IP addresses are from the RFC 5737 documentation range reserved for examples."},
+            {q:"Will this help me get a job?",a:"It helps you build demonstrable skills. We do not guarantee placement, but completing investigations gives you real scenarios to talk about in interviews."},
+            {q:"Is this relevant for India?",a:"Yes. We have India-specific scenarios including payment fraud, national ID data breach, and supply chain attacks targeting Indian infrastructure."},
+            {q:"How long does each investigation take?",a:"Beginner investigations take 15–25 minutes. Intermediate take 25–35 minutes. You can pause and resume at any point."},
+          ].map((faq,i)=>(
+            <details key={i} style={{borderBottom:"1px solid #e1e4ed",padding:"16px 0"}}>
+              <summary style={{fontSize:15,fontWeight:600,color:"#111318",cursor:"pointer",listStyle:"none",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                {faq.q}
+                <span style={{fontSize:18,color:"#1a56db",flexShrink:0,marginLeft:12}}>+</span>
+              </summary>
+              <p style={{fontSize:13,color:"#5a6272",lineHeight:1.7,marginTop:10,paddingRight:24}}>{faq.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+
+
       {/* ── CAREER ── */}
       <div style={{padding:"48px 20px",background:"#111318"}}>
         <div style={{maxWidth:760,margin:"0 auto",textAlign:"center"}}>
           <div style={{fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:"#3b82f6",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>For Your Career</div>
           <h2 style={{fontSize:"clamp(18px,4vw,26px)",fontWeight:800,color:"#f9fafb",marginBottom:8}}>The Skill Gap Costing You the Job</h2>
           <p style={{fontSize:14,color:"#6b7280",lineHeight:1.8,maxWidth:500,margin:"0 auto 28px"}}>Every cybersecurity job asks for hands-on experience. Every fresher has certificates and zero real experience. LearnThreatOps closes that gap.</p>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:28}}>{[{s:"4.7M",l:"unfilled cyber jobs",c:"#3b82f6"},{s:"60%",l:"of SOC work is alert triage",c:"#22c55e"},{s:"0",l:"platforms teaching real blue team",c:"#ef4444"}].map(x=>(<div key={x.s} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"18px",textAlign:"center"}}><div style={{fontSize:30,fontWeight:800,color:x.c,fontFamily:"var(--mo)",marginBottom:4}}>{x.s}</div><div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{x.l}</div></div>))}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:12,marginBottom:28}}>{[{s:"4.7M",l:"unfilled cyber jobs",c:"#3b82f6"},{s:"60%",l:"of SOC work is alert triage",c:"#22c55e"},{s:"10",l:"free India-specific investigations",c:"#22c55e"}].map(x=>(<div key={x.s} style={{background:"#1a1f2e",border:"1px solid #1f2937",borderRadius:10,padding:"18px",textAlign:"center"}}><div style={{fontSize:30,fontWeight:800,color:x.c,fontFamily:"var(--mo)",marginBottom:4}}>{x.s}</div><div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{x.l}</div></div>))}</div>
           <button onClick={()=>nav("signup")} style={{background:"#1a56db",color:"#fff",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer"}}>Start Building Real Experience</button>
         </div>
       </div>
