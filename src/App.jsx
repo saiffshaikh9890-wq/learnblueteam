@@ -343,11 +343,56 @@ function useSupabase() {
   };
 
   const finishSim = (id, score, grade, sec) => {
-    // Save under both INC id and scenario id for compatibility
     const INC_TO_SCENARIO = Object.fromEntries(Object.entries(SCENARIO_TO_INC).map(([k,v])=>[v,k]));
     const scenarioId = INC_TO_SCENARIO[id] || id;
     const entry = {score,grade,sec,at:Date.now()};
-    saveProg({...prog, done:{...prog.done, [id]:entry, [scenarioId]:entry}});
+
+    // ── STREAK LOGIC ────────────────────────────────────
+    const today = new Date().toDateString();
+    const lastDate = prog.streakLastDate;
+    const yesterday = new Date(Date.now()-86400000).toDateString();
+    let newStreak = prog.streak||0;
+    if(lastDate === today) {
+      // Already played today — keep streak
+    } else if(lastDate === yesterday) {
+      newStreak = newStreak + 1;  // Continued streak
+    } else {
+      newStreak = 1;  // Reset streak
+    }
+    const bestStreak = Math.max(prog.bestStreak||0, newStreak);
+
+    // ── RANK POINTS (faster = more points) ────────────────
+    const gradePoints = {S:100,A:80,B:60,C:40,D:20}[grade]||40;
+    const speedBonus = Math.max(0, 100 - Math.floor(sec/60)*10);
+    const rankGain = gradePoints + speedBonus;
+
+    // ── ACHIEVEMENTS CHECK ──────────────────────────────
+    const newBadges = [...(prog.badges||[])];
+    if(!newBadges.includes('first_blood')) newBadges.push('first_blood');
+    if(sec < 360 && !newBadges.includes('speed_demon')) newBadges.push('speed_demon');
+    const allDone = Object.keys({...prog.done,[id]:entry,[scenarioId]:entry});
+    const indiaIds = ['INC-2026-0441','INC-2026-0612','payment-fraud','nationalid-breach'];
+    if(indiaIds.every(i=>allDone.includes(i)) && !newBadges.includes('india_defender')) newBadges.push('india_defender');
+    if(newStreak>=3 && !newBadges.includes('streak_3')) newBadges.push('streak_3');
+    if(newStreak>=7 && !newBadges.includes('streak_7')) newBadges.push('streak_7');
+    if(newStreak>=30 && !newBadges.includes('streak_30')) newBadges.push('streak_30');
+
+    // ── RUN COUNTER (for replay) ─────────────────────────
+    const prevEntry = prog.done[id];
+    const runNum = prevEntry ? (prevEntry.runs||1)+1 : 1;
+    const finalEntry = {...entry, runs:runNum, rankGain};
+    const bestEntry = (!prevEntry||score>=(prevEntry.score||0)) ? finalEntry : {...prevEntry, runs:runNum};
+
+    saveProg({
+      ...prog,
+      done:{...prog.done,[id]:bestEntry,[scenarioId]:bestEntry},
+      streak:newStreak,
+      bestStreak,
+      streakLastDate:today,
+      badges:newBadges,
+      rankPoints:(prog.rankPoints||0)+rankGain,
+      totalSessions:(prog.totalSessions||0)+1,
+    });
   };
 
   const submitFeedback = async (incId, rating, difficulty, recommend, comment) => {
