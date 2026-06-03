@@ -738,7 +738,7 @@ const INCIDENTS = {
     },
 
     {
-      id:3,phase:"INVESTIGATION",xp:30,
+      id:2,phase:"INVESTIGATION",xp:30,
       tool:"LearnThreatOpsEDR",toolIcon:"🖥",toolAnalogy:"like CCTV inside the computer",
       title:"Read the Process Tree",
       objective:"Switch to LearnThreatOpsEDR. Look at the process tree for WS-CORP-FIN-044. It shows every program that ran and what started it. Think: does this chain make sense for a normal Finance workstation?",
@@ -760,7 +760,7 @@ const INCIDENTS = {
       action_result:"Kill chain confirmed:\nT1566.001 — Phishing macro document\nT1059.001 — PowerShell -Enc (AMSI bypass)\nT1071.001 — svchost32.exe beaconing 203.0.113.47\nT1003.001 — LSASS GrantedAccess=0x1fffff\nT1547.001 — Registry Run key persistence\nT1021.002 — SMB lateral attempt (blocked)",
     },
     {
-      id:2,phase:"INVESTIGATION",xp:20,
+      id:3,phase:"INVESTIGATION",xp:20,
       tool:"ThreatLens",toolIcon:"🔍",toolAnalogy:"like a criminal database for IPs and files",
       title:"Check the IOCs",
       objective:"You have 3 suspicious indicators. Look each one up in ThreatLens. Check the raw scores FIRST — form your own verdict before reading the tool's conclusion. This is how real analysts build judgment.",
