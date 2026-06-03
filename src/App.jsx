@@ -4279,7 +4279,7 @@ function DecisionQuestion({step,onDecide}) {
             else if(revealed&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
             return(
               <div key={i}>
-                <button onClick={()=>choose(i)} style={{width:"100%",background:bg,border:"1px solid "+border,borderRadius:9,padding:"11px 13px",cursor:chosen!==null?"default":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s"}}>
+                <button onClick={()=>choose(i)} onTouchEnd={(e)=>{e.preventDefault();choose(i);}} style={{width:"100%",background:bg,border:"1px solid "+border,borderRadius:9,padding:"11px 13px",cursor:chosen!==null?"default":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s",touchAction:"manipulation",WebkitTapHighlightColor:"transparent"}}>
                   <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:tc,flexShrink:0,background:"#fff"}}>
                     {revealed&&isChosen?(isCorrect?"✓":"✗"):String.fromCharCode(65+i)}
                   </div>
@@ -4433,11 +4433,12 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
 
   const handleBack=()=>{
     if(si>0){
-      // Remove last done step
-      setDone(d=>d.filter(i=>i!==si-1));
+      setDoneSteps(d=>d.filter(i=>i!==si-1));
       setSi(s=>s-1);
       setStatus("coach");
-      setActiveTool(toolMap[INC.steps[si-1]?.tool]||"siem");
+      setActiveTool(toolMap[inc.steps[si-1]?.tool]||"siem");
+    } else {
+      onBack();
     }
   };
 
@@ -5481,7 +5482,7 @@ function Landing({nav=()=>{},appUser=null}) {
           {"© 2026 LearnThreatOps"} &nbsp;·&nbsp; {"All scenarios are fictional"} &nbsp;·&nbsp;
           <span onClick={()=>nav("privacy")} style={{cursor:"pointer",color:"#3b82f6"}}>Privacy</span> &nbsp;·&nbsp;
           <span onClick={()=>nav("terms")} style={{cursor:"pointer",color:"#3b82f6"}}>Terms</span> &nbsp;·&nbsp;
-          <a href="mailto:support.learnthreatops@gmail.com" style={{color:"#3b82f6",textDecoration:"none"}}>Contact</a>
+          <span onClick={()=>nav("contact")} style={{cursor:"pointer",color:"#3b82f6",textDecoration:"none"}}>Contact</span>
         </div>
       </div>
 
