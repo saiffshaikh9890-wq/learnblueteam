@@ -4449,8 +4449,8 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
 
   const handleNext=()=>{
     if(si<inc.steps.length-1){
-      // Guest users: show signup prompt after step 1
-      if(isGuest && si===0){
+      // Guest users: show signup prompt after step 1 (now si===1 since step 0 is pure action)
+      if(isGuest && si===1){
         setShowGuestModal(true);
         return;
       }
