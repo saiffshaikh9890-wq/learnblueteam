@@ -2945,7 +2945,7 @@ function ActionOverlay({step, onConfirm, isRunning, isDone, xpBurst}) {
   return (
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:400,
       background:"linear-gradient(to top,rgba(8,10,16,0.98) 0%,rgba(8,10,16,0.7) 80%,transparent 100%)",
-      padding:"12px 16px 20px",pointerEvents:"none"}}>
+      padding:"12px 16px 20px"}}>
       <div style={{maxWidth:600,margin:"0 auto",pointerEvents:"all"}}>
 
         {/* Analyst note — what to look for */}
