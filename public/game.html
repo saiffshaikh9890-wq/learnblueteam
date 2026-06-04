@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>ANALYST — Defend the Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#020408;--bg2:#06090f;--bg3:#0a0e18;
+  --g:#00ff88;--gd:rgba(0,255,136,0.1);--gb:rgba(0,255,136,0.2);
+  --r:#ff2244;--rd:rgba(255,34,68,0.1);--rb:rgba(255,34,68,0.2);
+  --a:#ffaa00;--ad:rgba(255,170,0,0.08);
+  --b:#00aaff;--bd2:rgba(0,170,255,0.1);
+  --tx:rgba(255,255,255,0.9);--tx2:rgba(255,255,255,0.45);
+  --tx3:rgba(255,255,255,0.18);--tx4:rgba(255,255,255,0.06);
+  --bdr:rgba(255,255,255,0.08);
+  --mono:'Share Tech Mono',monospace;
+  --head:'Orbitron',sans-serif;
+}
+html,body{background:var(--bg);color:var(--tx);font-family:var(--mono);overflow:hidden;height:100dvh;width:100vw;touch-action:manipulation}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.09) 2px,rgba(0,0,0,0.09) 4px)}
+
+/* BOOT */
+#boot{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;z-index:100;transition:opacity .5s}
+.b-logo{font-family:var(--head);font-size:clamp(40px,10vw,72px);font-weight:900;letter-spacing:.2em;color:var(--g);text-shadow:0 0 40px rgba(0,255,136,0.35),0 0 80px rgba(0,255,136,0.12);margin-bottom:6px;animation:glitch 5s ease-in-out infinite}
+@keyframes glitch{0%,88%,100%{text-shadow:0 0 40px rgba(0,255,136,0.35)}89%{text-shadow:-3px 0 rgba(255,34,68,0.9),3px 0 rgba(0,170,255,0.8)}91%{text-shadow:2px 0 rgba(255,34,68,0.8),-2px 0 rgba(0,170,255,0.8)}93%{text-shadow:0 0 40px rgba(0,255,136,0.35)}}
+.b-sub{font-size:10px;letter-spacing:.28em;color:rgba(255,255,255,0.2);text-transform:uppercase;margin-bottom:36px}
+.b-log{width:100%;max-width:480px;font-size:11px;line-height:2;color:rgba(255,255,255,0.35);margin-bottom:28px;min-height:160px}
+.bl{opacity:0;transition:opacity .12s}.bl.in{opacity:1}.bl.dim{color:rgba(255,255,255,0.15)}
+.b-cur{color:var(--g);animation:cur 1s steps(1) infinite;font-size:13px;display:none}
+@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+.b-btn{display:none;padding:12px 36px;background:transparent;border:1px solid var(--g);color:var(--g);font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:16px;touch-action:manipulation}
+.b-btn:hover,.b-btn:active{background:var(--g);color:#000}
+
+/* GAME ROOT */
+#game{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
+#game.on{display:flex}
+
+/* HUD */
+.hud{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:1px solid var(--bdr);background:var(--bg2);flex-shrink:0;gap:8px}
+.hud-brand{font-family:var(--head);font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--g)}
+.hud-inc{font-size:9px;letter-spacing:.1em;color:var(--tx3)}
+.hud-r{display:flex;gap:14px;align-items:center}
+.hstat{text-align:center}
+.hstat-n{font-size:15px;font-weight:700;color:var(--g);line-height:1}
+.hstat-l{font-size:8px;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+
+/* ATK BAR */
+.atkbar{flex-shrink:0;padding:5px 14px 7px;background:var(--bg2);border-bottom:1px solid rgba(255,34,68,0.12)}
+.atk-top{display:flex;justify-content:space-between;font-size:9px;color:var(--r);margin-bottom:3px;letter-spacing:.08em}
+.atk-track{height:3px;background:rgba(255,34,68,0.1);border-radius:2px}
+.atk-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--r),#ff5566);transition:width 1s linear;box-shadow:0 0 6px rgba(255,34,68,0.3)}
+
+/* SCENE */
+.scene{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.sc-head{padding:8px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--bg2)}
+.sc-phase{font-size:8px;font-weight:700;letter-spacing:.16em;padding:2px 8px;border-radius:3px;flex-shrink:0}
+.ph-t{background:var(--rd);color:var(--r)}
+.ph-i{background:var(--bd2);color:var(--b)}
+.ph-c{background:var(--ad);color:var(--a)}
+.ph-cl{background:var(--gd);color:var(--g)}
+.sc-title{font-size:12px;font-weight:700;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 8px}
+.sc-num{font-size:9px;color:var(--tx3);flex-shrink:0}
+.sc-brief{padding:7px 14px;background:rgba(0,255,136,0.03);border-bottom:1px solid rgba(0,255,136,0.07);font-size:11px;line-height:1.5;color:var(--tx2);flex-shrink:0}
+.sc-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.sc-body::-webkit-scrollbar{width:2px}
+.sc-body::-webkit-scrollbar-thumb{background:var(--tx3)}
+.sc-foot{padding:8px 14px 14px;border-top:1px solid var(--bdr);flex-shrink:0;background:var(--bg2)}
+
+/* FLASH */
+.flash{position:fixed;inset:0;pointer-events:none;z-index:8000;opacity:0;transition:opacity .08s}
+.flash.r{background:rgba(255,34,68,0.14)}.flash.g{background:rgba(0,255,136,0.1)}.flash.on{opacity:1}
+
+/* EMAIL SCENE */
+.email-wrap{padding:10px}
+.inbox-hdr{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,255,136,0.4);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--bdr);display:flex;gap:8px;align-items:center}
+.unread-badge{background:var(--rd);color:var(--r);padding:1px 6px;border-radius:3px;font-size:9px}
+.email-card{border:1px solid var(--bdr);border-radius:7px;overflow:hidden;cursor:pointer;transition:border-color .2s}
+.email-card:hover,.email-card.open{border-color:rgba(0,255,136,0.25)}
+.email-prev{padding:11px 13px;background:var(--bg3);display:flex;gap:10px}
+.email-av{width:30px;height:30px;border-radius:50%;background:var(--rd);border:1px solid var(--rb);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.email-meta{flex:1;min-width:0}
+.email-from{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.sus{color:var(--r)}
+.email-subj{font-size:11px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
+.email-time{font-size:9px;color:var(--tx3)}
+.email-body-inner{padding:12px 13px;background:var(--bg2);border-top:1px solid var(--bdr);display:none}
+.email-card.open .email-body-inner{display:block}
+.ef{display:flex;gap:6px;margin-bottom:5px;font-size:10px}
+.ef-k{color:var(--tx3);flex-shrink:0;width:52px}
+.ef-v{color:var(--tx2)}
+.ef-v.s{color:var(--r)}
+.email-text{margin:10px 0;padding:10px;background:rgba(255,255,255,0.02);border-left:2px solid var(--bdr);border-radius:0 4px 4px 0;font-size:11px;color:rgba(255,255,255,0.45);line-height:1.7;white-space:pre-wrap;font-family:Georgia,serif}
+.attach-row{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid rgba(255,170,0,0.2);border-radius:5px;font-size:11px;color:var(--a);margin:4px 0;background:rgba(255,170,0,0.04)}
+.badge{display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;letter-spacing:.06em;margin-left:4px;text-transform:uppercase}
+.badge-warn{background:var(--ad);color:var(--a)}
+.badge-danger{background:var(--rd);color:var(--r)}
+.hdr-toggle{font-size:10px;color:var(--tx3);cursor:pointer;margin-top:8px;display:block;letter-spacing:.04em}
+.hdr-toggle:hover{color:var(--tx2)}
+.hdr-list{display:none;margin-top:6px;padding:8px;background:rgba(0,0,0,0.4);border-radius:4px;font-size:10px;line-height:1.9}
+.hdr-list.open{display:block}
+.hdr-bad{color:var(--r)}
+.tap-hint{font-size:11px;color:var(--tx3);text-align:center;margin-top:8px}
+
+/* SIEM SCENE */
+.siem-wrap{padding:10px;background:#000;min-height:100%}
+.siem-hdr{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,255,136,0.35);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.al{border-left:3px solid transparent;border:1px solid var(--bdr);border-radius:5px;margin-bottom:6px;cursor:pointer;transition:all .15s;overflow:hidden}
+.al:hover{border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.02)}
+.al.sel{border-color:rgba(0,255,136,0.35);background:rgba(0,255,136,0.04)}
+.al.crit{border-left:3px solid var(--r)}
+.al.high{border-left:3px solid var(--a)}
+.al-top{display:flex;gap:7px;align-items:center;padding:8px 10px}
+.al-sev{font-size:8px;font-weight:700;padding:2px 5px;border-radius:2px;letter-spacing:.06em;flex-shrink:0}
+.sev-CRITICAL{background:var(--rd);color:var(--r)}
+.sev-HIGH{background:var(--ad);color:var(--a)}
+.al-rule{font-size:11px;color:#fff;font-weight:700;flex:1}
+.al-time{font-size:9px;color:var(--tx3);flex-shrink:0}
+.al-pulse{width:5px;height:5px;border-radius:50%;background:var(--r);animation:pulse .7s steps(1) infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0}}
+.al-msg{font-size:10px;color:var(--tx2);padding:0 10px 8px}
+.al-det{padding:8px 10px;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.35);display:none}
+.al-det.open{display:block;animation:gin .2s ease}
+@keyframes gin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.al-row{display:flex;gap:6px;font-size:10px;margin-bottom:3px}
+.ar-k{color:var(--tx3);flex-shrink:0;width:65px}
+.ar-v{color:#fff}
+.ar-v.bad{color:var(--r)}
+
+/* EDR SCENE */
+.edr-wrap{padding:10px;background:#000;min-height:100%}
+.edr-hdr{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--b);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(0,170,255,0.15);display:flex;gap:8px;align-items:center}
+.edr-host{background:var(--bd2);color:var(--b);padding:2px 7px;border-radius:3px;font-size:9px}
+.proc{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:4px;border:1px solid transparent;margin-bottom:3px;cursor:pointer;transition:all .15s;font-size:11px}
+.proc:hover{border-color:var(--bdr);background:var(--tx4)}
+.proc.sel{border-color:rgba(0,170,255,0.3);background:var(--bd2)}
+.proc.suspicious{border-color:rgba(255,170,0,0.15);background:rgba(255,170,0,0.03)}
+.proc.suspicious .pname{color:var(--a)}
+.proc.malicious{border-color:rgba(255,34,68,0.2);background:var(--rd)}
+.proc.malicious .pname{color:var(--r)}
+.pindent{flex-shrink:0;color:var(--tx3)}
+.pname{flex:1;font-weight:600}
+.ppid{font-size:9px;color:var(--tx3)}
+.ptag{font-size:8px;padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:.06em;flex-shrink:0}
+.pt-sus{background:var(--ad);color:var(--a)}
+.pt-mal{background:var(--rd);color:var(--r)}
+.pdet{margin-bottom:5px;padding:8px;background:rgba(0,0,0,0.5);border:1px solid var(--bdr);border-radius:4px;font-size:10px;display:none;animation:gin .2s ease}
+.pdet.open{display:block}
+.pd-row{display:flex;gap:6px;margin-bottom:2px}
+.pd-k{color:var(--tx3);flex-shrink:0;width:70px}
+.pd-v{color:#fff}
+.pd-v.bad{color:var(--r)}
+.hash-wrap{margin-top:10px;padding:10px;border:1px solid var(--bdr);border-radius:6px;background:rgba(0,0,0,0.4)}
+.hw-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px}
+.hw-row{display:flex;gap:7px;margin-bottom:7px}
+.hw-inp{flex:1;background:rgba(255,255,255,0.03);border:1px solid var(--bdr);border-radius:3px;padding:7px 9px;color:var(--g);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .2s}
+.hw-inp:focus{border-color:var(--g)}
+.hw-btn{padding:7px 13px;background:var(--gd);border:1px solid var(--gb);color:var(--g);font-family:var(--mono);font-size:11px;cursor:pointer;border-radius:3px;transition:all .2s;touch-action:manipulation}
+.hw-btn:hover{background:rgba(0,255,136,0.15)}
+.hash-res{padding:9px;border-radius:4px;font-size:11px;line-height:1.7;animation:gin .3s ease}
+.hash-res.mal{background:var(--rd);border:1px solid var(--rb)}
+.hash-res.safe{background:var(--gd);border:1px solid var(--gb)}
+.hr-score{font-size:20px;font-weight:700;margin-bottom:3px}
+.hr-score.bad{color:var(--r);text-shadow:0 0 14px rgba(255,34,68,0.3)}
+.hr-score.ok{color:var(--g)}
+
+/* NETWORK SCENE */
+.net-wrap{padding:10px;background:#000;min-height:100%}
+.net-hdr{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--a);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,170,0,0.15)}
+.conn-card{border:1px solid rgba(255,34,68,0.25);border-radius:7px;overflow:hidden;margin-bottom:10px;background:rgba(255,34,68,0.03)}
+.conn-top{padding:8px 12px;background:rgba(255,34,68,0.07);border-bottom:1px solid rgba(255,34,68,0.1);display:flex;align-items:center;gap:8px}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:var(--r);animation:pulse .5s steps(1) infinite}
+.conn-dot.off{background:var(--g);animation:none;box-shadow:0 0 6px var(--g)}
+.conn-title{font-size:11px;color:#fff;font-weight:700;flex:1}
+.conn-body{padding:10px 12px}
+.conn-row{display:flex;gap:7px;margin-bottom:5px;font-size:10px}
+.ck{color:var(--tx3);flex-shrink:0;width:70px}
+.cv{color:#fff}
+.cv.bad{color:var(--r)}
+.cv.ok{color:var(--g)}
+.conn-visual{display:flex;align-items:center;gap:8px;margin:10px 0;padding:10px;background:rgba(0,0,0,0.4);border-radius:5px;font-size:11px}
+.cv-node{flex:1;padding:7px;border-radius:4px;border:1px solid;text-align:center}
+.cv-node.inf{border-color:rgba(255,34,68,0.3);background:var(--rd)}
+.cv-node.ext{border-color:rgba(255,170,0,0.25);background:var(--ad)}
+.cv-lbl{font-size:8px;color:var(--tx3);margin-top:3px}
+.cv-arr{color:var(--r);font-size:14px;animation:arr 1s ease-in-out infinite;flex-shrink:0}
+.cv-arr.off{color:var(--g);animation:none}
+@keyframes arr{0%,100%{opacity:.3;transform:translateX(-3px)}50%{opacity:1;transform:translateX(3px)}}
+
+/* QUARANTINE SCENE */
+.quar-wrap{padding:10px;background:#000;min-height:100%}
+.q-path{font-size:10px;color:var(--tx3);margin-bottom:10px;padding:6px 9px;background:rgba(255,255,255,0.02);border-radius:3px;border:1px solid var(--bdr)}
+.q-path span{color:var(--g)}
+.frow{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:4px;border:1px solid transparent;margin-bottom:3px;cursor:pointer;transition:all .15s;font-size:11px}
+.frow:hover{border-color:var(--bdr);background:var(--tx4)}
+.frow.sel{border-color:rgba(255,34,68,0.3);background:var(--rd)}
+.frow.done{border-color:rgba(0,255,136,0.2);background:var(--gd);opacity:.6;cursor:default}
+.frow.done .fname{text-decoration:line-through;color:rgba(0,255,136,0.6)}
+.ficon{font-size:15px;flex-shrink:0}
+.fname{flex:1;color:#fff}
+.fsize{font-size:9px;color:var(--tx3)}
+.ftag{font-size:8px;padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:.06em;flex-shrink:0}
+.ftag-mal{background:var(--rd);color:var(--r)}
+.ftag-ok{background:var(--gd);color:var(--g)}
+.factions{padding:10px;border:1px solid var(--bdr);border-radius:6px;background:rgba(0,0,0,0.4);margin-top:8px;display:none;animation:gin .2s ease}
+.factions.open{display:block}
+.fa-title{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px}
+.fa-row{display:flex;gap:6px;font-size:10px;margin-bottom:3px}
+.fak{color:var(--tx3);flex-shrink:0;width:60px}
+.fav{color:#fff}
+.fav.bad{color:var(--r)}
+
+/* REPORT SCENE */
+.rep-wrap{padding:10px}
+.rep-sec{padding:10px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg3);margin-bottom:10px}
+.rep-sec-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bdr)}
+.rep-row{display:flex;gap:6px;font-size:10px;margin-bottom:5px}
+.rk{color:var(--tx3);flex-shrink:0;width:68px}
+.rv{color:#fff}
+.rv.bad{color:var(--r)}
+.rv.warn{color:var(--a)}
+.rv.ok{color:var(--g)}
+
+/* DECISION */
+.dec-wrap{padding:10px;background:rgba(0,10,20,0.95);border-top:1px solid rgba(0,170,255,0.12);animation:gin .3s ease}
+.dec-q{font-size:12px;color:#fff;line-height:1.5;margin-bottom:10px;font-weight:600}
+.dec-opts{display:flex;flex-direction:column;gap:5px}
+.dec-opt{display:flex;gap:8px;align-items:flex-start;padding:9px 10px;border:1px solid var(--bdr);border-radius:5px;cursor:pointer;transition:all .15s;font-size:11px;line-height:1.5;touch-action:manipulation}
+.dec-opt:hover{border-color:rgba(0,170,255,0.3);background:var(--bd2)}
+.dec-opt.cor{border-color:rgba(0,255,136,0.4);background:var(--gd);color:var(--g);cursor:default}
+.dec-opt.wr{border-color:rgba(255,34,68,0.3);background:var(--rd);color:rgba(255,120,120,0.9);cursor:default}
+.dec-opt.locked{cursor:default}
+.dec-key{width:18px;height:18px;border-radius:3px;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.dec-why{font-size:10px;color:rgba(255,255,255,0.45);margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,0.07);line-height:1.5;display:none}
+.dec-why.open{display:block}
+
+/* FEEDBACK */
+.fb{padding:9px 10px;border-radius:5px;font-size:11px;line-height:1.6;margin-top:8px;animation:gin .3s ease}
+.fb.cor{background:var(--gd);border:1px solid var(--gb);color:var(--g)}
+.fb.wr{background:var(--rd);border:1px solid var(--rb);color:rgba(255,120,120,0.9)}
+.fb strong{color:#fff}
+
+/* BUTTONS */
+.next-btn{width:100%;padding:12px;background:var(--gd);border:1px solid var(--gb);color:var(--g);font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all .2s;touch-action:manipulation;font-weight:700;margin-top:8px}
+.next-btn:hover,.next-btn:active{background:rgba(0,255,136,0.16)}
+.act-row{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
+.abtn{flex:1;min-width:88px;padding:11px 8px;border-radius:5px;font-family:var(--mono);font-size:10px;letter-spacing:.07em;cursor:pointer;transition:all .2s;border:1px solid;touch-action:manipulation;font-weight:700;text-align:center;text-transform:uppercase}
+.abtn.g{background:var(--gd);border-color:var(--gb);color:var(--g)}
+.abtn.g:hover{background:rgba(0,255,136,0.16)}
+.abtn.r{background:var(--rd);border-color:var(--rb);color:var(--r)}
+.abtn.r:hover{background:rgba(255,34,68,0.16)}
+.abtn.n{background:var(--tx4);border-color:var(--bdr);color:var(--tx2)}
+.abtn.n:hover{color:var(--tx);border-color:var(--tx3)}
+.abtn:disabled{opacity:.35;cursor:default}
+
+/* SCORE */
+#score{position:fixed;inset:0;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;z-index:9999}
+#score.on{display:flex}
+.sc-grade{font-family:var(--head);font-size:84px;font-weight:900;line-height:1;animation:gshow .5s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes gshow{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.gr-s{color:var(--g);text-shadow:0 0 50px rgba(0,255,136,0.4)}
+.gr-a{color:var(--b);text-shadow:0 0 50px rgba(0,170,255,0.4)}
+.gr-b{color:var(--a);text-shadow:0 0 36px rgba(255,170,0,0.3)}
+.gr-f{color:var(--r);text-shadow:0 0 50px rgba(255,34,68,0.4)}
+.sc-sub{font-family:var(--head);font-size:15px;letter-spacing:.1em;color:rgba(255,255,255,0.55);margin:10px 0 24px}
+.sc-stats{display:flex;border:1px solid var(--bdr);border-radius:7px;overflow:hidden;margin-bottom:24px;width:100%;max-width:320px}
+.ss{flex:1;padding:12px 8px;text-align:center;border-right:1px solid var(--bdr)}
+.ss:last-child{border:none}
+.ss-n{font-family:var(--head);font-size:20px;color:var(--g);font-weight:800;line-height:1;margin-bottom:3px}
+.ss-l{font-size:8px;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase}
+.sc-btns{display:flex;gap:9px;width:100%;max-width:320px;flex-wrap:wrap}
+.sc-b1{flex:1;min-width:110px;padding:11px;background:var(--g);color:#000;border:none;font-family:var(--mono);font-size:11px;letter-spacing:.12em;cursor:pointer;border-radius:4px;font-weight:700;touch-action:manipulation}
+.sc-b2{flex:1;min-width:110px;padding:11px;background:transparent;color:var(--tx2);border:1px solid var(--bdr);font-family:var(--mono);font-size:11px;letter-spacing:.1em;cursor:pointer;border-radius:4px;touch-action:manipulation}
+.sc-b2:hover{color:var(--tx);border-color:var(--tx3)}
+</style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<!-- BOOT -->
+<div id="boot">
+  <div class="b-logo">ANALYST</div>
+  <div class="b-sub">Blue Team · Incident Response</div>
+  <div class="b-log" id="blog"></div>
+  <span class="b-cur" id="bcur">_</span>
+  <button class="b-btn" id="bbtn" onclick="startGame()">Accept Shift →</button>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="hud">
+    <div>
+      <div class="hud-brand">ANALYST</div>
+      <div class="hud-inc" id="hud-inc">INC-2026-0441</div>
+    </div>
+    <div class="hud-r">
+      <div class="hstat"><div class="hstat-n" id="hud-time">00:00</div><div class="hstat-l">Time</div></div>
+      <div class="hstat"><div class="hstat-n" id="hud-xp">0</div><div class="hstat-l">XP</div></div>
+      <div class="hstat"><div class="hstat-n" id="hud-step">1/6</div><div class="hstat-l">Step</div></div>
+    </div>
+  </div>
+  <div class="atkbar">
+    <div class="atk-top"><span>⚠ ATTACKER PROGRESS</span><span id="atk-pct">0%</span></div>
+    <div class="atk-track"><div class="atk-fill" id="atk-fill" style="width:0%"></div></div>
+  </div>
+  <div class="scene" id="scene">
+    <div class="sc-head">
+      <div class="sc-phase ph-t" id="sc-phase">TRIAGE</div>
+      <div class="sc-title" id="sc-title">Loading...</div>
+      <div class="sc-num" id="sc-num">1/6</div>
+    </div>
+    <div class="sc-brief" id="sc-brief"></div>
+    <div class="sc-body" id="sc-body"></div>
+    <div class="sc-foot" id="sc-foot"></div>
+  </div>
+</div>
+
+<!-- SCORE -->
+<div id="score">
+  <div class="sc-grade" id="sc-grade">S</div>
+  <div class="sc-sub" id="sc-sub">INCIDENT CONTAINED</div>
+  <div class="sc-stats">
+    <div class="ss"><div class="ss-n" id="sc-time">—</div><div class="ss-l">Time</div></div>
+    <div class="ss"><div class="ss-n" id="sc-xp">—</div><div class="ss-l">XP</div></div>
+    <div class="ss"><div class="ss-n" id="sc-acc">—</div><div class="ss-l">Accuracy</div></div>
+  </div>
+  <div class="sc-btns">
+    <button class="sc-b1" onclick="replayGame()">REPLAY</button>
+    <button class="sc-b2" onclick="goBack()">DASHBOARD</button>
+  </div>
+</div>
+
+<script>
+const INC_ID = new URLSearchParams(location.search).get('inc') || 'INC-2026-0441';
+
+/* ── BOOT ── */
+const LINES = [
+  {t:'BLUETRACE SOC v4.2.1 — Initializing...'},
+  {t:'Threat intelligence feeds: CONNECTED'},
+  {t:'SIEM cluster: 847 events in queue'},
+  {t:'EDR agent: 24 endpoints monitored'},
+  {t:'ThreatLens: ONLINE'},
+  {t:'─────────────────────────────────',d:1},
+  {t:'NEW INCIDENT ASSIGNED TO YOUR QUEUE'},
+  {t:`ID: ${INC_ID} · Priority: P1 CRITICAL`},
+  {t:'SLA: 60 minutes remaining'},
+  {t:'─────────────────────────────────',d:1},
+];
+let bi=0;
+function bootStep(){
+  const el=document.getElementById('blog');
+  if(bi<LINES.length){
+    const d=document.createElement('div');
+    d.className='bl'+(LINES[bi].d?' dim':'');
+    d.textContent=LINES[bi].t;
+    el.appendChild(d);
+    setTimeout(()=>d.classList.add('in'),20);
+    bi++;
+    setTimeout(bootStep,80+Math.random()*60);
+  } else {
+    document.getElementById('bcur').style.display='inline';
+    setTimeout(()=>document.getElementById('bbtn').style.display='block',500);
+  }
+}
+setTimeout(bootStep,300);
+
+/* ── GAME STATE ── */
+const G={
+  si:0, xp:0, elapsed:0, atkProg:0,
+  correct:0, decisions:0,
+  emailOpen:false, hdrOpen:false,
+  selAlert:null, selProc:null,
+  hashVal:'a3f2b9d1e4c8f0a7', hashDone:false,
+  connBlocked:false,
+  selFile:null, quarantined:[],
+  decisionMade:false, chosenOpt:null,
+  atkTimer:null, elTimer:null,
+};
+
+/* ── SCENARIO ── */
+const S={
+  scenes:[
+    {id:'email',phase:'TRIAGE',phaseClass:'ph-t',xp:20,icon:'📧',
+     title:'Suspicious email in analyst inbox',
+     brief:'A finance analyst received this email 3 minutes ago. She has not opened it yet. Analyze it before she does — check the sender, headers, and attachment.',
+     decision:{q:'You inspected the email. What do you do?',opts:[
+       {t:'Report as phishing — suspicious domain, auth failures, macro attachment',c:true,w:'Correct. hdfc-bank-secure.net is not hdfc.com. DMARC and SPF both fail. The .docm is a macro-enabled delivery document. Report and block immediately.'},
+       {t:'Let it sit — wait to see if she opens it',c:false,w:'Wrong. Every minute a phishing email sits unblocked is a risk. Act now.'},
+       {t:'Forward to IT — not SOC responsibility',c:false,w:'Wrong. SOC is responsible for phishing response. Forwarding delays action.'},
+     ]}},
+    {id:'siem',phase:'TRIAGE',phaseClass:'ph-t',xp:20,icon:'🚨',
+     title:'SIEM fired — 4 alerts on same host',
+     brief:'She opened the attachment before you could block it. BlueTrace SIEM fired immediately. Read the alerts. Click the most critical one to open it.',
+     decision:{q:'You opened the C2 alert. Risk score 97/100. Two correlated rules on the same host at 08:17. Your classification?',opts:[
+       {t:'TRUE POSITIVE — Open incident and investigate immediately',c:true,w:'Correct. 97/100 with C2 beacon + LSASS credential theft on the same host = confirmed True Positive. Open it now.'},
+       {t:'FALSE POSITIVE — Probably a scanner, close it',c:false,w:'Wrong. Two correlated rules at 97/100 is not noise. C2 + credential theft together = active attacker.'},
+       {t:'Escalate — not enough information',c:false,w:'Wrong. You have a 97/100 risk score and two correlated rules. That is sufficient to classify.'},
+     ]}},
+    {id:'edr',phase:'INVESTIGATION',phaseClass:'ph-i',xp:25,icon:'🖥',
+     title:'Trace the kill chain in EDR',
+     brief:'Open the process tree on WS-CORP-FIN-044. Click each process to expand it. Find svchost32.exe, then run a hash lookup to confirm it is malicious.',
+     decision:{q:'You confirmed svchost32.exe is a Cobalt Strike beacon. Process chain: OUTLOOK→WINWORD→cmd→powershell→svchost32. What does this tell you?',opts:[
+       {t:'Phishing email with macro dropped a C2 implant',c:true,w:'Correct. OUTLOOK→WINWORD = email attachment. cmd/powershell = macro execution. svchost32.exe = Cobalt Strike beacon dropped by the macro.'},
+       {t:'Remote exploit against Microsoft Office',c:false,w:'Wrong. The chain starts at OUTLOOK meaning an email attachment triggered it. This is macro execution, not a remote exploit.'},
+       {t:'User deliberately installed malware',c:false,w:'Wrong. The process chain is automated macro execution from an email attachment. Not user-initiated.'},
+     ]}},
+    {id:'network',phase:'CONTAINMENT',phaseClass:'ph-c',xp:25,icon:'📡',
+     title:'Active C2 connection — act now',
+     brief:'svchost32.exe is beaconing to the attacker every 30 seconds. The connection is live right now. Choose your action carefully.',
+     decision:{q:'The machine is beaconing. Every 30 seconds credentials go to the attacker. What do you do?',opts:[
+       {t:'Network isolate — cut all external connections, preserve machine for forensics',c:true,w:'Best action. Isolation severs C2 immediately while keeping the machine accessible for forensic investigation. Shutdown destroys RAM evidence.'},
+       {t:'Block the C2 IP at the firewall only',c:false,w:'Insufficient. The attacker can pivot to a backup C2. The machine is still infected. Isolate the endpoint entirely.'},
+       {t:'Keep monitoring — collect more evidence first',c:false,w:'Wrong. Every 30 seconds more credentials are exfiltrated. On a confirmed C2 beacon you isolate immediately.'},
+     ]}},
+    {id:'quarantine',phase:'CONTAINMENT',phaseClass:'ph-c',xp:20,icon:'🗂',
+     title:'Find and quarantine the malware',
+     brief:'Machine is isolated. Now find the two malicious files in the Downloads folder. Select each one and quarantine it.',
+     decision:{q:'Both files quarantined. What should happen to prevent this recurring?',opts:[
+       {t:'Enable EDR prevention mode + block Office macros + block .docm at email gateway',c:true,w:'Correct. Three gaps to fix: EDR should have blocked powershell, macros should be disabled by policy, and .docm files should be blocked at the email gateway.'},
+       {t:'Change the affected user\'s password',c:false,w:'Necessary but not sufficient. The credentials were already dumped. The technical control gaps that allowed execution need fixing.'},
+       {t:'Reinstall Windows on the affected machine',c:false,w:'Overkill. Quarantine + eradication is sufficient. The real fix is the policy gaps.'},
+     ]}},
+    {id:'report',phase:'CLOSE',phaseClass:'ph-cl',xp:20,icon:'📋',
+     title:'Write the incident report',
+     brief:'Incident contained. Document it properly. Root cause is not just what happened — it is WHY the technical controls failed to stop it.',
+     decision:{q:'What is the ROOT CAUSE of this incident?',opts:[
+       {t:'EDR was in detect-only mode — prevention policy was not enforced',c:true,w:'Correct. If EDR was in PREVENT mode, powershell.exe dropping svchost32.exe would have been blocked automatically. This operational gap is the root cause.'},
+       {t:'The user opened a phishing email — human error',c:false,w:'That is the attack vector, not the root cause. Root cause is why the technical controls failed AFTER the user made a mistake.'},
+       {t:'Antivirus did not detect the malware',c:false,w:'Too vague. The specific failure: EDR prevention policy was off. Name the exact gap.'},
+     ]}},
+  ]
+};
+
+function startGame(){
+  document.getElementById('boot').style.opacity='0';
+  setTimeout(()=>{
+    document.getElementById('boot').style.display='none';
+    document.getElementById('game').classList.add('on');
+  },500);
+  G.atkTimer=setInterval(()=>{
+    G.atkProg=Math.min(100,G.atkProg+1);
+    document.getElementById('atk-fill').style.width=G.atkProg+'%';
+    document.getElementById('atk-pct').textContent=G.atkProg+'%';
+    if(G.atkProg>=100) endGame(false);
+  },10000);
+  G.elTimer=setInterval(()=>{
+    G.elapsed++;
+    const m=String(Math.floor(G.elapsed/60)).padStart(2,'0');
+    const s=String(G.elapsed%60).padStart(2,'0');
+    document.getElementById('hud-time').textContent=m+':'+s;
+  },1000);
+  loadScene(0);
+}
+
+function loadScene(idx){
+  G.si=idx;
+  const sc=S.scenes[idx];
+  // Reset state
+  G.emailOpen=G.hdrOpen=G.hashDone=G.connBlocked=false;
+  G.selAlert=G.selProc=G.selFile=null;
+  G.quarantined=[];
+  G.decisionMade=false;G.chosenOpt=null;
+
+  document.getElementById('hud-step').textContent=(idx+1)+'/'+S.scenes.length;
+  const phEl=document.getElementById('sc-phase');
+  phEl.className='sc-phase '+sc.phaseClass;
+  phEl.textContent=sc.phase;
+  document.getElementById('sc-title').textContent=sc.icon+' '+sc.title;
+  document.getElementById('sc-num').textContent=(idx+1)+'/'+S.scenes.length;
+  document.getElementById('sc-brief').textContent=sc.brief;
+  document.getElementById('sc-foot').innerHTML='';
+
+  const body=document.getElementById('sc-body');
+  body.innerHTML='';
+
+  if(sc.id==='email') renderEmail(body);
+  else if(sc.id==='siem') renderSIEM(body);
+  else if(sc.id==='edr') renderEDR(body);
+  else if(sc.id==='network') renderNetwork(body);
+  else if(sc.id==='quarantine') renderQuarantine(body);
+  else if(sc.id==='report') renderReport(body);
+}
+
+/* ── SCENE RENDERS ── */
+function renderEmail(b){
+  b.innerHTML=`
+  <div class="email-wrap">
+    <div class="inbox-hdr">📥 INBOX — priya.sharma@corp.in <span class="unread-badge">1 UNREAD</span></div>
+    <div class="email-card" id="ecard" onclick="openEmail()">
+      <div class="email-prev">
+        <div class="email-av">📧</div>
+        <div class="email-meta">
+          <div class="email-from">HDFC Bank Accounts &lt;<span class="sus">accounts@hdfc-bank-secure.net</span>&gt;</div>
+          <div class="email-subj">⚠ Urgent: Invoice payment required — Action needed</div>
+          <div class="email-time">Today 08:14 IST · 1 attachment</div>
+        </div>
+      </div>
+      <div class="email-body-inner" id="ebody">
+        <div class="ef"><span class="ef-k">From:</span><span class="ef-v s">accounts@hdfc-bank-secure.net <span class="badge badge-danger">SUSPICIOUS</span></span></div>
+        <div class="ef"><span class="ef-k">To:</span><span class="ef-v">priya.sharma@corp.in</span></div>
+        <div class="ef"><span class="ef-k">Reply-To:</span><span class="ef-v s">payments@hdfc-bank-secure.net <span class="badge badge-danger">≠ SENDER</span></span></div>
+        <div class="ef"><span class="ef-k">Subject:</span><span class="ef-v">⚠ Urgent: Invoice payment required</span></div>
+        <div class="email-text">Dear Priya,
+
+Please find the attached invoice for processing. This payment is overdue and requires your immediate approval before EOD.
+
+Kindly open the attached file and complete the verification steps.
+
+Regards,
+HDFC Bank Corporate Payments</div>
+        <div class="attach-row">📎 Invoice_Final.docm <span class="badge badge-warn">MACRO ENABLED</span> <span style="font-size:9px;color:rgba(255,255,255,0.2);margin-left:4px">124 KB</span></div>
+        <span class="hdr-toggle" onclick="event.stopPropagation();toggleHdr()">▸ View email headers</span>
+        <div class="hdr-list" id="hdr-list">
+          <div>Received-From: <span class="hdr-bad">mail.hdfc-bank-secure.net ← NOT hdfc.com</span></div>
+          <div>X-Originating-IP: <span class="hdr-bad">185.220.101.47 ← known threat actor</span></div>
+          <div>DMARC: <span class="hdr-bad">FAIL ← domain is spoofed</span></div>
+          <div>SPF: <span class="hdr-bad">FAIL ← not authorized sender</span></div>
+          <div style="color:var(--r);margin-top:4px">⚠ This email is NOT from HDFC Bank</div>
+        </div>
+        <div class="act-row" id="email-acts" style="margin-top:14px">
+          <button class="abtn g" onclick="event.stopPropagation();emailDecide(true)">🚨 Report Phishing</button>
+          <button class="abtn n" onclick="event.stopPropagation();emailDecide(false)">Let it sit</button>
+        </div>
+      </div>
+    </div>
+    <div class="tap-hint" id="etip">↑ Tap to open the email</div>
+  </div>`;
+}
+function openEmail(){
+  const c=document.getElementById('ecard');
+  c.classList.toggle('open');
+  if(!G.emailOpen){G.emailOpen=true;document.getElementById('etip').style.display='none';}
+}
+function toggleHdr(){
+  const h=document.getElementById('hdr-list');
+  h.classList.toggle('open');
+}
+function emailDecide(correct){
+  G.decisions++;
+  if(correct){G.correct++;gainXP(S.scenes[0].xp);flash('g');}
+  else{flash('r');G.atkProg=Math.min(100,G.atkProg+8);updateAtk();}
+  document.getElementById('email-acts').innerHTML=`<div class="fb ${correct?'cor':'wr'}">${correct?'✓ <strong>Correct.</strong>':'✗ <strong>Wrong.</strong>'} ${S.scenes[0].decision.opts[correct?0:1].w}</div>`;
+  G.decisionMade=true;G.chosenOpt=correct?0:1;
+  showNext();
+}
+
+function renderSIEM(b){
+  const alerts=[
+    {id:'BT-9901',sev:'CRITICAL',time:'08:17:04',rule:'OUTBOUND_C2_BEACON',msg:'svchost32.exe → 203.0.113.47:443 every 30s',key:true,
+     det:{'Risk Score':'97/100','Host':'WS-CORP-FIN-044','User':'priya.sharma@corp.in','Process':'svchost32.exe','Dest IP':'203.0.113.47:443','Interval':'30 seconds','Verdict':'C2 beacon — active attacker'}},
+    {id:'BT-9902',sev:'CRITICAL',time:'08:17:04',rule:'LSASS_MEMORY_ACCESS',msg:'GrantedAccess=0x1fffff on lsass.exe — credential theft',
+     det:{'Risk Score':'95/100','Target':'lsass.exe PID 688','Access':'0x1fffff (FULL READ)','Verdict':'Credential dumping tool'}},
+    {id:'BT-9903',sev:'HIGH',time:'08:17:09',rule:'SUSPICIOUS_PROCESS_CHAIN',msg:'WINWORD.EXE → cmd.exe → powershell.exe',
+     det:{'Chain':'WINWORD→cmd→powershell','Trigger':'Macro in Invoice_Final.docm','Verdict':'Macro execution chain'}},
+    {id:'BT-9904',sev:'HIGH',time:'08:18:12',rule:'DNS_QUERY_SPIKE',msg:'847 DNS queries/hr to cdn-update.net',
+     det:{'Domain':'cdn-update.net','Rate':'847/hr','Entropy':'4.8 (high)'}},
+  ];
+  b.innerHTML=`<div class="siem-wrap"><div class="siem-hdr">BlueTrace SIEM — ${INC_ID} — ${alerts.length} alerts</div><div id="alerts-wrap"></div></div>`;
+  const wrap=document.getElementById('alerts-wrap');
+  alerts.forEach((a,i)=>{
+    setTimeout(()=>{
+      const div=document.createElement('div');
+      div.className=`al ${a.sev==='CRITICAL'?'crit':'high'}`;
+      div.id='al-'+a.id;
+      div.innerHTML=`
+        <div class="al-top">
+          <span class="al-sev sev-${a.sev}">${a.sev}</span>
+          <span class="al-rule">${a.rule}</span>
+          <span class="al-time">${a.time}</span>
+          ${a.sev==='CRITICAL'?'<div class="al-pulse"></div>':''}
+        </div>
+        <div class="al-msg">${a.msg}</div>
+        <div class="al-det" id="ad-${a.id}">${Object.entries(a.det).map(([k,v])=>`<div class="al-row"><span class="ar-k">${k}</span><span class="ar-v${k==='Risk Score'||k==='Access'?' bad':''}">${v}</span></div>`).join('')}</div>`;
+      div.onclick=()=>selectAlert(a);
+      wrap.appendChild(div);
+    },i*280);
+  });
+}
+function selectAlert(a){
+  document.querySelectorAll('.al').forEach(x=>x.classList.remove('sel'));
+  document.querySelectorAll('.al-det').forEach(x=>x.classList.remove('open'));
+  document.getElementById('al-'+a.id).classList.add('sel');
+  document.getElementById('ad-'+a.id).classList.add('open');
+  flash('g');
+  if(a.key&&!G.decisionMade){
+    const foot=document.getElementById('sc-foot');
+    foot.innerHTML=`<div class="dec-wrap"><div class="dec-q">${S.scenes[1].decision.q}</div><div class="dec-opts" id="siem-opts">${S.scenes[1].decision.opts.map((o,i)=>`<div class="dec-opt" onclick="siemDecide(${i})" data-idx="${i}"><div class="dec-key">${String.fromCharCode(65+i)}</div><div>${o.t}</div></div>`).join('')}</div></div>`;
+  }
+}
+function siemDecide(i){
+  if(G.decisionMade)return;
+  const opt=S.scenes[1].decision.opts[i];
+  G.decisions++;G.decisionMade=true;G.chosenOpt=i;
+  if(opt.c){G.correct++;gainXP(S.scenes[1].xp);flash('g');}else{flash('r');G.atkProg=Math.min(100,G.atkProg+8);updateAtk();}
+  document.querySelectorAll('#siem-opts .dec-opt').forEach((el,idx)=>{
+    el.onclick=null;el.classList.add('locked');
+    if(idx===i)el.classList.add(opt.c?'cor':'wr');
+    if(S.scenes[1].decision.opts[idx].c&&idx!==i)el.classList.add('cor');
+    el.querySelector('div:last-child').innerHTML+=`<div class="dec-why${idx===i||S.scenes[1].decision.opts[idx].c?' open':''}">${S.scenes[1].decision.opts[idx].w}</div>`;
+  });
+  showNext();
+}
+
+function renderEDR(b){
+  const procs=[
+    {n:'explorer.exe',pid:1204,d:0,s:'normal',info:null},
+    {n:'OUTLOOK.EXE',pid:2241,d:1,s:'normal',info:{'Path':'C:\\Program Files\\Microsoft Office\\','Verdict':'Normal — email client'}},
+    {n:'WINWORD.EXE',pid:3847,d:2,s:'suspicious',info:{'Parent':'OUTLOOK.EXE','File':'Invoice_Final.docm','Flag':'Office app spawned from email attachment'}},
+    {n:'cmd.exe',pid:4102,d:3,s:'suspicious',info:{'Parent':'WINWORD.EXE','Flag':'⚠ Office should NOT spawn cmd.exe','Verdict':'Macro executing shell command'}},
+    {n:'powershell.exe',pid:4210,d:4,s:'malicious',info:{'Parent':'cmd.exe','Command':'-enc JABjAG0AZAAg... (encoded payload)','Verdict':'Downloading and executing C2 implant'}},
+    {n:'svchost32.exe',pid:4891,d:5,s:'malicious',info:{'Parent':'powershell.exe','Path':'C:\\Users\\priya\\Downloads\\','Hash':'a3f2b9d1e4c8f0a7','Flag':'FAKE — real svchost is in System32','Size':'48 KB','Verdict':'C2 IMPLANT — Cobalt Strike beacon'}},
+  ];
+  b.innerHTML=`<div class="edr-wrap"><div class="edr-hdr">LearnThreatOps EDR <span class="edr-host">WS-CORP-FIN-044</span></div><div id="ptree"></div><div id="hash-area" style="display:none" class="hash-wrap"><div class="hw-lbl">Hash Lookup — verify the file</div><div class="hw-row"><input class="hw-inp" id="hinp" value="a3f2b9d1e4c8f0a7"/><button class="hw-btn" onclick="doHash()">LOOKUP</button></div><div id="hres"></div></div></div>`;
+  const tree=document.getElementById('ptree');
+  procs.forEach(p=>{
+    const row=document.createElement('div');
+    row.className=`proc ${p.s}`;row.id='p'+p.pid;
+    row.innerHTML=`<div class="pindent" style="width:${p.d*16}px"></div>${p.d>0?'<span class="pindent" style="margin-right:4px">└─</span>':''}<span class="pname">${p.n}</span><span class="ppid">PID ${p.pid}</span>${p.s==='suspicious'?'<span class="ptag pt-sus">SUSPICIOUS</span>':p.s==='malicious'?'<span class="ptag pt-mal">MALICIOUS</span>':''}`;
+    row.onclick=()=>selectProc(p);
+    tree.appendChild(row);
+    const det=document.createElement('div');
+    det.className='pdet';det.id='pd'+p.pid;
+    if(p.info)det.innerHTML=Object.entries(p.info).map(([k,v])=>`<div class="pd-row"><span class="pd-k">${k}</span><span class="pd-v${k==='Verdict'&&v.includes('alicious')?' bad':''}">${v}</span></div>`).join('');
+    tree.appendChild(det);
+  });
+}
+function selectProc(p){
+  document.querySelectorAll('.proc').forEach(x=>x.classList.remove('sel'));
+  document.querySelectorAll('.pdet').forEach(x=>x.classList.remove('open'));
+  document.getElementById('p'+p.pid).classList.add('sel');
+  if(p.info)document.getElementById('pd'+p.pid).classList.add('open');
+  flash('g');
+  if(p.n==='svchost32.exe'){
+    document.getElementById('hash-area').style.display='block';
+    document.getElementById('hash-area').scrollIntoView({behavior:'smooth'});
+  }
+}
+function doHash(){
+  const v=document.getElementById('hinp').value.trim();
+  if(!v)return;
+  G.hashDone=true;flash('r');
+  document.getElementById('hres').innerHTML=`<div class="hash-res mal"><div class="hr-score bad">97/100 — MALICIOUS</div><div style="font-size:10px;color:var(--r);margin-bottom:5px">CobaltStrike.Beacon.4 · Confirmed C2 implant</div><div style="font-size:10px;color:rgba(255,255,255,0.45);line-height:1.7">Detections: 58/70 AV engines<br/>C2: 203.0.113.47:443<br/>First seen: 3 days ago</div></div>`;
+  if(!G.decisionMade){
+    const foot=document.getElementById('sc-foot');
+    foot.innerHTML=`<div class="dec-wrap"><div class="dec-q">${S.scenes[2].decision.q}</div><div class="dec-opts" id="edr-opts">${S.scenes[2].decision.opts.map((o,i)=>`<div class="dec-opt" onclick="edrDecide(${i})"><div class="dec-key">${String.fromCharCode(65+i)}</div><div>${o.t}</div></div>`).join('')}</div></div>`;
+  }
+}
+function edrDecide(i){
+  if(G.decisionMade)return;
+  const opt=S.scenes[2].decision.opts[i];
+  G.decisions++;G.decisionMade=true;G.chosenOpt=i;
+  if(opt.c){G.correct++;gainXP(S.scenes[2].xp);flash('g');}else{flash('r');}
+  document.querySelectorAll('#edr-opts .dec-opt').forEach((el,idx)=>{
+    el.onclick=null;el.classList.add('locked');
+    if(idx===i)el.classList.add(opt.c?'cor':'wr');
+    if(S.scenes[2].decision.opts[idx].c&&idx!==i)el.classList.add('cor');
+    el.querySelector('div:last-child').innerHTML+=`<div class="dec-why${idx===i||S.scenes[2].decision.opts[idx].c?' open':''}">${S.scenes[2].decision.opts[idx].w}</div>`;
+  });
+  showNext();
+}
+
+function renderNetwork(b){
+  b.innerHTML=`<div class="net-wrap">
+    <div class="net-hdr">⚡ ACTIVE CONNECTIONS — WS-CORP-FIN-044</div>
+    <div class="conn-card">
+      <div class="conn-top"><div class="conn-dot" id="cdot"></div><div class="conn-title" id="ctitle">ACTIVE C2 BEACON — svchost32.exe</div></div>
+      <div class="conn-body">
+        <div class="conn-row"><span class="ck">From</span><span class="cv">WS-CORP-FIN-044 (10.10.1.44)</span></div>
+        <div class="conn-row"><span class="ck">To</span><span class="cv bad">203.0.113.47:443</span></div>
+        <div class="conn-row"><span class="ck">Process</span><span class="cv bad">svchost32.exe (PID 4891)</span></div>
+        <div class="conn-row"><span class="ck">Protocol</span><span class="cv">HTTPS · TLS 1.3 · Encrypted</span></div>
+        <div class="conn-row"><span class="ck">Frequency</span><span class="cv bad">Every 30 seconds</span></div>
+        <div class="conn-row"><span class="ck">Threat score</span><span class="cv bad">100/100 · Cobalt Strike C2 · Tor exit</span></div>
+        <div class="conn-visual">
+          <div class="cv-node inf"><div>💻 WS-FIN-044</div><div class="cv-lbl">Compromised</div></div>
+          <div class="cv-arr" id="carr">→→→</div>
+          <div class="cv-node ext"><div>☠ 203.0.113.47</div><div class="cv-lbl">Attacker C2</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.6">Every 30 seconds the attacker receives updates. The longer you wait, the more damage occurs.</div>
+    <div class="act-row" id="net-acts">
+      <button class="abtn g" onclick="netDecide(0)">🔒 Isolate Machine</button>
+      <button class="abtn r" onclick="netDecide(1)">Block IP Only</button>
+      <button class="abtn n" onclick="netDecide(2)">Keep Monitoring</button>
+    </div>
+  </div>`;
+}
+function netDecide(i){
+  if(G.decisionMade)return;
+  const opt=S.scenes[3].decision.opts[i];
+  G.decisions++;G.decisionMade=true;G.chosenOpt=i;
+  document.querySelectorAll('#net-acts .abtn').forEach(b=>b.disabled=true);
+  if(opt.c){
+    G.correct++;gainXP(S.scenes[3].xp);flash('g');
+    document.getElementById('cdot').classList.add('off');
+    document.getElementById('ctitle').textContent='✓ MACHINE ISOLATED — C2 SEVERED';
+    document.getElementById('ctitle').style.color='var(--g)';
+    document.getElementById('carr').classList.add('off');
+    document.getElementById('carr').textContent='✗✗✗';
+    G.atkProg=Math.max(0,G.atkProg-20);updateAtk();
+  }else{flash('r');G.atkProg=Math.min(100,G.atkProg+10);updateAtk();}
+  const foot=document.getElementById('sc-foot');
+  foot.innerHTML=`<div class="fb ${opt.c?'cor':'wr'}">${opt.c?'✓ <strong>Correct.</strong>':'✗ <strong>Wrong.</strong>'} ${opt.w}</div><button class="next-btn" onclick="nextScene()">QUARANTINE FILES →</button>`;
+}
+
+function renderQuarantine(b){
+  const files=[
+    {n:'Invoice_Final.docm',icon:'📄',size:'124 KB',mal:true,info:{'Path':'C:\\Users\\priya\\Downloads\\','Hash':'f9e2a1b3d4c5e6f7','Verdict':'Malicious macro — initial infection vector'}},
+    {n:'report_Q3.xlsx',icon:'📊',size:'87 KB',mal:false,info:null},
+    {n:'svchost32.exe',icon:'⚙️',size:'48 KB',mal:true,info:{'Path':'C:\\Users\\priya\\Downloads\\','Hash':'a3f2b9d1e4c8f0a7','Verdict':'Cobalt Strike beacon — C2 implant'}},
+    {n:'profile_photo.png',icon:'🖼',size:'2.1 MB',mal:false,info:null},
+  ];
+  b.innerHTML=`<div class="quar-wrap"><div class="q-path">📁 <span>C:\\Users\\priya\\Downloads\\</span></div><div id="flist"></div><div class="factions" id="factions"><div class="fa-title" id="fa-title">File Details</div><div id="fa-info"></div><div class="act-row" id="fa-acts"></div></div></div>`;
+  const list=document.getElementById('flist');
+  files.forEach(f=>{
+    const row=document.createElement('div');
+    row.className='frow'+(f.mal?' sel':'');
+    row.id='fr-'+f.n.replace(/\./g,'-');
+    row.innerHTML=`<span class="ficon">${f.icon}</span><span class="fname">${f.n}</span><span class="fsize">${f.size}</span>${f.mal?'<span class="ftag ftag-mal">MALICIOUS</span>':''}`;
+    if(!f.mal)row.onclick=()=>{document.querySelectorAll('.frow:not(.done)').forEach(r=>r.classList.remove('sel'));row.classList.add('sel');document.getElementById('factions').classList.remove('open');};
+    else row.onclick=()=>selectFile(f);
+    list.appendChild(row);
+  });
+  // Pre-select svchost32
+  setTimeout(()=>selectFile(files[2]),300);
+}
+function selectFile(f){
+  document.querySelectorAll('.frow:not(.done)').forEach(r=>r.classList.remove('sel'));
+  const row=document.getElementById('fr-'+f.n.replace(/\./g,'-'));
+  if(row&&!row.classList.contains('done'))row.classList.add('sel');
+  const fa=document.getElementById('factions');
+  fa.classList.add('open');
+  document.getElementById('fa-title').textContent=f.n;
+  document.getElementById('fa-info').innerHTML=f.info?Object.entries(f.info).map(([k,v])=>`<div class="fa-row"><span class="fak">${k}</span><span class="fav${k==='Verdict'?' bad':''}">${v}</span></div>`).join(''):'<div style="font-size:11px;color:var(--tx3)">No threat indicators.</div>';
+  document.getElementById('fa-acts').innerHTML=f.mal?`<button class="abtn r" onclick="doQuar('${f.n}')">🔒 Quarantine</button><button class="abtn n" onclick="document.getElementById('factions').classList.remove('open')">Cancel</button>`:'<div style="font-size:11px;color:var(--tx3)">No action needed.</div>';
+}
+let quarDone=0;
+function doQuar(name){
+  G.quarantined.push(name);quarDone++;
+  flash('g');gainXP(10);
+  const row=document.getElementById('fr-'+name.replace(/\./g,'-'));
+  if(row){row.classList.remove('sel');row.classList.add('done');row.querySelector('.fname').style.textDecoration='line-through';}
+  document.getElementById('factions').classList.remove('open');
+  if(quarDone>=2&&!G.decisionMade){
+    const foot=document.getElementById('sc-foot');
+    foot.innerHTML=`<div class="dec-wrap"><div class="dec-q">${S.scenes[4].decision.q}</div><div class="dec-opts" id="qopts">${S.scenes[4].decision.opts.map((o,i)=>`<div class="dec-opt" onclick="quarDecide(${i})"><div class="dec-key">${String.fromCharCode(65+i)}</div><div>${o.t}</div></div>`).join('')}</div></div>`;
+  }
+}
+function quarDecide(i){
+  if(G.decisionMade)return;
+  const opt=S.scenes[4].decision.opts[i];
+  G.decisions++;G.decisionMade=true;G.chosenOpt=i;
+  if(opt.c){G.correct++;gainXP(S.scenes[4].xp);flash('g');}else flash('r');
+  document.querySelectorAll('#qopts .dec-opt').forEach((el,idx)=>{
+    el.onclick=null;el.classList.add('locked');
+    if(idx===i)el.classList.add(opt.c?'cor':'wr');
+    if(S.scenes[4].decision.opts[idx].c&&idx!==i)el.classList.add('cor');
+    el.querySelector('div:last-child').innerHTML+=`<div class="dec-why${idx===i||S.scenes[4].decision.opts[idx].c?' open':''}">${S.scenes[4].decision.opts[idx].w}</div>`;
+  });
+  showNext();
+}
+
+function renderReport(b){
+  const summary={'Incident ID':'INC-2026-0441','Classification':'TRUE POSITIVE','Severity':'P1 CRITICAL','Host':'WS-CORP-FIN-044','User':'priya.sharma@corp.in','Attack type':'Phishing + Cobalt Strike C2','Malware':'CobaltStrike.Beacon.4','C2':'203.0.113.47 (score 100/100)','Status':'CONTAINED'};
+  b.innerHTML=`<div class="rep-wrap">
+    <div class="rep-sec">
+      <div class="rep-sec-title">Incident Summary — Auto-populated</div>
+      ${Object.entries(summary).map(([k,v])=>`<div class="rep-row"><span class="rk">${k}</span><span class="rv${k==='Classification'||k==='Severity'||k==='Malware'||k==='C2'?' bad':k==='Status'?' ok':k==='Attack type'?' warn':''}">${v}</span></div>`).join('')}
+    </div>
+    <div class="rep-sec">
+      <div class="rep-sec-title">You fill in — Root Cause</div>
+      <div style="font-size:12px;color:#fff;margin-bottom:10px;line-height:1.5;font-weight:600">${S.scenes[5].decision.q}</div>
+      <div class="dec-opts" id="rep-opts">
+        ${S.scenes[5].decision.opts.map((o,i)=>`<div class="dec-opt" onclick="repDecide(${i})"><div class="dec-key">${String.fromCharCode(65+i)}</div><div>${o.t}</div></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function repDecide(i){
+  if(G.decisionMade)return;
+  const opt=S.scenes[5].decision.opts[i];
+  G.decisions++;G.decisionMade=true;G.chosenOpt=i;
+  if(opt.c){G.correct++;gainXP(S.scenes[5].xp);flash('g');}else flash('r');
+  document.querySelectorAll('#rep-opts .dec-opt').forEach((el,idx)=>{
+    el.onclick=null;el.classList.add('locked');
+    if(idx===i)el.classList.add(opt.c?'cor':'wr');
+    if(S.scenes[5].decision.opts[idx].c&&idx!==i)el.classList.add('cor');
+    el.querySelector('div:last-child').innerHTML+=`<div class="dec-why${idx===i||S.scenes[5].decision.opts[idx].c?' open':''}">${S.scenes[5].decision.opts[idx].w}</div>`;
+  });
+  showNext();
+}
+
+/* ── HELPERS ── */
+function gainXP(n){G.xp+=n;document.getElementById('hud-xp').textContent=G.xp;}
+function updateAtk(){document.getElementById('atk-fill').style.width=G.atkProg+'%';document.getElementById('atk-pct').textContent=G.atkProg+'%';}
+function flash(c){const f=document.getElementById('flash');f.className='flash '+c+' on';setTimeout(()=>f.className='flash',180);}
+function showNext(){
+  const foot=document.getElementById('sc-foot');
+  const nb=document.createElement('button');
+  nb.className='next-btn';nb.textContent=G.si<S.scenes.length-1?'NEXT →':'CLOSE INCIDENT →';
+  nb.style.touchAction='manipulation';
+  nb.onclick=nextScene;
+  foot.appendChild(nb);
+}
+function nextScene(){
+  if(G.si>=S.scenes.length-1){endGame(true);}
+  else{flash('g');loadScene(G.si+1);}
+}
+function endGame(success){
+  clearInterval(G.atkTimer);clearInterval(G.elTimer);
+  const pct=G.decisions>0?Math.round((G.correct/G.decisions)*100):80;
+  const grade=success?(pct>=90?'S':pct>=75?'A':pct>=60?'B':'C'):'F';
+  const gradeClass={S:'gr-s',A:'gr-a',B:'gr-b',C:'gr-b',F:'gr-f'}[grade];
+  document.getElementById('sc-grade').textContent=grade;
+  document.getElementById('sc-grade').className='sc-grade '+gradeClass;
+  document.getElementById('sc-sub').textContent=success?'INCIDENT CONTAINED':'DRILL FAILED';
+  const m=String(Math.floor(G.elapsed/60)).padStart(2,'0');
+  const s=String(G.elapsed%60).padStart(2,'0');
+  document.getElementById('sc-time').textContent=m+':'+s;
+  document.getElementById('sc-xp').textContent=G.xp;
+  document.getElementById('sc-acc').textContent=pct+'%';
+  // Save result to localStorage so dashboard can read it
+  try{localStorage.setItem('lbt_game_result',JSON.stringify({incId:INC_ID,xp:G.xp,grade,time:G.elapsed,pct,at:Date.now()}));}catch(e){}
+  setTimeout(()=>document.getElementById('score').classList.add('on'),300);
+}
+function replayGame(){
+  document.getElementById('score').classList.remove('on');
+  G.xp=0;G.elapsed=0;G.atkProg=0;G.correct=0;G.decisions=0;
+  document.getElementById('hud-xp').textContent='0';
+  document.getElementById('hud-time').textContent='00:00';
+  updateAtk();
+  clearInterval(G.atkTimer);clearInterval(G.elTimer);
+  G.atkTimer=setInterval(()=>{G.atkProg=Math.min(100,G.atkProg+1);updateAtk();if(G.atkProg>=100)endGame(false);},10000);
+  G.elTimer=setInterval(()=>{G.elapsed++;const m=String(Math.floor(G.elapsed/60)).padStart(2,'0');const s=String(G.elapsed%60).padStart(2,'0');document.getElementById('hud-time').textContent=m+':'+s;},1000);
+  loadScene(0);
+}
+function goBack(){
+  try{const r=JSON.parse(localStorage.getItem('lbt_game_result')||'{}');if(r.xp)localStorage.setItem('lbt_xp_pending',r.xp);}catch(e){}
+  location.href='/';
+}
+</script>
+</body>
+</html>
