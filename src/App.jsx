@@ -5969,6 +5969,42 @@ function AnalystProfile({prog, appUser, nav}) {
   );
 }
 
+function SimRedirect({simId, onBack}) {
+  const SCENARIO_INC_MAP = {
+    "phishing-c2":"INC-2026-0441",
+    "fp-powershell":"INC-2026-0502",
+    "impossible-travel":"INC-2026-0521",
+    "payment-fraud":"INC-2026-0544",
+    "usb-insider":"INC-2026-0561",
+    "dns-beacon":"INC-2026-0578",
+    "fp-pentest":"INC-2026-0591",
+    "bec-fraud":"INC-2026-0612",
+    "s3-exposure":"INC-2026-0634",
+    "fp-auth-storm":"INC-2026-0651",
+  };
+  const incId = SCENARIO_INC_MAP[simId] || "INC-2026-0441";
+  React.useEffect(()=>{
+    window.location.href = "/game.html?inc="+incId+"&back=true";
+  },[]);
+  return React.createElement("div",{style:{
+    position:"fixed",inset:0,background:"#020408",
+    display:"flex",flexDirection:"column",alignItems:"center",
+    justifyContent:"center",color:"rgba(0,255,136,0.7)",
+    fontFamily:"'Courier New',monospace",fontSize:13,
+    letterSpacing:"0.1em",gap:16
+  }},
+    React.createElement("div",{style:{fontSize:11,color:"rgba(255,255,255,0.2)"}},
+      "Loading investigation..."),
+    React.createElement("div",{
+      style:{animation:"spin 1s linear infinite",fontSize:20}
+    },"◌"),
+    React.createElement("style",null,
+      "@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}"
+    )
+  );
+}
+
+
 export default function App() {
   const [page,setPage]=useState("landing");
   const [simId,setSimId]=useState("phishing-c2");
@@ -6013,7 +6049,7 @@ export default function App() {
       )}
       {page==="inv-zero"     && <InvestigationZero onComplete={completeInvZero} addXP={addXP}/>}
       {page==="landing"      && <Landing nav={nav} appUser={user}/>}
-      {page==="sim"          && <SOCConsole incId={simId} prog={prog} addXP={addXP} finishSim={finishSim} onBack={()=>nav("dash")} nav={nav} isGuest={!user} submitFeedback={submitFeedback} analyst={{name:user?.name||"Analyst",tier:"SOC Analyst I",id:"ANLST-"+(user?.email?.slice(0,3).toUpperCase()||"047"),team:"Threat Ops Alpha"}}/>}
+      {page==="sim"          && <SimRedirect simId={simId} onBack={()=>nav("dash")}/>}
       {page==="dash"         && (user?<Dashboard nav={nav} appUser={user} prog={prog} lvlPct={lvlPct} logout={logout} invZeroDone={invZeroDone}/>:<AuthPage nav={nav} mode="signup" saveUser={saveUser}/>)}
       {page==="login"        && <AuthPage nav={nav} mode="login" login={login} signup={signup} authError={authError} loading={loading}/>}
       {page==="signup"       && <AuthPage nav={nav} mode="signup" login={login} signup={signup} authError={authError} loading={loading}/>}
