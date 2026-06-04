@@ -4504,7 +4504,6 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
 
   const handleNext=()=>{
     if(si<inc.steps.length-1){
-      // Guest users: show signup prompt after step 1 (now si===1 since step 0 is pure action)
       if(isGuest && si===1){
         setShowGuestModal(true);
         return;
@@ -4512,8 +4511,17 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
       setSi(s=>s+1);
       setStatus("coach");
     } else {
-      addXP(doneSteps.reduce((a,i)=>a+inc.steps[i].xp,0));
-      finishSim(inc.id,doneSteps.length*100,"A",elapsed);
+      // Add current step to done before finishing
+      const finalDone = doneSteps.includes(si) ? doneSteps : [...doneSteps, si];
+      const totalXP = finalDone.reduce((a,idx)=>{
+        const s = inc.steps[idx];
+        return a + (s?.xp||0);
+      }, 0);
+      const maxXP = inc.steps.reduce((a,s)=>a+(s?.xp||0),0);
+      const pct = maxXP>0 ? Math.round((totalXP/maxXP)*100) : 100;
+      const grade = pct>=95?"S":pct>=80?"A":pct>=65?"B":pct>=50?"C":"D";
+      addXP(totalXP);
+      finishSim(inc.id, totalXP, grade, elapsed);
       setShowScore(true);
     }
   };
