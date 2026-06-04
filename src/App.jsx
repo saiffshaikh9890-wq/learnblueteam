@@ -2975,7 +2975,6 @@ function ActionOverlay({step, onConfirm, isRunning, isDone, xpBurst}) {
         {/* Action button */}
         <button 
           onClick={isRunning?undefined:onConfirm}
-          onTouchEnd={isRunning?undefined:(e)=>{e.preventDefault();onConfirm && onConfirm();}}
           disabled={isRunning}
           style={{width:"100%",
             background:isDone?"#22c55e":isRunning?"#374151":pc,
@@ -4329,7 +4328,7 @@ function DecisionQuestion({step,onDecide}) {
             else if(revealed&&isCorrect){bg="#f0fdf4";border="#86efac";tc="#166534";}
             return(
               <div key={i}>
-                <button onClick={()=>choose(i)} onTouchEnd={(e)=>{e.preventDefault();choose(i);}} style={{width:"100%",background:bg,border:"1px solid "+border,borderRadius:9,padding:"11px 13px",cursor:chosen!==null?"default":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s",touchAction:"manipulation",WebkitTapHighlightColor:"transparent"}}>
+                <button onClick={()=>choose(i)} style={{width:"100%",background:bg,border:"1px solid "+border,borderRadius:9,padding:"11px 13px",cursor:chosen!==null?"default":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,transition:"all 0.15s",touchAction:"manipulation",WebkitTapHighlightColor:"transparent"}}>
                   <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:tc,flexShrink:0,background:"#fff"}}>
                     {revealed&&isChosen?(isCorrect?"✓":"✗"):String.fromCharCode(65+i)}
                   </div>
