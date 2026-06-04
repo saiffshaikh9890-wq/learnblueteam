@@ -3159,6 +3159,9 @@ const GAME_CSS = `
 </style>
 `;
 
+// Inject game styles immediately at module load
+(function(){if(!document.getElementById('game-styles')){const s=document.createElement('style');s.id='game-styles';s.textContent=GAME_CSS.replace(/<\/?style[^>]*>/g,'');document.head.appendChild(s);}})();
+
 /* ── GAME COMPONENT ─────────────────────────────────────────────────── */
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp,nav=()=>{},isGuest=false}) {
 
@@ -3202,10 +3205,6 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
   };
 
   React.useEffect(() => {
-    // Inject styles
-    if(!document.getElementById('game-styles')) {
-      document.head.insertAdjacentHTML('beforeend', GAME_CSS);
-    }
     // Timers
     atkRef.current = setInterval(() => {
       setAtkProg(p => {
@@ -3613,7 +3612,7 @@ function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=
           <div className="g-snum">{si+1}/{scenario.scenes.length}</div>
         </div>
         <div className="g-brief">
-          <div>{scene.brief.replace(/<strong>/g,'').replace(/<\/strong>/g,'')}</div>
+          <div>{scene.brief}</div>
         </div>
         <div className="g-body">{renderSceneBody()}</div>
 
