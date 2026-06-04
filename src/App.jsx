@@ -3160,7 +3160,7 @@ const GAME_CSS = `
 `;
 
 // Inject game styles immediately at module load
-(function(){if(!document.getElementById('game-styles')){const s=document.createElement('style');s.id='game-styles';s.textContent=GAME_CSS.replace(/<\/?style[^>]*>/g,'');document.head.appendChild(s);}})();
+(function(){if(!document.getElementById('game-styles')){const s=document.createElement('style');s.id='game-styles';s.textContent=GAME_CSS.replace('<style id="game-styles">','').replace('</style>','');document.head.appendChild(s);}})();
 
 /* ── GAME COMPONENT ─────────────────────────────────────────────────── */
 function SOCConsole({incId="INC-2026-0441",prog={xp:0,level:1,done:{}},addXP=()=>{},finishSim=()=>{},onBack=()=>{},submitFeedback=()=>{},analyst:analystProp,nav=()=>{},isGuest=false}) {
