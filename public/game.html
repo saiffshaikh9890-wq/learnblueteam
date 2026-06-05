@@ -1114,7 +1114,51 @@ function loadScene(idx){
 }
 
 // ── EMAIL ──
+
+function renderCustomEmail(b, sc){
+  const d=sc.emailData||{};
+  b.innerHTML=`<div class="email-wrap">
+    <div class="inbox-hdr">📥 INBOX — Analyst Queue <span class="unread-badge">1 UNREAD</span></div>
+    <div class="email-card open">
+      <div class="email-prev">
+        <div class="email-av">📧</div>
+        <div class="email-meta">
+          <div class="email-from"><span class="sus">${d.from||'unknown@suspicious.net'}</span></div>
+          <div class="email-subj">${d.subject||'Suspicious email'}</div>
+          <div class="email-time">Today · Received just now · Flagged by email gateway</div>
+        </div>
+      </div>
+      <div class="email-bdy" style="display:block">
+        <div class="ef"><span class="ef-k">From:</span><span class="ef-v s">${d.from||''}</span></div>
+        <div class="ef"><span class="ef-k">Subject:</span><span class="ef-v">${d.subject||''}</span></div>
+        <div class="email-text">${(d.body||'').replace(/</g,'&lt;')}</div>
+        ${d.iocs&&d.iocs.length?`<div class="ioc-panel"><div class="ioc-title">⚠ Threat Indicators</div>${d.iocs.map(i=>`<div class="ioc-item">${i}</div>`).join('')}</div>`:''}
+        <div class="act-row" id="email-acts" style="margin-top:16px">
+          ${sc.decision?sc.decision.opts.map((o,i)=>`<button class="abtn ${i===0?'g':'n'}" onclick="event.stopPropagation();customEmailDecide(${i})">${o.t.slice(0,35)}${o.t.length>35?'...':''}</button>`).join(''):''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function customEmailDecide(i){
+  if(G.decisionMade)return;
+  const opt=S.scenes[G.si].decision.opts[i];
+  G.decisions++;G.decisionMade=true;G.chosenOpt=i;
+  if(opt.c){G.correct++;gainXP(S.scenes[G.si].xp,'📧');flash('g');}
+  else{flash('r');G.atkProg=Math.min(100,G.atkProg+8);updateAtk();}
+  document.getElementById('email-acts').innerHTML=`<div class="fb ${opt.c?'cor':'wr'}">${opt.c?'✓ ':'✗ '}<strong>${opt.c?'Correct.':'Wrong.'}</strong> ${opt.w}</div>`;
+  showNext();
+}
+
 function renderEmail(b){
+  const sc=S.scenes[G.si];
+  // If scene has custom emailData, use it — otherwise use phishing defaults
+  if(sc.emailData){
+    renderCustomEmail(b,sc);
+    return;
+  }
+  // Default: phishing scenario hardcoded below
+
   b.innerHTML=`<div class="email-wrap">
     <div class="inbox-hdr">📥 INBOX — priya.sharma@corp.in <span class="unread-badge">1 UNREAD</span></div>
     <div class="email-card" id="ecard" onclick="openEmail()">
@@ -1189,17 +1233,10 @@ function emailDecide(correct){
 
 // ── SIEM ──
 function renderSIEM(b){
-  const alerts=[
-    {id:'BT-9901',sev:'CRITICAL',time:'08:17:04',rule:'OUTBOUND_C2_BEACON',msg:'svchost32.exe → 203.0.113.47:443 every 30 seconds',key:true,
-     det:{'Risk Score':'97/100','Host':'WS-CORP-FIN-044','User':'priya.sharma@corp.in','Process':'svchost32.exe','Destination':'203.0.113.47:443','Interval':'Every 30 seconds','Encrypted':'Yes — TLS 1.3','Verdict':'Active C2 beacon — attacker has remote access'}},
-    {id:'BT-9902',sev:'CRITICAL',time:'08:17:04',rule:'LSASS_MEMORY_ACCESS',msg:'GrantedAccess=0x1fffff on lsass.exe — credential theft active',
-     det:{'Risk Score':'95/100','Target':'lsass.exe (PID 688)','Access Level':'0x1fffff — FULL READ access','Verdict':'Credential dumping — Mimikatz or similar tool'}},
-    {id:'BT-9903',sev:'HIGH',time:'08:17:09',rule:'SUSPICIOUS_PROCESS_CHAIN',msg:'WINWORD.EXE spawned cmd.exe → powershell.exe — macro executed',
-     det:{'Parent Process':'WINWORD.EXE','Child Chain':'cmd.exe → powershell.exe','Trigger File':'Invoice_INV-2026-3847.docm','Verdict':'Macro execution chain — document weaponized'}},
-    {id:'BT-9904',sev:'HIGH',time:'08:18:12',rule:'DNS_QUERY_SPIKE',msg:'847 DNS queries/hour to cdn-update.net — possible DNS tunnelling',
-     det:{'Domain':'cdn-update.net','Query Rate':'847 per hour','Entropy Score':'4.8 (abnormally high)','Verdict':'DNS tunnelling suspected — data exfiltration channel'}},
-  ];
-  b.innerHTML=`<div class="siem-wrap"><div class="siem-hdr">BlueTrace SIEM — INC-2026-0441 — ${alerts.length} alerts fired · Tap to investigate</div><div id="alerts-wrap"></div></div>`;
+  const sc=S.scenes[G.si];
+  const alerts=(sc.siemData||sc.data||{alerts:[]}).alerts||[];
+  const incLabel=S.title||INC_ID;
+  b.innerHTML=`<div class="siem-wrap"><div class="siem-hdr">BlueTrace SIEM — ${incLabel} — ${alerts.length} alerts · Tap to investigate</div><div id="alerts-wrap"></div></div>`;
   const wrap=document.getElementById('alerts-wrap');
   alerts.forEach((a,i)=>{
     setTimeout(()=>{
@@ -1218,28 +1255,26 @@ function selectAlert(a){
   document.getElementById('ad-'+a.id).classList.add('open');
   flash('g');
   if(a.key&&!G.decisionMade){
-    document.getElementById('sc-foot').innerHTML=renderDecBlock(S.scenes[1].decision,'siemDec');
+    const sc=S.scenes[G.si];
+    document.getElementById('sc-foot').innerHTML=renderDecBlock(sc.decision,'siemDec');
   }
 }
-function siemDec(i){decideFn(i,1,'siemDec');}
+function siemDec(i){decideFn(i,G.si,'siemDec');}
 
 // ── EDR ──
 function renderEDR(b){
-  const procs=[
-    {n:'explorer.exe',pid:1204,d:0,s:'normal',info:null},
-    {n:'OUTLOOK.EXE',pid:2241,d:1,s:'normal',info:{'Path':'C:\\Program Files\\Microsoft Office\\','Verdict':'Normal — Microsoft Outlook (email client)'}},
-    {n:'WINWORD.EXE',pid:3847,d:2,s:'suspicious',info:{'Parent':'OUTLOOK.EXE','File Opened':'Invoice_INV-2026-3847.docm','Flag':'Office app spawned from email attachment — suspicious'}},
-    {n:'cmd.exe',pid:4102,d:3,s:'suspicious',info:{'Parent':'WINWORD.EXE','Command Line':'cmd.exe /c powershell.exe -enc ...','Flag':'⚠ Office applications should NEVER spawn cmd.exe','Verdict':'Macro executing shell commands'}},
-    {n:'powershell.exe',pid:4210,d:4,s:'malicious',info:{'Parent':'cmd.exe','Command':'-enc JABjAG0AZAAg... (base64 encoded)','Action':'Downloading and executing remote payload','Verdict':'Malicious — C2 implant loader'}},
-    {n:'svchost32.exe',pid:4891,d:5,s:'malicious',info:{'Parent':'powershell.exe','Path':'C:\\Users\\priya\\AppData\\Local\\Temp\\','Hash':'a3f2b9d1e4c8f0a7','Warning':'FAKE — real svchost.exe lives in C:\\Windows\\System32\\','Size':'48 KB','Verdict':'⚠ COBALT STRIKE BEACON — C2 implant'}},
-  ];
-  b.innerHTML=`<div class="edr-wrap"><div class="edr-hdr">LearnThreatOps EDR — Process Tree <span class="edr-host">WS-CORP-FIN-044</span></div><div id="ptree"></div><div id="hash-area" style="display:none" class="hash-wrap"><div class="hw-lbl">Hash Lookup — Verify this file against threat intelligence</div><div class="hw-row"><input class="hw-inp" id="hinp" value="a3f2b9d1e4c8f0a7" placeholder="Paste file hash here..."/><button class="hw-btn" onclick="doHash()">LOOKUP →</button></div><div id="hres"></div></div></div>`;
+  const sc=S.scenes[G.si];
+  const pd=sc.procData||sc.edr||{};
+  const procs=pd.procs||[];
+  const host=pd.host||'Endpoint';
+  const hashTarget=pd.hashTarget||{hash:'',score:0,family:'Unknown',detections:'N/A',c2:'N/A'};
+  b.innerHTML=`<div class="edr-wrap"><div class="edr-hdr">LearnThreatOps EDR — Process Tree <span class="edr-host">${host}</span></div><div id="ptree"></div><div id="hash-area" style="display:none" class="hash-wrap"><div class="hw-lbl">Hash Lookup — Verify this file against threat intelligence</div><div class="hw-row"><input class="hw-inp" id="hinp" value="${hashTarget.hash||''}" placeholder="Paste file hash here..."/><button class="hw-btn" onclick="doHash()">LOOKUP →</button></div><div id="hres"></div></div></div>`;
   const tree=document.getElementById('ptree');
   procs.forEach(p=>{
     const row=document.createElement('div');
     row.className=`proc ${p.s}`;row.id='p'+p.pid;
     row.innerHTML=`<div class="pindent" style="width:${p.d*18}px"></div>${p.d>0?'<span class="pindent" style="margin-right:5px;color:rgba(255,255,255,0.2)">└─</span>':''}<span class="pname">${p.n}</span><span class="ppid">PID ${p.pid}</span>${p.s==='suspicious'?'<span class="ptag pt-sus">SUSPICIOUS</span>':p.s==='malicious'?'<span class="ptag pt-mal">MALICIOUS</span>':''}`;
-    row.onclick=()=>selectProc(p);
+    row.onclick=()=>selectProc(p,hashTarget);
     tree.appendChild(row);
     const det=document.createElement('div');
     det.className='pdet';det.id='pd'+p.pid;
@@ -1247,82 +1282,52 @@ function renderEDR(b){
     tree.appendChild(det);
   });
 }
-function selectProc(p){
-  document.querySelectorAll('.proc').forEach(x=>x.classList.remove('sel'));
-  document.querySelectorAll('.pdet').forEach(x=>x.classList.remove('open'));
-  document.getElementById('p'+p.pid).classList.add('sel');
-  if(p.info)document.getElementById('pd'+p.pid).classList.add('open');
-  flash('g');
-  if(p.n==='svchost32.exe'){const ha=document.getElementById('hash-area');ha.style.display='block';ha.scrollIntoView({behavior:'smooth'});}
-}
-function doHash(){
-  const v=document.getElementById('hinp').value.trim();
-  if(!v)return;
-  G.hashDone=true;flash('r');
-  document.getElementById('hres').innerHTML=`<div class="hash-res mal"><div class="hr-score bad">97/100 — MALICIOUS</div><div style="font-size:13px;color:var(--r);margin-bottom:8px;font-weight:600">CobaltStrike.Beacon.4 · Confirmed C2 implant</div><div style="font-size:13px;color:rgba(255,120,120,0.7);line-height:1.8">Detections: 58/70 AV engines<br/>Family: Cobalt Strike<br/>C2 server: 203.0.113.47:443<br/>First seen: 3 days ago</div></div>`;
-  if(!G.decisionMade){document.getElementById('sc-foot').innerHTML=renderDecBlock(S.scenes[2].decision,'edrDec');}
-}
-function edrDec(i){decideFn(i,2,'edrDec');}
 
-// ── NETWORK ──
 function renderNetwork(b){
+  const sc=S.scenes[G.si];
+  const cd=sc.connData||{src:'Endpoint',dst:'C2 Server',status:'ACTIVE'};
+  const conn=sc.networkData||{
+    src:cd.src||'WS-CORP-FIN-044 (10.10.1.44)',
+    dst:cd.dst||'203.0.113.47:443',
+    process:'Malicious process',protocol:'HTTPS · TLS 1.3',
+    frequency:'Active',threatScore:'100/100',risk:'Attacker has access'
+  };
   b.innerHTML=`<div class="net-wrap">
-    <div class="net-hdr">⚡ ACTIVE CONNECTIONS — WS-CORP-FIN-044 — LIVE</div>
+    <div class="net-hdr">⚡ ACTIVE CONNECTIONS — ${conn.src||cd.src}</div>
     <div class="conn-card">
-      <div class="conn-top"><div class="conn-dot" id="cdot"></div><div class="conn-title" id="ctitle">C2 BEACON ACTIVE — svchost32.exe calling home</div></div>
+      <div class="conn-top"><div class="conn-dot" id="cdot"></div><div class="conn-title" id="ctitle">${cd.status||'ACTIVE'}</div></div>
       <div class="conn-body">
-        <div class="conn-row"><span class="ck">Source</span><span class="cv">WS-CORP-FIN-044 (10.10.1.44)</span></div>
-        <div class="conn-row"><span class="ck">Destination</span><span class="cv bad">203.0.113.47:443</span></div>
-        <div class="conn-row"><span class="ck">Process</span><span class="cv bad">svchost32.exe (PID 4891) — FAKE</span></div>
-        <div class="conn-row"><span class="ck">Protocol</span><span class="cv">HTTPS · TLS 1.3 · Encrypted</span></div>
-        <div class="conn-row"><span class="ck">Frequency</span><span class="cv bad">Every 30 seconds — active beaconing</span></div>
-        <div class="conn-row"><span class="ck">Threat</span><span class="cv bad">100/100 · Cobalt Strike C2 · Tor exit node</span></div>
-        <div class="conn-row"><span class="ck">Risk</span><span class="cv bad">Attacker has FULL remote access to this machine</span></div>
+        <div class="conn-row"><span class="ck">From</span><span class="cv">${conn.src||cd.src}</span></div>
+        <div class="conn-row"><span class="ck">To</span><span class="cv bad">${conn.dst||cd.dst}</span></div>
+        ${conn.process?`<div class="conn-row"><span class="ck">Process</span><span class="cv bad">${conn.process}</span></div>`:''}
+        ${conn.protocol?`<div class="conn-row"><span class="ck">Protocol</span><span class="cv">${conn.protocol}</span></div>`:''}
+        ${conn.frequency?`<div class="conn-row"><span class="ck">Frequency</span><span class="cv bad">${conn.frequency}</span></div>`:''}
+        ${conn.threatScore?`<div class="conn-row"><span class="ck">Threat</span><span class="cv bad">${conn.threatScore}</span></div>`:''}
+        ${conn.risk?`<div class="conn-row"><span class="ck">Risk</span><span class="cv bad">${conn.risk}</span></div>`:''}
         <div class="conn-visual">
-          <div class="cv-node inf"><div>💻 WS-FIN-044</div><div class="cv-lbl">Compromised Host</div></div>
+          <div class="cv-node inf"><div>💻 ${(conn.src||cd.src||'').split('(')[0].trim()}</div><div class="cv-lbl">Source</div></div>
           <div class="cv-arr" id="carr">→→→</div>
-          <div class="cv-node ext"><div>☠ 203.0.113.47</div><div class="cv-lbl">Attacker C2 Server</div></div>
+          <div class="cv-node ext"><div>⚠ ${(conn.dst||cd.dst||'').split(':')[0]}</div><div class="cv-lbl">Destination</div></div>
         </div>
       </div>
     </div>
-    <div style="font-size:13px;color:var(--tx2);margin-bottom:12px;line-height:1.65;padding:0 2px">Every 30 seconds this beacon fires, the attacker receives screenshots, keystrokes, and can issue commands. Each minute of delay = more damage.</div>
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:12px;line-height:1.65;padding:0 2px">${sc.brief||'Choose your action carefully.'}</div>
     <div class="act-row" id="net-acts">
-      <button class="abtn g" onclick="netDecide(0)">🔒 Isolate Machine</button>
-      <button class="abtn r" onclick="netDecide(1)">Block IP Only</button>
-      <button class="abtn n" onclick="netDecide(2)">Keep Monitoring</button>
+      ${sc.decision&&sc.decision.opts?sc.decision.opts.map((o,i)=>`<button class="abtn ${i===0?'g':i===1?'r':'n'}" onclick="netDecide(${i})">${o.t.slice(0,40)}${o.t.length>40?'...':''}</button>`).join(''):''}
     </div>
   </div>`;
 }
-function netDecide(i){
-  if(G.decisionMade)return;
-  const opt=S.scenes[3].decision.opts[i];
-  G.decisions++;G.decisionMade=true;G.chosenOpt=i;
-  document.querySelectorAll('#net-acts .abtn').forEach(b=>b.disabled=true);
-  if(opt.c){
-    G.correct++;gainXP(S.scenes[3].xp,'🔒');flash('g');
-    document.getElementById('cdot').classList.add('off');
-    document.getElementById('ctitle').textContent='✓ MACHINE ISOLATED — C2 SEVERED';
-    document.getElementById('ctitle').style.color='var(--g)';
-    document.getElementById('carr').classList.add('off');
-    document.getElementById('carr').textContent='✗✗✗';
-    G.atkProg=Math.max(0,G.atkProg-20);updateAtk();
-    document.getElementById('atk-msg').textContent='✓ Endpoint isolated — C2 beacon severed';
-    document.getElementById('atk-msg').style.color='rgba(0,255,136,0.6)';
-  }else{flash('r');G.atkProg=Math.min(100,G.atkProg+10);updateAtk();}
-  const foot=document.getElementById('sc-foot');
-  foot.innerHTML=`<div class="fb ${opt.c?'cor':'wr'}">${opt.c?'✓ ':'✗ '}<strong>${opt.c?'Correct.':'Wrong.'}</strong> ${opt.w}</div><button class="next-btn" onclick="nextScene()">QUARANTINE FILES →</button>`;
-}
 
-// ── QUARANTINE ──
 function renderQuarantine(b){
-  const files=[
-    {n:'Invoice_INV-2026-3847.docm',icon:'📄',size:'124 KB',mal:true,info:{'Path':'C:\\Users\\priya\\Downloads\\','Hash':'f9e2a1b3d4c5e6f7','Detection':'47/70 AV engines — malicious macro','Verdict':'Delivery document — initial infection vector'}},
-    {n:'report_Q3_2026.xlsx',icon:'📊',size:'87 KB',mal:false,info:null},
-    {n:'svchost32.exe',icon:'⚙️',size:'48 KB',mal:true,info:{'Path':'C:\\Users\\priya\\AppData\\Local\\Temp\\','Hash':'a3f2b9d1e4c8f0a7','Detection':'58/70 AV engines — Cobalt Strike','Verdict':'C2 implant — must quarantine immediately'}},
-    {n:'profile_photo.jpg',icon:'🖼',size:'2.1 MB',mal:false,info:null},
-    {n:'OneDriveSetup.exe',icon:'⚙️',size:'3.4 MB',mal:false,info:{'Path':'C:\\Users\\priya\\Downloads\\','Note':'Legitimate Microsoft installer — verified signature','Verdict':'CLEAN — do not quarantine'}},
+  const sc=S.scenes[G.si];
+  const qd=sc.quarantineData||sc.data||{};
+  const files=qd.files||[
+    {n:'malware.exe',icon:'⚙️',size:'48 KB',mal:true,info:{'Verdict':'Malicious — quarantine immediately'}},
+    {n:'document.docm',icon:'📄',size:'124 KB',mal:true,info:{'Verdict':'Malicious macro document'}},
+    {n:'notes.txt',icon:'📝',size:'2 KB',mal:false,info:null},
   ];
-  b.innerHTML=`<div class="quar-wrap"><div class="q-path">📁 <span>C:\\Users\\priya\\AppData\\Local\\Temp\\ + Downloads\\</span></div><div style="font-size:13px;color:var(--tx2);margin-bottom:12px;padding:0 2px">Tap each file to inspect it. Quarantine the malicious ones. Not all files here are malicious — check carefully.</div><div id="flist"></div><div class="factions" id="factions"><div class="fa-title" id="fa-title">File Details</div><div id="fa-info"></div><div class="act-row" id="fa-acts"></div></div></div>`;
+  const path=qd.path||'C:\\Users\\user\\Downloads\\';
+  b.innerHTML=`<div class="quar-wrap"><div class="q-path">📁 <span>${path}</span></div><div style="font-size:13px;color:var(--tx2);margin-bottom:12px;padding:0 2px">Tap each file to inspect it. Quarantine the malicious ones.</div><div id="flist"></div><div class="factions" id="factions"><div class="fa-title" id="fa-title">File Details</div><div id="fa-info"></div><div class="act-row" id="fa-acts"></div></div></div>`;
   const list=document.getElementById('flist');
   files.forEach(f=>{
     const row=document.createElement('div');
@@ -1332,45 +1337,30 @@ function renderQuarantine(b){
     row.onclick=()=>!row.classList.contains('done')&&selectFile(f);
     list.appendChild(row);
   });
-  setTimeout(()=>selectFile(files[2]),400);
+  const firstMal=files.find(f=>f.mal);
+  if(firstMal)setTimeout(()=>selectFile(firstMal),400);
 }
-function selectFile(f){
-  document.querySelectorAll('.frow:not(.done)').forEach(r=>r.classList.remove('sel'));
-  const row=document.getElementById('fr-'+f.n.replace(/[^a-z0-9]/gi,'-'));
-  if(row&&!row.classList.contains('done'))row.classList.add('sel');
-  const fa=document.getElementById('factions');
-  fa.classList.add('open');
-  document.getElementById('fa-title').textContent=f.n;
-  document.getElementById('fa-info').innerHTML=f.info?Object.entries(f.info).map(([k,v])=>`<div class="fa-row"><span class="fak">${k}</span><span class="fav${k==='Verdict'?' bad':''}">${v}</span></div>`).join(''):'<div style="font-size:13px;color:var(--tx3)">No threat indicators detected.</div>';
-  document.getElementById('fa-acts').innerHTML=f.mal?`<button class="abtn r" onclick="doQuar('${f.n}')">🔒 Quarantine This File</button><button class="abtn n" onclick="document.getElementById('factions').classList.remove('open')">Cancel</button>`:'<div style="font-size:13px;color:var(--tx3);margin-top:4px">No action needed — file is clean.</div>';
-}
-function doQuar(name){
-  G.quarantined.push(name);G.quarDone++;
-  flash('g');gainXP(10,'🔒');
-  const row=document.getElementById('fr-'+name.replace(/[^a-z0-9]/gi,'-'));
-  if(row){row.classList.remove('sel');row.classList.add('done');}
-  document.getElementById('factions').classList.remove('open');
-  if(G.quarDone>=2&&!G.decisionMade){
-    document.getElementById('sc-foot').innerHTML=renderDecBlock(S.scenes[4].decision,'quarDec');
-  }
-}
-function quarDec(i){decideFn(i,4,'quarDec');}
 
-// ── REPORT ──
 function renderReport(b){
-  const s={'Incident ID':'INC-2026-0441','Classification':'TRUE POSITIVE','Severity':'P1 CRITICAL','Affected Host':'WS-CORP-FIN-044','Affected User':'priya.sharma@corp.in','Attack Type':'Spear Phishing + Cobalt Strike C2','Initial Vector':'Macro-enabled document via email','Malware Family':'CobaltStrike.Beacon.4','C2 Server':'203.0.113.47 (score 100/100)','Credentials Dumped':'Yes — lsass.exe accessed','Status':'CONTAINED'};
+  const sc=S.scenes[G.si];
+  const rd=sc.reportData||sc.data||{};
+  const summary=rd.summary||rd||{"Incident ID":INC_ID,"Status":"Under Investigation"};
+  // Filter out non-display keys
+  const displaySummary=typeof summary==='object'&&!Array.isArray(summary)?summary:{};
+  const badKeys=["Incident ID","Classification","Severity","Malware","C2 Server","Malware Family","Credentials Dumped","Data Exfiltrated","Amount Lost","Records Exposed","Attacker IP","Dwell Time"];
   b.innerHTML=`<div class="rep-wrap">
-    <div class="rep-sec"><div class="rep-sec-title">Incident Summary — Auto-populated from investigation</div>${Object.entries(s).map(([k,v])=>`<div class="rep-row"><span class="rk">${k}</span><span class="rv${['Classification','Severity','Malware Family','C2 Server','Credentials Dumped'].includes(k)?' bad':k==='Status'?' ok':k.includes('Attack')||k.includes('Vector')?' warn':''}">${v}</span></div>`).join('')}</div>
+    <div class="rep-sec"><div class="rep-sec-title">Incident Summary — Auto-populated</div>${Object.entries(displaySummary).map(([k,v])=>`<div class="rep-row"><span class="rk">${k}</span><span class="rv${badKeys.includes(k)?' bad':k==='Status'?' ok':k.includes('Type')||k.includes('Attack')?' warn':''}">${v}</span></div>`).join('')}</div>
     <div class="rep-sec">
       <div class="rep-sec-title">You fill in — Root Cause Analysis</div>
-      <div style="font-size:14px;color:var(--tx);margin-bottom:14px;line-height:1.55;font-weight:700">${S.scenes[5].decision.q}</div>
-      <div class="dec-opts" id="rep-opts">${S.scenes[5].decision.opts.map((o,i)=>`<div class="dec-opt" onclick="repDec(${i})"><div class="dec-key">${String.fromCharCode(65+i)}</div><div class="dec-txt">${o.t}</div></div>`).join('')}</div>
+      <div style="font-size:14px;color:var(--tx);margin-bottom:14px;line-height:1.55;font-weight:700">${sc.decision?sc.decision.q:''}</div>
+      <div class="dec-opts" id="rep-opts">${sc.decision?sc.decision.opts.map((o,i)=>`<div class="dec-opt" onclick="repDec(${i})"><div class="dec-key">${String.fromCharCode(65+i)}</div><div class="dec-txt">${o.t}</div></div>`).join(''):'<div style="color:var(--tx3)">No questions for this scene.</div>'}</div>
     </div>
   </div>`;
 }
+
 function repDec(i){
   if(G.decisionMade)return;
-  const opt=S.scenes[5].decision.opts[i];
+  const opt=S.scenes[G.si].decision.opts[i];
   G.decisions++;G.decisionMade=true;G.chosenOpt=i;
   if(opt.c){G.correct++;gainXP(S.scenes[5].xp,'📋');flash('g');}else flash('r');
   document.querySelectorAll('#rep-opts .dec-opt').forEach((el,idx)=>{
