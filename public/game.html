@@ -698,7 +698,7 @@ Customer cannot withdraw. Contact lost.`,
      title:"Check exactly what was copied",
      brief:"Open DLP logs. See every file that was transferred to the USB. Confirm whether production credentials were included.",
      procData:{host:"WS-DEV-ANKIT-03",procs:[
-       {n:"File copy operation",pid:5501,d:0,s:"malicious",info:{"Operation":"xcopy /S /E D:\repos\ H:\","Source":"D:\repos\ (entire codebase)","Destination":"H:\ (USB drive)","Files copied":"312 source files","Time":"23:04:18"}},
+       {n:"File copy operation",pid:5501,d:0,s:"malicious",info:{"Operation":"xcopy /S /E D:/repos/ H:/","Source":"D:/repos/ (entire codebase)","Destination":"H:/ (USB drive)","Files copied":"312 source files","Time":"23:04:18"}},
        {n:"production.env",pid:5502,d:1,s:"malicious",info:{"File":"D:\repos\api-server\production.env","Contains":"DB_URL, STRIPE_SECRET_KEY, SENDGRID_API_KEY, JWT_SECRET","Risk":"Complete production compromise possible","Verdict":"Live production credentials — must rotate immediately"}},
        {n:"customers_export.csv",pid:5503,d:1,s:"malicious",info:{"File":"D:\reports\customers_export.csv","Contains":"14,832 customer records — name, email, phone, address","Risk":"PII data breach","Verdict":"Customer PII on unencrypted USB"}},
        {n:"git_history.tar",pid:5504,d:1,s:"suspicious",info:{"File":"D:\repos\git_history.tar","Contains":"Full git history including old credentials","Risk":"Historical credentials may be reused"}},
@@ -743,7 +743,7 @@ Customer cannot withdraw. Contact lost.`,
      brief:"BlueTrace SIEM just fired 47 PowerShell alerts on DC-01 in 3 minutes. At 10AM on a Monday. Read the alerts and correlate before escalating.",
      siemData:{alerts:[
        {id:"PS-001",sev:"HIGH",time:"10:02:14",rule:"POWERSHELL_SCRIPT_EXECUTION",msg:"powershell.exe -ExecutionPolicy Bypass running on DC-01",key:true,
-        det:{"Host":"DC-01 (Domain Controller)","User":"svc_backup@corp.internal","Script":"C:\Windows\System32\WindowsPowerShell\v1.0\","Count":"47 instances in 3 minutes","Risk Score":"72/100","Initiating user":"svc_backup — service account"}},
+        det:{"Host":"DC-01 (Domain Controller)","User":"svc_backup@corp.internal","Script":"C:/Windows/System32/WindowsPowerShell/v1.0/","Count":"47 instances in 3 minutes","Risk Score":"72/100","Initiating user":"svc_backup — service account"}},
        {id:"PS-002",sev:"HIGH",time:"10:02:16",rule:"SCHEDULED_TASK_MODIFICATION",msg:"Scheduled task 'Weekly_Patch_Check' modified by svc_backup",
         det:{"Task":"Weekly_Patch_Check","Modified by":"svc_backup","Action":"Updated script path for patch Tuesday","Change ticket":"CHG-2026-4421"}},
        {id:"PS-003",sev:"HIGH",time:"10:02:44",rule:"GROUP_POLICY_UPDATE",msg:"Group policy updated across 24 machines via DC-01",
@@ -988,7 +988,7 @@ CEO — Corp India`,
      procData:{host:"WS-RESEARCH-07",procs:[
        {n:"svchost.exe",pid:6601,d:0,s:"normal",info:{"Path":"C:\Windows\System32\svchost.exe","Hash":"matches known good","Verdict":"Legitimate system process"}},
        {n:"WmiPrvSE.exe",pid:6602,d:1,s:"suspicious",info:{"Spawned by":"svchost.exe (unusual)","DNS queries":"Yes — generating all anomalous queries","Hash":"differs from known good by 2 bytes","Verdict":"Trojanized WmiPrvSE — implant masquerading as WMI provider"}},
-       {n:"Research data access",pid:6603,d:1,s:"malicious",info:{"Files accessed":"D:\Research\Q4_Product_Roadmap.pdf, D:\Research\Patent_Applications\","Volume":"~180 MB over 14 days","Method":"Encoded in DNS subdomain labels and exfiltrated","Verdict":"Intellectual property theft"}},
+       {n:"Research data access",pid:6603,d:1,s:"malicious",info:{"Files accessed":"D:/Research/Q4_Product_Roadmap.pdf, D:/Research/Patent_Applications/","Volume":"~180 MB over 14 days","Method":"Encoded in DNS subdomain labels and exfiltrated","Verdict":"Intellectual property theft"}},
      ],hashTarget:{hash:"WmiPrvSE.exe:modified",score:94,family:"APT.DNSTunnel.Customized",detections:"31/70 AV engines (low — custom implant)",c2:"cdn-metrics.net (DNS tunneling)"}},
      decision:{q:"Trojanized WmiPrvSE.exe, 14-day dwell, research data exfiltrated via DNS. This is an APT. What is the containment priority?",opts:[
        {t:"Isolate the machine, sinkhole cdn-metrics.net, check if other hosts communicate with same domain",c:true,w:"Correct. Isolate to stop ongoing exfiltration. Sinkhole the C2 domain to detect other infected hosts. APTs often compromise multiple machines — check all hosts for the same DNS pattern."},
@@ -1059,8 +1059,7 @@ CEO — Corp India`,
 // ── SELECT SCENARIO BASED ON URL PARAM ──────────────────────────
 const S = ALL_SCENARIOS[INC_ID] || ALL_SCENARIOS["INC-2026-0441"];
 
-// ── OLD S DEFINITION (replaced) ─────────────────────────────────
-const _UNUSED_OLD_S={
+
 function startGame(){
   document.getElementById('boot').style.opacity='0';
   setTimeout(()=>{
