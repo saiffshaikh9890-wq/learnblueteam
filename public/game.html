@@ -377,6 +377,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;b
 </div>
 
 <script>
+
 const SUPA_URL = "https://gfprfirlffellsmpciwk.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcHJmaXJsZmZlbGxzbXBjaXdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNjQxODgsImV4cCI6MjA5NTY0MDE4OH0.f1QDkhLmSszWCvXF-HRMHNBUDIFAqceEw24nPHXZjIo";
 const INC_ID = new URLSearchParams(location.search).get('inc') || 'INC-2026-0441';
@@ -453,6 +454,47 @@ let lastMsgPct=0;
 // ── SCENARIO ──
 
 // ── ALL 10 SCENARIOS ─────────────────────────────────────────────
+const _d441={
+  siem:{alerts:[
+    {id:"BT-9901",sev:"CRITICAL",time:"08:17:04",rule:"OUTBOUND_C2_BEACON",
+     msg:"svchost32.exe beaconing to 203.0.113.47:443 every 30s",key:true,
+     det:{"Risk Score":"97/100","Host":"WS-CORP-FIN-044","User":"priya.sharma@corp.in",
+       "Process":"svchost32.exe (FAKE)","Destination":"203.0.113.47:443",
+       "Interval":"Every 30 seconds","Verdict":"Active C2 beacon"}},
+    {id:"BT-9902",sev:"CRITICAL",time:"08:17:04",rule:"LSASS_MEMORY_ACCESS",
+     msg:"GrantedAccess=0x1fffff on lsass.exe — credential theft",
+     det:{"Risk Score":"95/100","Target":"lsass.exe PID 688","Access":"0x1fffff FULL READ",
+       "Verdict":"Credential dumping active"}},
+    {id:"BT-9903",sev:"HIGH",time:"08:17:09",rule:"SUSPICIOUS_PROCESS_CHAIN",
+     msg:"WINWORD.EXE spawned cmd.exe then powershell.exe",
+     det:{"Chain":"WINWORD to cmd to powershell","File":"Invoice_INV-2026-3847.docm","Verdict":"Macro execution"}},
+    {id:"BT-9904",sev:"HIGH",time:"08:18:12",rule:"DNS_QUERY_SPIKE",
+     msg:"847 DNS queries/hr to cdn-update.net",
+     det:{"Domain":"cdn-update.net","Rate":"847/hr","Entropy":"4.8","Verdict":"DNS tunnelling"}},
+  ]},
+  edr:{host:"WS-CORP-FIN-044",procs:[
+    {n:"explorer.exe",pid:1204,d:0,s:"normal",info:null},
+    {n:"OUTLOOK.EXE",pid:2241,d:1,s:"normal",info:{"Path":"C:/Program Files/Office/","Verdict":"Normal email client"}},
+    {n:"WINWORD.EXE",pid:3847,d:2,s:"suspicious",info:{"Parent":"OUTLOOK.EXE","File":"Invoice_INV-2026-3847.docm","Flag":"Office app from email attachment"}},
+    {n:"cmd.exe",pid:4102,d:3,s:"suspicious",info:{"Parent":"WINWORD.EXE","Flag":"Office should NOT spawn cmd.exe","Verdict":"Macro shell command"}},
+    {n:"powershell.exe",pid:4210,d:4,s:"malicious",info:{"Parent":"cmd.exe","Command":"-enc JABjAG0AZAAg (encoded)","Verdict":"Downloading C2 implant"}},
+    {n:"svchost32.exe",pid:4891,d:5,s:"malicious",info:{"Parent":"powershell.exe","Path":"C:/Users/priya/AppData/","Hash":"a3f2b9d1e4c8f0a7","Warning":"FAKE svchost","Verdict":"COBALT STRIKE BEACON"}},
+  ],hashTarget:{hash:"a3f2b9d1e4c8f0a7",score:97,family:"CobaltStrike.Beacon.4",detections:"58/70 AV engines",c2:"203.0.113.47:443"}},
+  conn:{src:"WS-CORP-FIN-044 (10.10.1.44)",dst:"203.0.113.47:443",
+    process:"svchost32.exe PID 4891 FAKE",protocol:"HTTPS TLS 1.3",
+    frequency:"Every 30 seconds",threatScore:"100/100 Cobalt Strike C2",
+    risk:"Attacker has FULL remote access"},
+  quar:{path:"C:/Users/priya/Downloads/",files:[
+    {n:"Invoice_INV-2026-3847.docm",icon:"📄",size:"124 KB",mal:true,info:{"Hash":"f9e2a1b3d4c5e6f7","Detection":"47/70 AV engines","Verdict":"Malicious macro — infection vector"}},
+    {n:"report_Q3_2026.xlsx",icon:"📊",size:"87 KB",mal:false,info:null},
+    {n:"svchost32.exe",icon:"⚙️",size:"48 KB",mal:true,info:{"Hash":"a3f2b9d1e4c8f0a7","Detection":"58/70 AV engines","Verdict":"Cobalt Strike beacon — quarantine now"}},
+    {n:"profile_photo.jpg",icon:"🖼",size:"2.1 MB",mal:false,info:null},
+  ]},
+  report:{"Incident ID":"INC-2026-0441","Classification":"TRUE POSITIVE","Severity":"P1 CRITICAL",
+    "Host":"WS-CORP-FIN-044","User":"priya.sharma@corp.in","Attack Type":"Phishing + Cobalt Strike C2",
+    "Malware":"CobaltStrike.Beacon.4","C2 Server":"203.0.113.47","Credentials Dumped":"Yes","Status":"CONTAINED"},
+};
+
 const ALL_SCENARIOS={
 
 // ─────────────────────────────────────────────────────────────────
@@ -472,7 +514,7 @@ const ALL_SCENARIOS={
        {t:"Let it sit — wait to see if she opens it",c:false,w:"Wrong. Every minute a confirmed phishing email sits unblocked is a live threat. SOC acts, not waits."},
        {t:"Forward to IT — not SOC responsibility",c:false,w:"Wrong. Phishing response is a core SOC function."},
      ]}},
-    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"🚨",
+    {id:"siem",phase:"TRIAGE",siemData:_d441.siem,phaseClass:"ph-t",xp:20,icon:"🚨",
      title:"SIEM fired — 4 critical alerts",
      brief:"She opened the attachment before you blocked it. SIEM fired 4 alerts. Read each one. Click the most dangerous to investigate.",
      decision:{q:"C2 beacon alert: risk score 97/100, two correlated rules on same host at 08:17. Your classification?",opts:[
@@ -480,7 +522,7 @@ const ALL_SCENARIOS={
        {t:"FALSE POSITIVE — Probably an endpoint scanner",c:false,w:"Wrong. Two correlated rules at 97/100 is not a scanner. Act immediately."},
        {t:"Escalate to senior — not sure",c:false,w:"Wrong. 97/100 with two correlated rules is sufficient to classify."},
      ]}},
-    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:25,icon:"🖥",
+    {id:"edr",phase:"INVESTIGATION",procData:_d441.edr,phaseClass:"ph-i",xp:25,icon:"🖥",
      title:"Trace the kill chain in EDR",
      brief:"Open the process tree on WS-CORP-FIN-044. Click each process. Find svchost32.exe and hash it.",
      decision:{q:"Hash: 97/100 malicious, Cobalt Strike. Chain: OUTLOOK→WINWORD→cmd→powershell→svchost32. What does this mean?",opts:[
@@ -488,7 +530,7 @@ const ALL_SCENARIOS={
        {t:"Remote exploit against Microsoft Office vulnerability",c:false,w:"Wrong. The chain starts at OUTLOOK — email attachment triggered it. This is macro execution."},
        {t:"User deliberately installed the software",c:false,w:"Wrong. Fully automated macro chain from an email attachment."},
      ]}},
-    {id:"network",phase:"CONTAINMENT",phaseClass:"ph-c",xp:25,icon:"📡",
+    {id:"network",phase:"CONTAINMENT",phaseClass:"ph-c",xp:25,connData:_d441.conn,icon:"📡",
      title:"Active C2 connection — act now",
      brief:"svchost32.exe is beaconing to 203.0.113.47 every 30 seconds. Live right now. Choose your action.",
      decision:{q:"Machine is beaconing. Every 30 seconds more data goes to the attacker. What do you do?",opts:[
@@ -496,7 +538,7 @@ const ALL_SCENARIOS={
        {t:"Block the C2 IP at the firewall only",c:false,w:"Insufficient. Attacker can pivot to backup C2 in seconds. Isolate the endpoint entirely."},
        {t:"Keep monitoring — collect more evidence",c:false,w:"Wrong. Every 30 seconds more credentials are exfiltrated. Isolate immediately."},
      ]}},
-    {id:"quarantine",phase:"CONTAINMENT",phaseClass:"ph-c",xp:20,icon:"🗂",
+    {id:"quarantine",phase:"CONTAINMENT",quarantineData:_d441.quar,phaseClass:"ph-c",xp:20,icon:"🗂",
      title:"Find and quarantine the malware",
      brief:"Machine isolated. Find and quarantine the two malicious files in Downloads.",
      decision:{q:"Both files quarantined. What three changes prevent this next time?",opts:[
@@ -504,7 +546,7 @@ const ALL_SCENARIOS={
        {t:"Change the user password — that is sufficient",c:false,w:"Necessary but insufficient. Three technical control gaps need fixing."},
        {t:"Reinstall Windows on the machine",c:false,w:"Overkill. Quarantine and eradication is sufficient. Fix the policy gaps."},
      ]}},
-    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:20,icon:"📋",
+    {id:"report",phase:"CLOSE",reportData:_d441.report,phaseClass:"ph-cl",xp:20,icon:"📋",
      title:"Write the incident report",
      brief:"Document what happened AND why the controls failed.",
      decision:{q:"What is the ROOT CAUSE — why did technical controls fail?",opts:[
@@ -1524,18 +1566,7 @@ function confirmQuit(){
   `;
   document.body.appendChild(overlay);
 }
+
 </script>
 </body>
-</html>function doHash(){
-  const v=document.getElementById('hinp').value.trim();
-  if(!v)return;
-  G.hashDone=true;
-  const sc=S.scenes[G.si];
-  const pd=sc.procData||sc.edr||{};
-  const ht=pd.hashTarget||{score:97,family:'CobaltStrike.Beacon.4',detections:'58/70 AV engines',c2:'203.0.113.47:443'};
-  const isMal=ht.score>=70;
-  flash(isMal?'r':'g');
-  document.getElementById('hres').innerHTML=`<div class="hash-res ${isMal?'mal':'safe'}"><div class="hr-score ${isMal?'bad':'ok'}">${ht.score}/100 — ${isMal?'MALICIOUS':'CLEAN'}</div><div style="font-size:13px;color:${isMal?'var(--r)':'var(--g)'};margin-bottom:8px;font-weight:600">${ht.family}</div><div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.8">Detections: ${ht.detections}<br/>C2/Notes: ${ht.c2}</div></div>`;
-  if(!G.decisionMade){document.getElementById('sc-foot').innerHTML=renderDecBlock(sc.decision,'edrDec');}
-}
-
+</html>
