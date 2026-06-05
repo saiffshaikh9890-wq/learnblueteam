@@ -1527,4 +1527,16 @@ function confirmQuit(){
 }
 </script>
 </body>
-</html>
+</html>function doHash(){
+  const v=document.getElementById('hinp').value.trim();
+  if(!v)return;
+  G.hashDone=true;
+  const sc=S.scenes[G.si];
+  const pd=sc.procData||sc.edr||{};
+  const ht=pd.hashTarget||{score:97,family:'CobaltStrike.Beacon.4',detections:'58/70 AV engines',c2:'203.0.113.47:443'};
+  const isMal=ht.score>=70;
+  flash(isMal?'r':'g');
+  document.getElementById('hres').innerHTML=`<div class="hash-res ${isMal?'mal':'safe'}"><div class="hr-score ${isMal?'bad':'ok'}">${ht.score}/100 — ${isMal?'MALICIOUS':'CLEAN'}</div><div style="font-size:13px;color:${isMal?'var(--r)':'var(--g)'};margin-bottom:8px;font-weight:600">${ht.family}</div><div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.8">Detections: ${ht.detections}<br/>C2/Notes: ${ht.c2}</div></div>`;
+  if(!G.decisionMade){document.getElementById('sc-foot').innerHTML=renderDecBlock(sc.decision,'edrDec');}
+}
+
